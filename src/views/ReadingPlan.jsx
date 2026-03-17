@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
-import { CheckCircle2, Circle, Edit3, Plus, Trash2, Save, Book, Layers, Layout } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { CheckCircle2, Circle, Edit3, Plus, Trash2, Save, Book, Layers, Layout, Download, Upload, BarChart3 } from 'lucide-react';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
+import { useNotification } from '../hooks/useNotification';
 
 export function ReadingPlan() {
   const {
     phases, setPhases,
     schedule, setSchedule,
     books, setBooks,
-    completedWeeks, setCompletedWeeks
+    entries, setEntries,
+    completedWeeks, setCompletedWeeks,
+    exportData, importData
   } = useLorekeeperState();
 
+  const notify = useNotification();
   const [isEditing, setIsEditing] = useState(false);
   const [activeManager, setActiveManager] = useState('weeks');
 
@@ -19,7 +23,27 @@ export function ReadingPlan() {
     );
   };
 
-  const progress = Math.round((completedWeeks.length / schedule.length) * 100);
+  const progress = schedule.length > 0 ? Math.round((completedWeeks.length / schedule.length) * 100) : 0;
+
+  const handleImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!window.confirm("¿Estás seguro de que deseas importar estos datos? Reemplazarán tu estado actual por completo.")) {
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        importData(ev.target.result);
+        notify('Datos importados con éxito.', 'success');
+      } catch (err) {
+        notify(err.message || 'El archivo no es un JSON válido.', 'error');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   // CRUD: Weeks
   const addWeek = () => {
@@ -49,6 +73,13 @@ export function ReadingPlan() {
   };
 
   const updatePhase = (id, field, value) => {
+    if (field === 'weeks') {
+      const [start, end] = value;
+      if (end < start) {
+        notify('La semana final no puede ser menor que la inicial.', 'error');
+        return;
+      }
+    }
     setPhases(phases.map(p => p.id === id ? { ...p, [field]: value } : p));
   };
 
@@ -66,13 +97,29 @@ export function ReadingPlan() {
   };
 
   const deleteBook = (id) => {
-    setBooks(books.filter(b => b.id !== id));
+    const bookToDelete = books.find(b => b.id === id);
+    if (!bookToDelete) return;
+
+    const bookEntries = entries.filter(e => e.book === bookToDelete.title);
+    
+    if (bookEntries.length > 0) {
+      if (window.confirm(`Este libro tiene ${bookEntries.length} crónicas asociadas. ¿Deseas eliminarlas también? (Si cancelas, el libro no se borrará)`)) {
+        setEntries(entries.filter(e => e.book !== bookToDelete.title));
+        setBooks(books.filter(b => b.id !== id));
+        notify('Libro y crónicas eliminados.', 'success');
+      }
+    } else {
+      if (window.confirm(`¿Estás seguro de que deseas eliminar "${bookToDelete.title}"?`)) {
+        setBooks(books.filter(b => b.id !== id));
+        notify('Libro eliminado.', 'success');
+      }
+    }
   };
 
   return (
     <div className="flex flex-col gap-8 animate-fade-in pb-24 h-full">
       {/* HEADER */}
-      <PlanHeader isEditing={isEditing} onToggleEdit={() => setIsEditing(!isEditing)} />
+      <PlanHeader isEditing={isEditing} onToggleEdit={() => setIsEditing(!isEditing)} onExport={exportData} onImport={handleImport} />
 
       {/* EDITING TABS */}
       {isEditing && (
@@ -81,6 +128,9 @@ export function ReadingPlan() {
 
       {/* PROGRESS (Only View Mode) */}
       {!isEditing && <ProgressBar progress={progress} />}
+
+      {/* STATISTICS (Only View Mode) */}
+      {!isEditing && <ReadingStats entries={entries} books={books} />}
 
       {/* BOOK MANAGER */}
       {isEditing && activeManager === 'books' && (
@@ -105,20 +155,27 @@ export function ReadingPlan() {
   );
 }
 
-function PlanHeader({ isEditing, onToggleEdit }) {
+function PlanHeader({ isEditing, onToggleEdit, onExport, onImport }) {
   return (
     <div className="flex justify-between items-center sm:text-center sm:flex-col sm:gap-4 bg-zinc-950/50 p-4 rounded-xl border border-zinc-900 sticky top-16 z-40 backdrop-blur-md">
       <div>
         <h2 className="text-3xl font-serif text-amber-500">Plan Maestro</h2>
         <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-bold">Arquitectura del Tiempo</p>
       </div>
-      <button
-        onClick={onToggleEdit}
-        className={`flex items-center gap-2 px-6 py-2 rounded-full border text-[10px] font-bold uppercase tracking-widest transition-all ${isEditing ? 'bg-amber-500 text-zinc-950 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}
-      >
-        {isEditing ? <Save size={14}/> : <Edit3 size={14}/>}
-        {isEditing ? 'Finalizar Diseño' : 'Rediseñar Viaje'}
-      </button>
+      <div className="flex items-center gap-2">
+        <button onClick={onExport} aria-label="Exportar datos" className="p-3 text-zinc-500 hover:text-amber-500 transition-colors"><Download size={16}/></button>
+        <label aria-label="Importar datos" className="p-3 text-zinc-500 hover:text-amber-500 transition-colors cursor-pointer">
+          <Upload size={16}/>
+          <input type="file" accept=".json" onChange={onImport} className="hidden" />
+        </label>
+        <button
+          onClick={onToggleEdit}
+          className={`flex items-center gap-2 px-6 py-2 rounded-full border text-[10px] font-bold uppercase tracking-widest transition-all ${isEditing ? 'bg-amber-500 text-zinc-950 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}
+        >
+          {isEditing ? <Save size={14}/> : <Edit3 size={14}/>}
+          {isEditing ? 'Finalizar Diseño' : 'Rediseñar Viaje'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -177,7 +234,7 @@ function BookManager({ books, onUpdate, onDelete, onAdd }) {
             <option value="manga">Manga</option>
           </select>
           <input type="color" value={book.color} onChange={e => onUpdate(book.id, 'color', e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-none" />
-          <button onClick={() => onDelete(book.id)} className="text-zinc-600 hover:text-red-500"><Trash2 size={16}/></button>
+          <button onClick={() => onDelete(book.id)} className="p-1.5 text-zinc-600 hover:text-red-500"><Trash2 size={16}/></button>
         </div>
       ))}
       <button onClick={onAdd} className="py-4 border-2 border-dashed border-zinc-800 text-zinc-600 rounded-xl hover:text-amber-500 transition-all font-serif italic text-sm">+ Invocar Nuevo Tomo</button>
@@ -193,7 +250,7 @@ function PhaseManager({ phases, onUpdate, onDelete, onAdd }) {
           <div className="flex gap-3">
             <input value={phase.label} onChange={e => onUpdate(phase.id, 'label', e.target.value)} className="flex-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-amber-500 font-serif font-bold" />
             <input type="color" value={phase.color} onChange={e => onUpdate(phase.id, 'color', e.target.value)} className="w-8 h-8 rounded bg-transparent border-none" />
-            <button onClick={() => onDelete(phase.id)} className="text-zinc-600 hover:text-red-500"><Trash2 size={16}/></button>
+            <button onClick={() => onDelete(phase.id)} className="p-1.5 text-zinc-600 hover:text-red-500"><Trash2 size={16}/></button>
           </div>
           <div className="flex gap-4 items-center">
             <span className="text-[10px] text-zinc-500 font-bold">Desde Sem.</span>
@@ -245,7 +302,7 @@ function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, onTo
                       <h4 className="font-serif text-lg font-bold">Semana {week.week}</h4>
                     </div>
                     {isEditing && (
-                      <button onClick={(e) => { e.stopPropagation(); onDeleteWeek(week.week); }} className="text-zinc-600 hover:text-red-500 p-1"><Trash2 size={16}/></button>
+                      <button onClick={(e) => { e.stopPropagation(); onDeleteWeek(week.week); }} className="text-zinc-600 hover:text-red-500 p-1.5"><Trash2 size={16}/></button>
                     )}
                     {!isEditing && isCompleted && (
                       <span className="text-[8px] font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded tracking-widest border border-amber-500/20">SELLADO</span>
@@ -283,6 +340,89 @@ function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, onTo
       {isEditing && (
         <button onClick={onAddWeek} className="py-4 border-2 border-dashed border-zinc-800 text-zinc-600 rounded-xl hover:text-amber-500 transition-all font-serif italic text-sm">+ Forjar Nueva Semana</button>
       )}
+    </div>
+  );
+}
+
+function ReadingStats({ entries, books }) {
+  const stats = useMemo(() => {
+    if (!entries.length) return null;
+
+    const totalEntries = entries.length;
+    const totalCharacters = new Set(entries.flatMap(e => (e.characters || []).map(c => c.name))).size;
+    const totalPlaces = new Set(entries.flatMap(e => (e.places || []).map(p => p.name))).size;
+    const totalQuotes = entries.reduce((sum, e) => sum + (e.quotes?.length || 0), 0);
+
+    // Entries per book
+    const perBook = {};
+    entries.forEach(e => { perBook[e.book] = (perBook[e.book] || 0) + 1; });
+
+    // Weekly pace (entries per week over last 4 weeks)
+    const now = new Date();
+    const fourWeeksAgo = new Date(now);
+    fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+    const recentEntries = entries.filter(e => new Date(e.date) >= fourWeeksAgo);
+    const weeklyPace = Math.round((recentEntries.length / 4) * 10) / 10;
+
+    // Streak (consecutive days with entries)
+    const dates = [...new Set(entries.map(e => e.date))].sort().reverse();
+    let streak = 0;
+    const today = now.toISOString().split('T')[0];
+    let checkDate = new Date(today);
+    for (const d of dates) {
+      const dateStr = checkDate.toISOString().split('T')[0];
+      if (d === dateStr) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else if (d < dateStr) {
+        break;
+      }
+    }
+
+    return { totalEntries, totalCharacters, totalPlaces, totalQuotes, perBook, weeklyPace, streak };
+  }, [entries]);
+
+  if (!stats) return null;
+
+  return (
+    <div className="bg-zinc-900/80 p-5 rounded-xl border border-zinc-800 shadow-lg">
+      <div className="flex items-center gap-2 mb-4">
+        <BarChart3 size={14} className="text-amber-500" />
+        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Estadísticas del Viaje</span>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <StatBadge label="Crónicas" value={stats.totalEntries} />
+        <StatBadge label="Personajes" value={stats.totalCharacters} />
+        <StatBadge label="Lugares" value={stats.totalPlaces} />
+        <StatBadge label="Citas" value={stats.totalQuotes} />
+      </div>
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <StatBadge label="Ritmo semanal" value={stats.weeklyPace} suffix="/sem" />
+        <StatBadge label="Racha actual" value={stats.streak} suffix={stats.streak === 1 ? ' día' : ' días'} />
+      </div>
+      {Object.keys(stats.perBook).length > 1 && (
+        <div className="flex flex-col gap-1.5 pt-3 border-t border-zinc-800">
+          <span className="text-[9px] text-zinc-600 uppercase tracking-widest font-bold mb-1">Por libro</span>
+          {Object.entries(stats.perBook).sort((a, b) => b[1] - a[1]).map(([book, count]) => {
+            const bookObj = books.find(b => b.title === book);
+            return (
+              <div key={book} className="flex items-center justify-between gap-2">
+                <span className="text-[10px] text-zinc-400 font-serif truncate">{bookObj?.emoji} {book}</span>
+                <span className="text-[10px] text-amber-500 font-bold">{count}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatBadge({ label, value, suffix = '' }) {
+  return (
+    <div className="bg-zinc-950/60 p-3 rounded-lg border border-zinc-800/50 text-center">
+      <div className="text-lg font-serif font-bold text-amber-500">{value}{suffix}</div>
+      <div className="text-[8px] text-zinc-600 uppercase tracking-widest font-bold mt-0.5">{label}</div>
     </div>
   );
 }

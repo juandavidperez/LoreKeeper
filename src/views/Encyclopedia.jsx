@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Search, User, Globe, HelpCircle, Sparkles, ChevronRight, BookOpen, Clock, Filter, Loader2 } from 'lucide-react';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Search, User, Globe, HelpCircle, Sparkles, ChevronRight, BookOpen, Clock, Filter, Loader2, Scroll } from 'lucide-react';
 import { callGemini } from '../utils/ai';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
 import { useLocalStorage } from '../hooks/useLocalStorage';
@@ -8,15 +8,18 @@ import { useNotification } from '../hooks/useNotification';
 export function Encyclopedia() {
   const { archive, books } = useLorekeeperState();
   const notify = useNotification();
-  const [activeTab, setActiveTab] = useState('personajes');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [bookFilter, setBookFilter] = useState('todos');
+  const [activeTab, setActiveTabRaw] = useState('personajes');
+  const [searchTerm, setSearchTermRaw] = useState('');
+  const [bookFilter, setBookFilterRaw] = useState('todos');
   const [oracleReplies, setOracleReplies] = useLocalStorage('oracle-replies', {});
   const [loadingOracle, setLoadingOracle] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(20);
+  const PAGE_SIZE = 20;
 
   const tabs = [
     { id: 'personajes', label: 'Personajes', icon: <User size={16}/> },
     { id: 'lugares', label: 'Lugares', icon: <Globe size={16}/> },
+    { id: 'reglas', label: 'Reglas', icon: <Scroll size={16}/> },
     { id: 'glosario', label: 'Glosario', icon: <HelpCircle size={16}/> }
   ];
 
@@ -33,6 +36,13 @@ export function Encyclopedia() {
     }
     return raw;
   }, [archive, activeTab, searchTerm, bookFilter]);
+
+  const setActiveTab = useCallback((v) => { setActiveTabRaw(v); setVisibleCount(PAGE_SIZE); }, []);
+  const setSearchTerm = useCallback((v) => { setSearchTermRaw(v); setVisibleCount(PAGE_SIZE); }, []);
+  const setBookFilter = useCallback((v) => { setBookFilterRaw(v); setVisibleCount(PAGE_SIZE); }, []);
+
+  const visibleData = filteredData.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredData.length;
 
   const invokeOracle = async (entityName, type, force = false) => {
     if (!force && oracleReplies[entityName]) return;
@@ -72,6 +82,7 @@ export function Encyclopedia() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
             <input
               type="text" placeholder="Buscar en los registros..."
+              aria-label="Buscar en los registros"
               value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
               className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 pl-10 pr-4 text-sm outline-none focus:border-amber-500/50 transition-all font-serif italic"
             />
@@ -99,10 +110,12 @@ export function Encyclopedia() {
       </div>
 
       {/* TABS */}
-      <div className="flex bg-zinc-900/50 p-1 rounded-xl border border-zinc-800">
+      <div role="tablist" aria-label="Categorías del archivo" className="flex bg-zinc-900/50 p-1 rounded-xl border border-zinc-800">
         {tabs.map(tab => (
           <button
             key={tab.id}
+            role="tab"
+            aria-selected={activeTab === tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === tab.id ? 'bg-zinc-800 text-amber-500 shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
           >
@@ -115,26 +128,36 @@ export function Encyclopedia() {
       {/* ENTITY LIST */}
       <div className="flex flex-col gap-4">
         {filteredData.length === 0 ? (
-          <div className="text-center py-20 text-zinc-700 font-serif italic border-2 border-dashed border-zinc-900 rounded-2xl">
+          <div className="text-center py-20 text-zinc-500 font-serif italic border-2 border-dashed border-zinc-900 rounded-2xl">
              No hay registros de "{activeTab}" bajo estos criterios.
           </div>
         ) : (
-          filteredData.map((item) => (
-            <EntityCard
-              key={item.name}
-              item={item}
-              oracleReply={oracleReplies[item.name]}
-              onInvoke={(force) => invokeOracle(item.name, activeTab, force)}
-              isLoading={loadingOracle === item.name}
-            />
-          ))
+          <>
+            {visibleData.map((item) => (
+              <EntityCard
+                key={item.name}
+                item={item}
+                oracleReply={oracleReplies[item.name]}
+                onInvoke={(force) => invokeOracle(item.name, activeTab, force)}
+                isLoading={loadingOracle === item.name}
+              />
+            ))}
+            {hasMore && (
+              <button
+                onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
+                className="py-4 text-sm text-amber-500 font-serif italic border border-zinc-800 rounded-xl hover:bg-zinc-900 transition-colors"
+              >
+                Mostrar más registros ({filteredData.length - visibleCount} restantes)
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
   );
 }
 
-function EntityCard({ item, oracleReply, onInvoke, isLoading }) {
+const EntityCard = React.memo(function EntityCard({ item, oracleReply, onInvoke, isLoading }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -210,13 +233,23 @@ function EntityCard({ item, oracleReply, onInvoke, isLoading }) {
                     </button>
                   </div>
                 </div>
+              ) : isLoading ? (
+                <div className="w-full max-w-xs flex flex-col items-center gap-4 py-4 animate-pulse">
+                  <Loader2 size={24} className="animate-spin text-amber-500/60" />
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-amber-600/60 font-bold">Desvelando el destino...</p>
+                  <div className="w-full space-y-2">
+                    <div className="h-2 bg-amber-500/10 rounded-full w-full" />
+                    <div className="h-2 bg-amber-500/10 rounded-full w-4/5 mx-auto" />
+                    <div className="h-2 bg-amber-500/10 rounded-full w-3/5 mx-auto" />
+                  </div>
+                </div>
               ) : (
                 <button
-                  onClick={(e) => { e.stopPropagation(); onInvoke(); }} disabled={isLoading}
+                  onClick={(e) => { e.stopPropagation(); onInvoke(); }}
                   className="w-full max-w-xs py-4 bg-zinc-950/50 hover:bg-amber-500/5 text-amber-500 border border-amber-500/30 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 group/btn hover:scale-[1.02] active:scale-95 shadow-lg flex items-center justify-center gap-3"
                 >
-                  {isLoading ? <Loader2 size={16} className="animate-spin text-amber-500/60" /> : <Sparkles size={16} className="group-hover/btn:rotate-12 transition-transform" />}
-                  <span>{isLoading ? 'Desvelando el destino...' : 'Tocar el Oráculo'}</span>
+                  <Sparkles size={16} className="group-hover/btn:rotate-12 transition-transform" />
+                  <span>Tocar el Oráculo</span>
                 </button>
               )}
             </div>
@@ -225,4 +258,4 @@ function EntityCard({ item, oracleReply, onInvoke, isLoading }) {
       )}
     </div>
   );
-}
+});
