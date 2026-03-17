@@ -32,6 +32,13 @@ export function NotificationProvider({ children }) {
 
   const dismiss = useCallback(() => setNotification(null), []);
 
+  // Listen for storage quota errors from useLocalStorage
+  useEffect(() => {
+    const handler = (e) => notify(e.detail, 'error');
+    window.addEventListener('lore-storage-error', handler);
+    return () => window.removeEventListener('lore-storage-error', handler);
+  }, [notify]);
+
   return React.createElement(
     NotificationContext.Provider,
     { value: notify },

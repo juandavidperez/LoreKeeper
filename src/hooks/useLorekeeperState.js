@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useCallback } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { 
   INITIAL_BOOKS, 
@@ -16,7 +16,13 @@ function aggregateEntities(entries, field, type) {
       if (!data[item.name]) {
         data[item.name] = { name: item.name, type, book: entry.book, tags: item.tags || [], mentions: [] };
       }
-      data[item.name].mentions.push({ date: entry.date, text: item.content, book: entry.book });
+      const mentionKey = `${entry.date}|${entry.book}|${item.content}`;
+      const isDuplicate = data[item.name].mentions.some(
+        m => `${m.date}|${m.book}|${m.text}` === mentionKey
+      );
+      if (!isDuplicate) {
+        data[item.name].mentions.push({ date: entry.date, text: item.content, book: entry.book });
+      }
       data[item.name].tags = [...new Set([...data[item.name].tags, ...(item.tags || [])])];
     });
   });
@@ -34,7 +40,60 @@ export function LorekeeperProvider({ children }) {
     personajes: aggregateEntities(entries, 'characters', 'personaje'),
     lugares: aggregateEntities(entries, 'places', 'lugar'),
     glosario: aggregateEntities(entries, 'glossary', 'glosario'),
+    reglas: aggregateEntities(entries, 'worldRules', 'regla')
   }), [entries]);
+
+  const exportData = useCallback(() => {
+    const data = { books, phases, schedule, entries, completedWeeks, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `lorekeeper-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [books, phases, schedule, entries, completedWeeks]);
+
+  const importData = useCallback((jsonString) => {
+    const data = JSON.parse(jsonString);
+
+    // Validate top-level shape
+    if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+      throw new Error('El archivo no contiene un objeto JSON válido.');
+    }
+
+    // Validate arrays where expected
+    if (data.books !== undefined && !Array.isArray(data.books)) throw new Error('Campo "books" debe ser un array.');
+    if (data.phases !== undefined && !Array.isArray(data.phases)) throw new Error('Campo "phases" debe ser un array.');
+    if (data.schedule !== undefined && !Array.isArray(data.schedule)) throw new Error('Campo "schedule" debe ser un array.');
+    if (data.entries !== undefined && !Array.isArray(data.entries)) throw new Error('Campo "entries" debe ser un array.');
+    if (data.completedWeeks !== undefined && !Array.isArray(data.completedWeeks)) throw new Error('Campo "completedWeeks" debe ser un array.');
+
+    // Validate each book has required fields
+    if (data.books) {
+      for (const book of data.books) {
+        if (!book.title || typeof book.title !== 'string') {
+          throw new Error('Cada libro debe tener un campo "title" de tipo texto.');
+        }
+      }
+    }
+
+    // Validate each entry has required fields
+    if (data.entries) {
+      for (const entry of data.entries) {
+        if (!entry.id) throw new Error('Cada entrada debe tener un campo "id".');
+        if (!entry.book || typeof entry.book !== 'string') {
+          throw new Error('Cada entrada debe tener un campo "book" de tipo texto.');
+        }
+      }
+    }
+
+    if (data.books) setBooks(data.books);
+    if (data.phases) setPhases(data.phases);
+    if (data.schedule) setSchedule(data.schedule);
+    if (data.entries) setEntries(data.entries);
+    if (data.completedWeeks) setCompletedWeeks(data.completedWeeks);
+  }, [setBooks, setPhases, setSchedule, setEntries, setCompletedWeeks]);
 
   const value = {
     books, setBooks,
@@ -42,11 +101,11 @@ export function LorekeeperProvider({ children }) {
     schedule, setSchedule,
     entries, setEntries,
     completedWeeks, setCompletedWeeks,
-    archive
+    archive,
+    exportData, importData
   };
 
-  // Using React.createElement instead of JSX to allow .js extension and avoid build tools picky about JSX in JS files
-  return React.createElement(LorekeeperContext.Provider, { value: value }, children);
+  return React.createElement(LorekeeperContext.Provider, { value }, children);
 }
 
 export function useLorekeeperState() {
