@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { MainLayout } from './components/MainLayout'
 import { ReadingPlan } from './views/ReadingPlan'
 import { ReadingLog } from './views/ReadingLog'
 import { Encyclopedia } from './views/Encyclopedia'
+import { ReloadPrompt } from './components/ReloadPrompt'
 
 import { LorekeeperProvider } from './hooks/useLorekeeperState'
 import { NotificationProvider } from './hooks/useNotification'
@@ -17,6 +18,7 @@ function App() {
           {activeTab === 'plan' && <ReadingPlan />}
           {activeTab === 'log' && <ReadingLog />}
           {activeTab === 'encyclopedia' && <Encyclopedia />}
+          <ReloadPrompt />
         </MainLayout>
       </LorekeeperProvider>
     </NotificationProvider>
