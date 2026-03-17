@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archivo Silencioso | Lorekeeper</title>
+    <style>
+        :root {
+            --parchment: #f2e8cf;
+            --ink: #1c1917;
+            --gold: #b45309;
+            --zinc-900: #18181b;
+        }
+
+        body {
+            background-color: var(--parchment);
+            color: var(--ink);
+            font-family: 'Georgia', serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        /* Subtle texture effect */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url("https://www.transparenttextures.com/patterns/paper-fibers.png");
+            opacity: 0.2;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 500px;
+            padding: 40px;
+            border: 2px solid var(--gold);
+            position: relative;
+            background: rgba(242, 232, 207, 0.5);
+            box-shadow: 0 0 50px rgba(0,0,0,0.1);
+        }
+
+        .container::after {
+            content: "";
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            border: 1px solid rgba(180, 83, 9, 0.3);
+            pointer-events: none;
+        }
+
+        .icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 24px;
+            filter: sepia(1) saturate(2) hue-rotate(-30deg);
+        }
+
+        h1 {
+            color: var(--gold);
+            font-size: 2.2rem;
+            margin: 0 0 16px 0;
+            letter-spacing: -0.02em;
+        }
+
+        p {
+            line-height: 1.7;
+            margin-bottom: 32px;
+            font-style: italic;
+            color: #444;
+        }
+
+        .btn {
+            background-color: var(--zinc-900);
+            color: var(--parchment);
+            padding: 14px 28px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-block;
+            border: 1px solid var(--zinc-900);
+        }
+
+        .btn:hover {
+            background-color: transparent;
+            color: var(--zinc-900);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .status {
+            margin-top: 20px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--gold);
+            font-weight: bold;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="/pwa-192.png" alt="Lorekeeper Logo" class="icon">
+        <h1>Archivo Silencioso</h1>
+        <p>Has entrado en una zona donde los vientos del éter no alcanzan. Los pergaminos no pueden actualizarse sin conexión.</p>
+        
+        <p style="font-size: 0.9rem; font-style: normal;">Puedes seguir consultando tus crónicas guardadas si vuelves a la biblioteca principal, pero la magia de sincronización está en pausa.</p>
+
+        <a href="/" class="btn">Reintentar Conexión</a>
+
+        <div class="status">Desconectado del Éter</div>
+
+        <div id="offline-stats" style="margin-top:24px; font-size:0.85rem; font-style:normal; color:#795548; display:none;">
+        </div>
+    </div>
+    <script>
+      try {
+        const entries = JSON.parse(localStorage.getItem('reading-entries') || '[]');
+        const books = JSON.parse(localStorage.getItem('lore-books') || '[]');
+        const el = document.getElementById('offline-stats');
+        if (entries.length > 0 || books.length > 0) {
+          el.style.display = 'block';
+          el.innerHTML = `
+            <p style="margin-bottom:8px; font-weight:bold; color:var(--gold); text-transform:uppercase; letter-spacing:0.1em; font-size:0.7rem;">Datos preservados en tu dispositivo:</p>
+            <p>${entries.length} crónica${entries.length !== 1 ? 's' : ''} guardada${entries.length !== 1 ? 's' : ''}</p>
+            <p>${books.length} libro${books.length !== 1 ? 's' : ''} registrado${books.length !== 1 ? 's' : ''}</p>
+            <p style="margin-top:12px; font-size:0.75rem; font-style:italic;">Tus datos están seguros. Cuando recuperes la conexión, todo seguirá intacto.</p>
+          `;
+        }
+      } catch(e) { /* ignore */ }
+    </script>
+</body>
+</html>
