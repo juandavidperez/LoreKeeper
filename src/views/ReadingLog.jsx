@@ -1,18 +1,75 @@
-import React, { useState } from 'react';
-import { Plus, History, Quote, User, Globe, HelpCircle, PenTool, Edit3, Trash2, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { Plus, History, Search, Filter, User, Globe, HelpCircle, Edit3, Trash2, Link as LinkIcon, Image as ImageIcon, CalendarDays, CheckSquare, Square, X } from 'lucide-react';
 import { EntryForm } from './EntryForm';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
+import { useNotification } from '../hooks/useNotification';
+import { resolvePanels } from '../utils/imageStore';
+
+let _nextId = 0;
+function uid() { return `entry-${Date.now()}-${_nextId++}-${Math.random().toString(36).slice(2, 7)}`; }
 
 export function ReadingLog() {
   const { entries, setEntries, books } = useLorekeeperState();
+  const notify = useNotification();
   const [editingId, setEditingId] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [searchTerm, setSearchTermRaw] = useState('');
+  const [bookFilter, setBookFilterRaw] = useState('todos');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [visibleCount, setVisibleCount] = useState(20);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [selected, setSelected] = useState(new Set());
+  const PAGE_SIZE = 20;
+
+  const setSearchTerm = useCallback((v) => { setSearchTermRaw(v); setVisibleCount(PAGE_SIZE); }, []);
+  const setBookFilter = useCallback((v) => { setBookFilterRaw(v); setVisibleCount(PAGE_SIZE); }, []);
+
+  const filteredEntries = useMemo(() => {
+    let result = entries;
+    if (bookFilter !== 'todos') {
+      result = result.filter(e => e.book === bookFilter);
+    }
+    if (dateFrom) {
+      result = result.filter(e => e.date >= dateFrom);
+    }
+    if (dateTo) {
+      result = result.filter(e => e.date <= dateTo);
+    }
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      result = result.filter(e =>
+        e.book?.toLowerCase().includes(q) ||
+        e.chapter?.toLowerCase().includes(q) ||
+        e.reingreso?.toLowerCase().includes(q) ||
+        e.characters?.some(c => c.name.toLowerCase().includes(q)) ||
+        e.places?.some(p => p.name.toLowerCase().includes(q))
+      );
+    }
+    return result;
+  }, [entries, searchTerm, bookFilter, dateFrom, dateTo]);
+
+  const visibleEntries = filteredEntries.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredEntries.length;
+
+  const checkDuplicate = (newEntry) => {
+    return entries.some(e =>
+      e.id !== newEntry.id &&
+      e.book === newEntry.book &&
+      e.date === newEntry.date &&
+      e.chapter === newEntry.chapter
+    );
+  };
 
   const saveEntry = (newEntry) => {
+    if (!editingId && checkDuplicate(newEntry)) {
+      if (!window.confirm('Ya existe una crónica para este libro, fecha y ubicación. ¿Guardar de todas formas?')) return;
+    }
     if (editingId) {
       setEntries(entries.map(e => e.id === editingId ? newEntry : e));
     } else {
-      setEntries([newEntry, ...entries]);
+      setEntries([{ ...newEntry, id: uid() }, ...entries]);
     }
     setIsAdding(false);
     setEditingId(null);
@@ -23,17 +80,39 @@ export function ReadingLog() {
       e.stopPropagation();
       e.preventDefault();
     }
-    // Slight delay to ensure the event loop is clear before the blocking confirm dialog
-    setTimeout(() => {
-      if (window.confirm("¿Deseas desvanecer esta crónica para siempre?")) {
-        setEntries(prev => prev.filter(ent => ent.id !== id));
-      }
-    }, 50);
+    setDeleteConfirm(id);
+  };
+
+  const confirmDelete = () => {
+    setEntries(prev => prev.filter(ent => ent.id !== deleteConfirm));
+    setDeleteConfirm(null);
   };
 
   const startEdit = (entry) => {
     setEditingId(entry.id);
     setIsAdding(true);
+  };
+
+  const toggleSelect = (id) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const bulkDelete = () => {
+    if (selected.size === 0) return;
+    if (!window.confirm(`¿Desvanecer ${selected.size} crónicas seleccionadas? Esta acción no se puede deshacer.`)) return;
+    setEntries(prev => prev.filter(e => !selected.has(e.id)));
+    notify(`${selected.size} crónicas desvanecidas.`, 'success');
+    setSelected(new Set());
+    setBulkMode(false);
+  };
+
+  const exitBulk = () => {
+    setBulkMode(false);
+    setSelected(new Set());
   };
 
   if (isAdding) {
@@ -43,62 +122,195 @@ export function ReadingLog() {
 
   return (
     <div className="flex flex-col gap-8 animate-fade-in pb-24">
+      {/* DELETE CONFIRMATION MODAL */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => setDeleteConfirm(null)}>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="font-serif text-amber-500 text-lg mb-2">Desvanecer Crónica</h3>
+            <p className="text-zinc-400 text-sm font-serif italic mb-6">¿Deseas desvanecer esta crónica para siempre? Esta acción no se puede deshacer.</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors">Cancelar</button>
+              <button onClick={confirmDelete} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors">Desvanecer</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center bg-zinc-950/50 p-4 rounded-xl border border-zinc-900 sticky top-16 z-30 backdrop-blur-md">
         <div>
           <h2 className="text-3xl font-serif text-amber-500">Bitácora</h2>
           <p className="text-zinc-500 text-sm italic">Tus crónicas de viaje.</p>
         </div>
-        <button 
-          onClick={() => setIsAdding(true)}
-          className="bg-amber-600 hover:bg-amber-500 text-zinc-950 p-4 rounded-full shadow-lg transition-all scale-110 active:scale-95"
-        >
-          <Plus size={24} />
-        </button>
+        <div className="flex items-center gap-2">
+          {bulkMode ? (
+            <>
+              <button onClick={bulkDelete} disabled={selected.size === 0} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors disabled:opacity-40">
+                Eliminar ({selected.size})
+              </button>
+              <button onClick={exitBulk} aria-label="Salir de selección" className="p-3 text-zinc-500 hover:text-zinc-300">
+                <X size={20} />
+              </button>
+            </>
+          ) : (
+            <>
+              {entries.length > 1 && (
+                <button onClick={() => setBulkMode(true)} aria-label="Selección múltiple" className="p-3 text-zinc-500 hover:text-amber-500 transition-colors">
+                  <CheckSquare size={20} />
+                </button>
+              )}
+              <button
+                onClick={() => setIsAdding(true)}
+                aria-label="Nueva crónica"
+                className="bg-amber-600 hover:bg-amber-500 text-zinc-950 p-4 rounded-full shadow-lg transition-all scale-110 active:scale-95"
+              >
+                <Plus size={24} />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
+      {/* SEARCH & FILTER */}
+      {entries.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+            <input
+              type="text" placeholder="Buscar en tus crónicas..."
+              aria-label="Buscar en tus crónicas"
+              value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 pl-10 pr-4 text-sm outline-none focus:border-amber-500/50 transition-all font-serif italic"
+            />
+          </div>
+          {/* DATE RANGE */}
+          <div className="flex items-center gap-2">
+            <CalendarDays size={14} className="text-zinc-600 flex-shrink-0" />
+            <input
+              type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setVisibleCount(PAGE_SIZE); }}
+              aria-label="Fecha desde"
+              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-3 text-[10px] text-zinc-400 outline-none focus:border-amber-500/50 font-serif"
+            />
+            <span className="text-zinc-600 text-[10px]">—</span>
+            <input
+              type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setVisibleCount(PAGE_SIZE); }}
+              aria-label="Fecha hasta"
+              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-3 text-[10px] text-zinc-400 outline-none focus:border-amber-500/50 font-serif"
+            />
+            {(dateFrom || dateTo) && (
+              <button onClick={() => { setDateFrom(''); setDateTo(''); }} aria-label="Limpiar fechas" className="p-1.5 text-zinc-600 hover:text-amber-500">
+                <X size={14} />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            <Filter size={14} className="text-zinc-600 flex-shrink-0" />
+            <button
+              onClick={() => setBookFilter('todos')}
+              className={`px-3 py-1.5 rounded-full text-[9px] font-bold border transition-all flex-shrink-0 ${bookFilter === 'todos' ? 'bg-amber-500 text-zinc-950 border-amber-500' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}`}
+            >
+              Todos
+            </button>
+            {books.map(b => (
+              <button
+                key={b.id || b.title}
+                onClick={() => setBookFilter(b.title)}
+                className={`px-3 py-1.5 rounded-full text-[9px] font-bold border transition-all flex-shrink-0 ${bookFilter === b.title ? 'bg-amber-600/20 border-amber-500/50 text-amber-400' : 'bg-zinc-950 border-zinc-800 text-zinc-600'}`}
+              >
+                {b.emoji} {b.title}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col gap-6">
-        {entries.length === 0 ? (
+        {filteredEntries.length === 0 ? (
           <div className="text-center py-24 bg-zinc-900/30 rounded-2xl border border-dashed border-zinc-800">
-            <History size={48} className="mx-auto text-zinc-800 mb-4" />
-            <p className="text-zinc-600 font-serif italic text-sm">El archivo está en silencio. Registra tu primera crónica.</p>
+            <History size={48} className="mx-auto text-zinc-600 mb-4" />
+            <p className="text-zinc-600 font-serif italic text-sm">
+              {(searchTerm || dateFrom || dateTo || bookFilter !== 'todos')
+                ? 'No se encontraron crónicas con estos filtros.'
+                : 'El archivo está en silencio. Registra tu primera crónica.'}
+            </p>
           </div>
         ) : (
-          entries.map((entry) => (
-            <LogCard 
-              key={entry.id} 
-              entry={entry} 
-              onEdit={() => startEdit(entry)} 
-              onDelete={(e) => deleteEntry(entry.id, e)} 
-            />
-          ))
+          <>
+            {visibleEntries.map((entry) => (
+              <LogCard
+                key={entry.id}
+                entry={entry}
+                onEdit={() => startEdit(entry)}
+                onDelete={(e) => deleteEntry(entry.id, e)}
+                bulkMode={bulkMode}
+                isSelected={selected.has(entry.id)}
+                onToggleSelect={() => toggleSelect(entry.id)}
+              />
+            ))}
+            {hasMore && (
+              <button
+                onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
+                className="py-4 text-sm text-amber-500 font-serif italic border border-zinc-800 rounded-xl hover:bg-zinc-900 transition-colors"
+              >
+                Mostrar más crónicas ({filteredEntries.length - visibleCount} restantes)
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
   );
 }
 
-function LogCard({ entry, onEdit, onDelete }) {
+const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, bulkMode, isSelected, onToggleSelect }) {
   return (
-    <div className="group bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden hover:border-amber-500/30 transition-all flex flex-col shadow-xl">
+    <div
+      onClick={bulkMode ? onToggleSelect : undefined}
+      className={`group bg-zinc-900 border rounded-2xl overflow-hidden transition-all flex flex-col shadow-xl ${
+        bulkMode ? 'cursor-pointer' : ''
+      } ${isSelected ? 'border-amber-500 ring-1 ring-amber-500/30' : 'border-zinc-800 hover:border-amber-500/30'}`}
+    >
       <div className="bg-gradient-to-r from-amber-600/20 to-transparent p-4 flex justify-between items-center border-b border-zinc-800/50">
-        <div>
-          <h3 className="font-serif text-amber-100 text-lg">{entry.book}</h3>
-          <p className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-bold">{entry.date} • {entry.chapter || 'S/N'}</p>
+        <div className="flex items-center gap-3">
+          {bulkMode && (
+            <div className="text-amber-500">
+              {isSelected ? <CheckSquare size={18} /> : <Square size={18} />}
+            </div>
+          )}
+          <div>
+            <h3 className="font-serif text-amber-100 text-lg">{entry.book}</h3>
+            <p className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-bold">{entry.date} • {entry.chapter || 'S/N'}</p>
+          </div>
         </div>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={onEdit} className="p-2 text-zinc-500 hover:text-amber-500"><Edit3 size={16}/></button>
-          <button onClick={onDelete} className="p-2 text-zinc-500 hover:text-red-500"><Trash2 size={16}/></button>
-          <span className="ml-2 bg-zinc-950 text-amber-500 px-3 py-1 rounded-full text-[9px] border border-amber-500/20 font-bold self-center shadow-inner">
-            {entry.mood}
-          </span>
-        </div>
+        {!bulkMode && (
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onClick={onEdit} aria-label="Editar crónica" className="p-3 text-zinc-500 hover:text-amber-500"><Edit3 size={16}/></button>
+            <button onClick={onDelete} aria-label="Eliminar crónica" className="p-3 text-zinc-500 hover:text-red-500"><Trash2 size={16}/></button>
+            <span className="ml-2 bg-zinc-950 text-amber-500 px-3 py-1 rounded-full text-[9px] border border-amber-500/20 font-bold self-center shadow-inner">
+              {entry.mood}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="p-5 flex flex-col gap-4">
         {entry.reingreso && (
           <div className="bg-zinc-950/60 p-4 rounded-xl border border-zinc-800/50 italic font-serif text-sm text-amber-50/80 leading-relaxed relative">
              <span className="absolute -top-3 left-3 bg-zinc-900 px-2 text-[8px] text-amber-600 uppercase tracking-widest font-bold">Reingreso</span>
-            "{entry.reingreso}"
+            &ldquo;{entry.reingreso}&rdquo;
+          </div>
+        )}
+
+        {entry.quotes?.length > 0 && (
+          <div className="flex flex-col gap-3 px-1">
+            {entry.quotes.map((q, i) => (
+              <div key={i} className="relative pl-6 py-1">
+                <span className="absolute left-0 top-0 text-amber-500/30 text-2xl font-serif">&ldquo;</span>
+                <p className="text-sm italic font-serif text-amber-200/90 leading-relaxed">
+                  {q}
+                </p>
+                <div className="absolute left-0 bottom-0 w-1 h-full bg-amber-500/10 rounded-full" />
+              </div>
+            ))}
           </div>
         )}
 
@@ -121,7 +333,7 @@ function LogCard({ entry, onEdit, onDelete }) {
                         <span key={t} className="text-[8px] bg-black/40 text-amber-400 px-2 py-0.5 rounded border border-amber-900/30 font-bold">{t}</span>
                       ))}
                     </div>
-                    {conn.description && <p className="text-[10px] text-zinc-400 italic font-serif leading-relaxed line-clamp-2">"{conn.description}"</p>}
+                    {conn.description && <p className="text-[10px] text-zinc-400 italic font-serif leading-relaxed line-clamp-2">&ldquo;{conn.description}&rdquo;</p>}
                   </div>
                 ))}
               </div>
@@ -131,18 +343,38 @@ function LogCard({ entry, onEdit, onDelete }) {
 
         {/* MANGA PANELS PREVIEW */}
         {entry.mangaPanels?.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-2 pt-2">
-            {entry.mangaPanels.map((img, i) => (
-              <div key={i} className="flex-shrink-0 w-24 aspect-video bg-black rounded-lg border border-zinc-800 overflow-hidden relative group/img">
-                <img src={img} className="w-full h-full object-cover opacity-60 group-hover/img:opacity-100 transition-opacity" alt="Panel" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-1">
-                  <ImageIcon size={10} className="text-zinc-500" />
-                </div>
-              </div>
-            ))}
-          </div>
+          <MangaPanelsPreview panels={entry.mangaPanels} />
         )}
       </div>
+    </div>
+  );
+});
+
+function MangaPanelsPreview({ panels }) {
+  const [resolved, setResolved] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    resolvePanels(panels).then(imgs => {
+      if (!cancelled) setResolved(imgs);
+    }).catch(() => {
+      if (!cancelled) setResolved(panels.filter(p => p.startsWith('data:')));
+    });
+    return () => { cancelled = true; };
+  }, [panels]);
+
+  if (resolved.length === 0) return null;
+
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-2 pt-2">
+      {resolved.map((img, i) => (
+        <div key={i} className="flex-shrink-0 w-24 aspect-video bg-black rounded-lg border border-zinc-800 overflow-hidden relative group/img">
+          <img src={img} loading="lazy" className="w-full h-full object-cover opacity-60 group-hover/img:opacity-100 transition-opacity" alt={`Panel de manga ${i + 1}`} />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-1">
+            <ImageIcon size={10} className="text-zinc-500" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
