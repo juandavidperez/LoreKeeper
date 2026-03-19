@@ -1,13 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --bg-app: #09090b;
-  --bg-card: #111113;
-  --bg-input: #18181b;
+  --bg-app: #0c0a08;
+  --bg-card: #141210;
+  --bg-input: #1c1916;
   --text-primary: #d4d4d8;
+  --text-heading: #f4f4f5;
   --text-muted: #a1a1aa;
   --text-accent: #f59e0b;
-  --border-primary: #1e1e21;
+  --border-primary: #221e1a;
+  /* Semantic colors */
+  --success: #4a7a5c;
+  --danger: #8b2332;
+  --oracle: #6d28d9;
 }
 
 .light {
@@ -15,9 +20,14 @@
   --bg-card: #ece0c5;
   --bg-input: #e4d5b7;
   --text-primary: #4e342e;
+  --text-heading: #1c0f0a;
   --text-muted: #795548;
   --text-accent: #b45309;
   --border-primary: #d7ccc8;
+  /* Semantic colors — parchment variants */
+  --success: #2d6a4f;
+  --danger: #7f1d1d;
+  --oracle: #4c1d95;
 }
 
 @theme {
@@ -27,6 +37,10 @@
   --color-zinc-300: var(--text-primary);
   --color-zinc-500: var(--text-muted);
   --color-amber-500: var(--text-accent);
+  --color-heading: var(--text-heading);
+  --color-success: var(--success);
+  --color-danger-deep: var(--danger);
+  --color-oracle: var(--oracle);
 }
 
 @layer base {

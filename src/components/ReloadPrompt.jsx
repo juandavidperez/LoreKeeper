@@ -31,10 +31,10 @@ export function ReloadPrompt() {
             <RefreshCw size={18} className={needRefresh ? 'animate-spin-slow' : ''} />
           </div>
           <div>
-            <p className="text-sm font-serif font-bold text-amber-100">
+            <p className="text-sm font-serif font-bold text-heading">
               {offlineReady ? 'Aplicación lista para usar sin conexión' : 'Nueva versión disponible'}
             </p>
-            <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
+            <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold">
               {offlineReady ? 'El conocimiento ha sido preservado' : 'Actualiza para obtener el último saber'}
             </p>
           </div>

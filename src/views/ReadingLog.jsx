@@ -4,6 +4,7 @@ import { EntryForm } from './EntryForm';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
 import { useNotification } from '../hooks/useNotification';
 import { resolvePanels } from '../utils/imageStore';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 let _nextId = 0;
 function uid() { return `entry-${Date.now()}-${_nextId++}-${Math.random().toString(36).slice(2, 7)}`; }
@@ -14,6 +15,8 @@ export function ReadingLog() {
   const [editingId, setEditingId] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [pendingSave, setPendingSave] = useState(null);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [searchTerm, setSearchTermRaw] = useState('');
   const [bookFilter, setBookFilterRaw] = useState('todos');
   const [dateFrom, setDateFrom] = useState('');
@@ -62,10 +65,7 @@ export function ReadingLog() {
     );
   };
 
-  const saveEntry = (newEntry) => {
-    if (!editingId && checkDuplicate(newEntry)) {
-      if (!window.confirm('Ya existe una crónica para este libro, fecha y ubicación. ¿Guardar de todas formas?')) return;
-    }
+  const commitSave = (newEntry) => {
     if (editingId) {
       setEntries(entries.map(e => e.id === editingId ? newEntry : e));
     } else {
@@ -73,6 +73,15 @@ export function ReadingLog() {
     }
     setIsAdding(false);
     setEditingId(null);
+    setPendingSave(null);
+  };
+
+  const saveEntry = (newEntry) => {
+    if (!editingId && checkDuplicate(newEntry)) {
+      setPendingSave(newEntry);
+      return;
+    }
+    commitSave(newEntry);
   };
 
   const deleteEntry = (id, e) => {
@@ -103,11 +112,15 @@ export function ReadingLog() {
 
   const bulkDelete = () => {
     if (selected.size === 0) return;
-    if (!window.confirm(`¿Desvanecer ${selected.size} crónicas seleccionadas? Esta acción no se puede deshacer.`)) return;
+    setBulkDeleteConfirm(true);
+  };
+
+  const confirmBulkDelete = () => {
     setEntries(prev => prev.filter(e => !selected.has(e.id)));
     notify(`${selected.size} crónicas desvanecidas.`, 'success');
     setSelected(new Set());
     setBulkMode(false);
+    setBulkDeleteConfirm(false);
   };
 
   const exitBulk = () => {
@@ -121,54 +134,67 @@ export function ReadingLog() {
   }
 
   return (
-    <div className="flex flex-col gap-8 animate-fade-in pb-24">
-      {/* DELETE CONFIRMATION MODAL */}
+    <div className="flex flex-col gap-6 animate-fade-in pb-24">
       {deleteConfirm && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" onClick={() => setDeleteConfirm(null)}>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <h3 className="font-serif text-amber-500 text-lg mb-2">Desvanecer Crónica</h3>
-            <p className="text-zinc-400 text-sm font-serif italic mb-6">¿Deseas desvanecer esta crónica para siempre? Esta acción no se puede deshacer.</p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors">Cancelar</button>
-              <button onClick={confirmDelete} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors">Desvanecer</button>
-            </div>
-          </div>
-        </div>
+        <ConfirmModal
+          title="Desvanecer Crónica"
+          message="¿Deseas desvanecer esta crónica para siempre? Esta acción no se puede deshacer."
+          confirmLabel="Desvanecer"
+          danger
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
+      {pendingSave && (
+        <ConfirmModal
+          title="Crónica duplicada"
+          message="Ya existe una crónica para este libro, fecha y ubicación. ¿Guardar de todas formas?"
+          confirmLabel="Guardar"
+          onConfirm={() => commitSave(pendingSave)}
+          onCancel={() => setPendingSave(null)}
+        />
+      )}
+      {bulkDeleteConfirm && (
+        <ConfirmModal
+          title="Desvanecer crónicas"
+          message={`¿Desvanecer ${selected.size} crónica${selected.size !== 1 ? 's' : ''} seleccionada${selected.size !== 1 ? 's' : ''}? Esta acción no se puede deshacer.`}
+          confirmLabel="Desvanecer"
+          danger
+          onConfirm={confirmBulkDelete}
+          onCancel={() => setBulkDeleteConfirm(false)}
+        />
       )}
 
-      <div className="flex justify-between items-center bg-zinc-950/50 p-4 rounded-xl border border-zinc-900 sticky top-16 z-30 backdrop-blur-md">
-        <div>
-          <h2 className="text-3xl font-serif text-amber-500">Bitácora</h2>
-          <p className="text-zinc-500 text-sm italic">Tus crónicas de viaje.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {bulkMode ? (
-            <>
-              <button onClick={bulkDelete} disabled={selected.size === 0} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors disabled:opacity-40">
-                Eliminar ({selected.size})
-              </button>
-              <button onClick={exitBulk} aria-label="Salir de selección" className="p-3 text-zinc-500 hover:text-zinc-300">
-                <X size={20} />
-              </button>
-            </>
-          ) : (
-            <>
-              {entries.length > 1 && (
-                <button onClick={() => setBulkMode(true)} aria-label="Selección múltiple" className="p-3 text-zinc-500 hover:text-amber-500 transition-colors">
-                  <CheckSquare size={20} />
-                </button>
-              )}
-              <button
-                onClick={() => setIsAdding(true)}
-                aria-label="Nueva crónica"
-                className="bg-amber-600 hover:bg-amber-500 text-zinc-950 p-4 rounded-full shadow-lg transition-all scale-110 active:scale-95"
-              >
-                <Plus size={24} />
-              </button>
-            </>
-          )}
-        </div>
+      {/* HEADER */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-serif text-heading">Bitácora</h2>
+        {bulkMode && (
+          <div className="flex items-center gap-2">
+            <button onClick={bulkDelete} disabled={selected.size === 0} className="px-4 py-2 text-xs font-bold uppercase tracking-widest bg-danger-deep hover:bg-danger-deep/80 text-white rounded-lg transition-colors disabled:opacity-40">
+              Eliminar ({selected.size})
+            </button>
+            <button onClick={exitBulk} aria-label="Salir de selección" className="p-2 text-zinc-500 hover:text-zinc-300">
+              <X size={20} />
+            </button>
+          </div>
+        )}
+        {!bulkMode && entries.length > 1 && (
+          <button onClick={() => setBulkMode(true)} aria-label="Selección múltiple" className="p-2 text-zinc-500 hover:text-amber-500 transition-colors">
+            <CheckSquare size={20} />
+          </button>
+        )}
       </div>
+
+      {/* FLOATING FAB — always accessible */}
+      {!bulkMode && (
+        <button
+          onClick={() => setIsAdding(true)}
+          aria-label="Nueva crónica"
+          className="fixed bottom-20 right-4 z-[110] bg-amber-600 hover:bg-amber-500 text-zinc-950 p-4 rounded-full shadow-2xl transition-all active:scale-95"
+        >
+          <Plus size={24} />
+        </button>
+      )}
 
       {/* SEARCH & FILTER */}
       {entries.length > 0 && (
@@ -188,13 +214,13 @@ export function ReadingLog() {
             <input
               type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setVisibleCount(PAGE_SIZE); }}
               aria-label="Fecha desde"
-              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-3 text-[10px] text-zinc-400 outline-none focus:border-amber-500/50 font-serif"
+              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg py-2 px-3 text-xs text-zinc-400 outline-none focus:border-amber-500/50 font-serif"
             />
-            <span className="text-zinc-600 text-[10px]">—</span>
+            <span className="text-zinc-600 text-xs">—</span>
             <input
               type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setVisibleCount(PAGE_SIZE); }}
               aria-label="Fecha hasta"
-              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg py-1.5 px-3 text-[10px] text-zinc-400 outline-none focus:border-amber-500/50 font-serif"
+              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg py-2 px-3 text-xs text-zinc-400 outline-none focus:border-amber-500/50 font-serif"
             />
             {(dateFrom || dateTo) && (
               <button onClick={() => { setDateFrom(''); setDateTo(''); }} aria-label="Limpiar fechas" className="p-1.5 text-zinc-600 hover:text-amber-500">
@@ -206,7 +232,7 @@ export function ReadingLog() {
             <Filter size={14} className="text-zinc-600 flex-shrink-0" />
             <button
               onClick={() => setBookFilter('todos')}
-              className={`px-3 py-1.5 rounded-full text-[9px] font-bold border transition-all flex-shrink-0 ${bookFilter === 'todos' ? 'bg-amber-500 text-zinc-950 border-amber-500' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex-shrink-0 ${bookFilter === 'todos' ? 'bg-amber-500 text-zinc-950 border-amber-500' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}`}
             >
               Todos
             </button>
@@ -214,7 +240,7 @@ export function ReadingLog() {
               <button
                 key={b.id || b.title}
                 onClick={() => setBookFilter(b.title)}
-                className={`px-3 py-1.5 rounded-full text-[9px] font-bold border transition-all flex-shrink-0 ${bookFilter === b.title ? 'bg-amber-600/20 border-amber-500/50 text-amber-400' : 'bg-zinc-950 border-zinc-800 text-zinc-600'}`}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex-shrink-0 ${bookFilter === b.title ? 'bg-amber-600/20 border-amber-500/50 text-amber-400' : 'bg-zinc-950 border-zinc-800 text-zinc-600'}`}
               >
                 {b.emoji} {b.title}
               </button>
@@ -230,7 +256,7 @@ export function ReadingLog() {
             <p className="text-zinc-600 font-serif italic text-sm">
               {(searchTerm || dateFrom || dateTo || bookFilter !== 'todos')
                 ? 'No se encontraron crónicas con estos filtros.'
-                : 'El archivo está en silencio. Registra tu primera crónica.'}
+                : 'El archivo está en silencio. Toca + para registrar tu primera crónica.'}
             </p>
           </div>
         ) : (
@@ -269,7 +295,7 @@ const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, bulkMode,
         bulkMode ? 'cursor-pointer' : ''
       } ${isSelected ? 'border-amber-500 ring-1 ring-amber-500/30' : 'border-zinc-800 hover:border-amber-500/30'}`}
     >
-      <div className="bg-gradient-to-r from-amber-600/20 to-transparent p-4 flex justify-between items-center border-b border-zinc-800/50">
+      <div className="bg-zinc-950/40 p-4 flex justify-between items-center border-b border-zinc-800/50">
         <div className="flex items-center gap-3">
           {bulkMode && (
             <div className="text-amber-500">
@@ -277,25 +303,27 @@ const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, bulkMode,
             </div>
           )}
           <div>
-            <h3 className="font-serif text-amber-100 text-lg">{entry.book}</h3>
-            <p className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-bold">{entry.date} • {entry.chapter || 'S/N'}</p>
+            <h3 className="font-serif text-heading text-lg">{entry.book}</h3>
+            <p className="text-xs text-zinc-500 uppercase tracking-[0.2em] font-bold">{entry.date} • {entry.chapter || 'S/N'}</p>
           </div>
         </div>
         {!bulkMode && (
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onClick={onEdit} aria-label="Editar crónica" className="p-3 text-zinc-500 hover:text-amber-500"><Edit3 size={16}/></button>
-            <button onClick={onDelete} aria-label="Eliminar crónica" className="p-3 text-zinc-500 hover:text-red-500"><Trash2 size={16}/></button>
-            <span className="ml-2 bg-zinc-950 text-amber-500 px-3 py-1 rounded-full text-[9px] border border-amber-500/20 font-bold self-center shadow-inner">
+          <div className="flex items-center gap-1">
+            <span className="bg-zinc-950 text-amber-500 px-3 py-1 rounded-full text-xs border border-amber-500/20 font-bold shadow-inner">
               {entry.mood}
             </span>
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+              <button onClick={onEdit} aria-label="Editar crónica" className="p-3 text-zinc-500 hover:text-amber-500 active:text-amber-500"><Edit3 size={16}/></button>
+              <button onClick={onDelete} aria-label="Eliminar crónica" className="p-3 text-zinc-500 hover:text-danger-deep active:text-danger-deep"><Trash2 size={16}/></button>
+            </div>
           </div>
         )}
       </div>
 
       <div className="p-5 flex flex-col gap-4">
         {entry.reingreso && (
-          <div className="bg-zinc-950/60 p-4 rounded-xl border border-zinc-800/50 italic font-serif text-sm text-amber-50/80 leading-relaxed relative">
-             <span className="absolute -top-3 left-3 bg-zinc-900 px-2 text-[8px] text-amber-600 uppercase tracking-widest font-bold">Reingreso</span>
+          <div className="bg-zinc-950/60 p-4 rounded-xl border border-zinc-800/50 italic font-serif text-sm text-zinc-300 leading-relaxed relative">
+             <span className="absolute -top-3 left-3 bg-zinc-900 px-2 text-xs text-amber-600 uppercase tracking-widest font-bold">Reingreso</span>
             &ldquo;{entry.reingreso}&rdquo;
           </div>
         )}
@@ -305,7 +333,7 @@ const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, bulkMode,
             {entry.quotes.map((q, i) => (
               <div key={i} className="relative pl-6 py-1">
                 <span className="absolute left-0 top-0 text-amber-500/30 text-2xl font-serif">&ldquo;</span>
-                <p className="text-sm italic font-serif text-amber-200/90 leading-relaxed">
+                <p className="text-sm italic font-serif text-heading leading-relaxed">
                   {q}
                 </p>
                 <div className="absolute left-0 bottom-0 w-1 h-full bg-amber-500/10 rounded-full" />
@@ -323,17 +351,17 @@ const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, bulkMode,
             <div className="mt-2 space-y-2">
               <div className="flex items-center gap-2 text-amber-500/60 ml-1">
                 <LinkIcon size={12}/>
-                <span className="text-[10px] uppercase font-bold tracking-widest">Conexiones</span>
+                <span className="text-xs uppercase font-bold tracking-widest">Conexiones</span>
               </div>
               <div className="space-y-2">
                 {entry.connections.map((conn, idx) => (
                   <div key={idx} className="bg-amber-500/5 border border-amber-500/10 p-3 rounded-xl">
                     <div className="flex flex-wrap gap-1 mb-2">
                       {conn.bookTitles?.map(t => (
-                        <span key={t} className="text-[8px] bg-black/40 text-amber-400 px-2 py-0.5 rounded border border-amber-900/30 font-bold">{t}</span>
+                        <span key={t} className="text-xs bg-black/40 text-amber-400 px-2 py-0.5 rounded border border-amber-900/30 font-bold">{t}</span>
                       ))}
                     </div>
-                    {conn.description && <p className="text-[10px] text-zinc-400 italic font-serif leading-relaxed line-clamp-2">&ldquo;{conn.description}&rdquo;</p>}
+                    {conn.description && <p className="text-xs text-zinc-400 italic font-serif leading-relaxed line-clamp-2">&ldquo;{conn.description}&rdquo;</p>}
                   </div>
                 ))}
               </div>
@@ -383,7 +411,7 @@ function EntrySection({ icon, label, list, color }) {
   const colors = {
     purple: 'text-purple-400 border-purple-500/20 bg-purple-500/5',
     cyan: 'text-cyan-400 border-cyan-500/20 bg-cyan-500/5',
-    red: 'text-red-400 border-red-500/20 bg-red-500/5',
+    red: 'text-danger-deep border-danger-deep/20 bg-danger-deep/5',
     amber: 'text-amber-500 border-amber-500/20 bg-amber-500/5',
   };
 
@@ -391,10 +419,10 @@ function EntrySection({ icon, label, list, color }) {
     <div className={`p-2 rounded-lg border flex items-center justify-between gap-3 ${colors[color]}`}>
       <div className="flex items-center gap-2">
         {icon}
-        <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
+        <span className="text-xs font-bold uppercase tracking-widest">{label}</span>
       </div>
       <div className="flex flex-wrap gap-1 justify-end">
-        {list.map(item => <span key={item} className="text-[9px] bg-black/40 px-2 py-0.5 rounded border border-zinc-800 text-zinc-300">{item}</span>)}
+        {list.map(item => <span key={item} className="text-xs bg-black/40 px-2 py-0.5 rounded border border-zinc-800 text-zinc-300">{item}</span>)}
       </div>
     </div>
   );

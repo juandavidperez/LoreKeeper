@@ -41,6 +41,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Don't let the service worker intercept Supabase API calls
+        navigateFallbackDenylist: [/^\/auth/, /^\/rest/, /^\/storage/],
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.mode === 'navigate',
@@ -50,6 +52,11 @@ export default defineConfig({
                 fallbackURL: '/offline.html'
               }
             }
+          },
+          {
+            // Supabase calls: always go to network
+            urlPattern: ({ url }) => url.hostname.endsWith('.supabase.co'),
+            handler: 'NetworkOnly',
           }
         ]
       }

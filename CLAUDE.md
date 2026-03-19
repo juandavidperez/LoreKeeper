@@ -113,3 +113,37 @@ Lorekeeper is a reading companion PWA for tracking reading progress, logging ent
 - **Manifest screenshots** — `screenshots` field in PWA manifest is empty (improves Android install experience)
 - **Data retention policy** — localStorage can fill up with no automatic cleanup
 - **Better API error UX** — When Gemini API retries are exhausted, user only sees a generic error
+
+## Design Context
+
+### Users
+Juan David, lector habitual de manga y novelas ligeras. Usa LoreKeeper como diario de lectura personal: registra progreso semanal, personajes, lugares, citas y reglas del mundo narrativo. Contexto de uso íntimo — abre el app mientras lee o justo después de un capítulo. Las decisiones deben escalar para un segundo usuario sin contexto previo.
+
+**Job to be done**: Capturar el conocimiento del mundo narrativo antes de que se olvide. El app es un grimorio vivo que crece con cada sesión de lectura.
+
+### Brand Personality
+**Solemne · Vivo · Íntimo**
+
+La voz es la de un archivero anciano que toma su oficio en serio pero se emociona con los descubrimientos. No frío ni burocrático; no casual ni juguetón. El acto de leer merece rituales.
+
+**Vocabulario canónico**: Crónicas (entradas), El Archivo (enciclopedia), Oráculo (IA), SELLADO (completado), Forjar, Invocar, Desvanecer, el Éter (red).
+
+### Aesthetic Direction
+- **Canónico**: Grimorio dorado — amber sobre fondo oscuro o pergamino medieval
+- **Dark**: `#0c0a08` base, `#f59e0b` amber acento sagrado
+- **Light (preferida)**: `#f4ead5` pergamino, `#b45309` amber oscuro — paleta más auténtica, debe liderar las decisiones de diseño
+- **Tipografía**: Playfair Display (títulos), Inter (UI), Source Serif 4 (cuerpo)
+- **Modelo estético**: La página `offline.html` (Archivo Silencioso) con doble borde manuscrito está más cerca del ideal que el app principal
+
+**Anti-referencias**:
+- ❌ Apps de productividad genéricas (Notion plain, Todoist)
+- ❌ Dashboards corporativos (métricas frías, gráficas de barra)
+- ❌ Estética anime/gaming (neon, glow, HUD)
+- ❌ Social media / feed (cards infinitas, espacio público)
+
+### Design Principles
+1. **El amber es sagrado** — reservar exclusivamente para: estado activo, acción primaria, momentos de logro. No usarlo como decoración genérica.
+2. **La UI es parte del mundo narrativo** — cada string, gesto y estado vacío debe ser coherente con el vocabulario del grimorio. La experiencia de usar el app es extensión de leer.
+3. **El contenido primero, el chrome mínimo** — en mobile, reducir capas de navegación sticky es prioridad funcional y estética.
+4. **El pergamino lidera** — el light mode parchment es la paleta de referencia desde la que se evalúa el sistema de diseño.
+5. **Los momentos de deleite son rituales, no confeti** — animaciones y micro-interactions con solemnidad, no urgencia. Una semana sellada merece pausa, no bounce.

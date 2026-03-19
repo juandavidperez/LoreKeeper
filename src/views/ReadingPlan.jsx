@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
-import { CheckCircle2, Circle, Edit3, Plus, Trash2, Save, Book, Layers, Layout, Download, Upload, BarChart3 } from 'lucide-react';
+import { CheckCircle2, Circle, Edit3, Plus, Trash2, Save, Book, Layers, Layout, Download, Upload, FlaskConical } from 'lucide-react';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
 import { useNotification } from '../hooks/useNotification';
+import { ConfirmModal } from '../components/ConfirmModal';
+import { DEMO_DATA } from '../data/mockData';
 
 export function ReadingPlan() {
   const {
@@ -16,6 +18,16 @@ export function ReadingPlan() {
   const notify = useNotification();
   const [isEditing, setIsEditing] = useState(false);
   const [activeManager, setActiveManager] = useState('weeks');
+  const [confirmModal, setConfirmModal] = useState(null);
+
+  const handleLoadDemo = () => {
+    try {
+      importData(JSON.stringify(DEMO_DATA));
+      notify('¡Datos de prueba cargados!', 'success');
+    } catch (err) {
+      notify(err.message || 'Error al cargar la demo.', 'error');
+    }
+  };
 
   const toggleWeek = (week) => {
     setCompletedWeeks((prev) =>
@@ -28,21 +40,26 @@ export function ReadingPlan() {
   const handleImport = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!window.confirm("¿Estás seguro de que deseas importar estos datos? Reemplazarán tu estado actual por completo.")) {
-      e.target.value = '';
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        importData(ev.target.result);
-        notify('Datos importados con éxito.', 'success');
-      } catch (err) {
-        notify(err.message || 'El archivo no es un JSON válido.', 'error');
-      }
-    };
-    reader.readAsText(file);
     e.target.value = '';
+    setConfirmModal({
+      title: 'Importar datos',
+      message: '¿Estás seguro? Los datos importados reemplazarán tu estado actual por completo.',
+      confirmLabel: 'Importar',
+      danger: true,
+      onConfirm: () => {
+        setConfirmModal(null);
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            importData(ev.target.result);
+            notify('Datos importados con éxito.', 'success');
+          } catch (err) {
+            notify(err.message || 'El archivo no es un JSON válido.', 'error');
+          }
+        };
+        reader.readAsText(file);
+      }
+    });
   };
 
   // CRUD: Weeks
@@ -101,36 +118,69 @@ export function ReadingPlan() {
     if (!bookToDelete) return;
 
     const bookEntries = entries.filter(e => e.book === bookToDelete.title);
-    
+
     if (bookEntries.length > 0) {
-      if (window.confirm(`Este libro tiene ${bookEntries.length} crónicas asociadas. ¿Deseas eliminarlas también? (Si cancelas, el libro no se borrará)`)) {
-        setEntries(entries.filter(e => e.book !== bookToDelete.title));
-        setBooks(books.filter(b => b.id !== id));
-        notify('Libro y crónicas eliminados.', 'success');
-      }
+      setConfirmModal({
+        title: 'Eliminar libro',
+        message: `"${bookToDelete.title}" tiene ${bookEntries.length} crónica${bookEntries.length !== 1 ? 's' : ''} asociada${bookEntries.length !== 1 ? 's' : ''}. ¿Eliminarlas también?`,
+        confirmLabel: 'Eliminar todo',
+        danger: true,
+        onConfirm: () => {
+          setConfirmModal(null);
+          setEntries(entries.filter(e => e.book !== bookToDelete.title));
+          setBooks(books.filter(b => b.id !== id));
+          notify('Libro y crónicas eliminados.', 'success');
+        }
+      });
     } else {
-      if (window.confirm(`¿Estás seguro de que deseas eliminar "${bookToDelete.title}"?`)) {
-        setBooks(books.filter(b => b.id !== id));
-        notify('Libro eliminado.', 'success');
-      }
+      setConfirmModal({
+        title: 'Eliminar libro',
+        message: `¿Deseas eliminar "${bookToDelete.title}"?`,
+        confirmLabel: 'Eliminar',
+        danger: true,
+        onConfirm: () => {
+          setConfirmModal(null);
+          setBooks(books.filter(b => b.id !== id));
+          notify('Libro eliminado.', 'success');
+        }
+      });
     }
   };
 
   return (
-    <div className="flex flex-col gap-8 animate-fade-in pb-24 h-full">
-      {/* HEADER */}
-      <PlanHeader isEditing={isEditing} onToggleEdit={() => setIsEditing(!isEditing)} onExport={exportData} onImport={handleImport} />
-
-      {/* EDITING TABS */}
-      {isEditing && (
-        <ManagerTabs activeManager={activeManager} onSelect={setActiveManager} />
+    <div className="flex flex-col gap-6 animate-fade-in pb-24 h-full">
+      {confirmModal && (
+        <ConfirmModal
+          title={confirmModal.title}
+          message={confirmModal.message}
+          confirmLabel={confirmModal.confirmLabel}
+          danger={confirmModal.danger}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
       )}
+
+      {/* HEADER */}
+      <PlanHeader
+        isEditing={isEditing}
+        onToggleEdit={() => setIsEditing(!isEditing)}
+        onExport={exportData}
+        onImport={handleImport}
+        onLoadDemo={handleLoadDemo}
+        activeManager={activeManager}
+        onSelectManager={setActiveManager}
+      />
+
+      {/* ONBOARDING HINT */}
+      {!isEditing && completedWeeks.length === 0 && schedule.length > 0 && (
+        <p className="text-xs text-zinc-500 italic text-center -mt-2">Toca cualquier semana para marcarla como completada.</p>
+      )}
+
+      {/* STATISTICS — promoted above schedule */}
+      {!isEditing && <ReadingStats entries={entries} books={books} />}
 
       {/* PROGRESS (Only View Mode) */}
       {!isEditing && <ProgressBar progress={progress} />}
-
-      {/* STATISTICS (Only View Mode) */}
-      {!isEditing && <ReadingStats entries={entries} books={books} />}
 
       {/* BOOK MANAGER */}
       {isEditing && activeManager === 'books' && (
@@ -142,7 +192,7 @@ export function ReadingPlan() {
         <PhaseManager phases={phases} onUpdate={updatePhase} onDelete={deletePhase} onAdd={addPhase} />
       )}
 
-      {/* SCHEDULE (View/Edit Weeks) */}
+      {/* SCHEDULE */}
       {(activeManager === 'weeks' || !isEditing) && (
         <WeekSchedule
           phases={phases} schedule={schedule} books={books}
@@ -155,66 +205,71 @@ export function ReadingPlan() {
   );
 }
 
-function PlanHeader({ isEditing, onToggleEdit, onExport, onImport }) {
-  return (
-    <div className="flex justify-between items-center sm:text-center sm:flex-col sm:gap-4 bg-zinc-950/50 p-4 rounded-xl border border-zinc-900 sticky top-16 z-40 backdrop-blur-md">
-      <div>
-        <h2 className="text-3xl font-serif text-amber-500">Plan Maestro</h2>
-        <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-bold">Arquitectura del Tiempo</p>
-      </div>
-      <div className="flex items-center gap-2">
-        <button onClick={onExport} aria-label="Exportar datos" className="p-3 text-zinc-500 hover:text-amber-500 transition-colors"><Download size={16}/></button>
-        <label aria-label="Importar datos" className="p-3 text-zinc-500 hover:text-amber-500 transition-colors cursor-pointer">
-          <Upload size={16}/>
-          <input type="file" accept=".json" onChange={onImport} className="hidden" />
-        </label>
-        <button
-          onClick={onToggleEdit}
-          className={`flex items-center gap-2 px-6 py-2 rounded-full border text-[10px] font-bold uppercase tracking-widest transition-all ${isEditing ? 'bg-amber-500 text-zinc-950 border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)]' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}
-        >
-          {isEditing ? <Save size={14}/> : <Edit3 size={14}/>}
-          {isEditing ? 'Finalizar Diseño' : 'Rediseñar Viaje'}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ManagerTabs({ activeManager, onSelect }) {
-  const tabs = [
+function PlanHeader({ isEditing, onToggleEdit, onExport, onImport, onLoadDemo, activeManager, onSelectManager }) {
+  const managerTabs = [
     { id: 'weeks', icon: Layout, label: 'Semanas' },
     { id: 'phases', icon: Layers, label: 'Fases' },
-    { id: 'books', icon: Book, label: 'Portal de Libros' },
+    { id: 'books', icon: Book, label: 'Libros' },
   ];
 
   return (
-    <div className="flex bg-zinc-900 p-1 rounded-xl border border-zinc-800">
-      {tabs.map(tab => {
-        const Icon = tab.icon;
-        return (
-          <button
-            key={tab.id}
-            onClick={() => onSelect(tab.id)}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${activeManager === tab.id ? 'bg-zinc-800 text-amber-500' : 'text-zinc-500'}`}
-          >
-            <Icon size={14}/>{tab.label}
+    <div className="flex flex-col gap-2">
+      {/* Primary row: title + edit action */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-serif text-heading">Plan Maestro</h2>
+        <button
+          onClick={onToggleEdit}
+          className={`flex items-center gap-2 px-5 py-2 rounded-full border text-xs font-bold uppercase tracking-widest transition-all ${isEditing ? 'bg-amber-500 text-zinc-950 border-amber-500' : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700'}`}
+        >
+          {isEditing ? <Save size={14}/> : <Edit3 size={14}/>}
+          {isEditing ? 'Finalizar' : 'Editar'}
+        </button>
+      </div>
+
+      {/* Secondary row: utilities (non-edit) or manager tabs (edit) */}
+      {!isEditing ? (
+        <div className="flex items-center gap-4">
+          <button onClick={onExport} className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-1">
+            <Download size={12}/> Exportar
           </button>
-        );
-      })}
+          <label aria-label="Importar datos" className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-1 cursor-pointer">
+            <Upload size={12}/> Importar
+            <input type="file" accept=".json" onChange={onImport} className="hidden" />
+          </label>
+          <button onClick={onLoadDemo} className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-1">
+            <FlaskConical size={12}/> Demo
+          </button>
+        </div>
+      ) : (
+        <div className="flex gap-5 border-b border-zinc-800 pb-1 mt-1">
+          {managerTabs.map(tab => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => onSelectManager(tab.id)}
+                className={`flex items-center gap-1.5 pb-2 text-xs font-bold transition-all border-b-2 -mb-px ${activeManager === tab.id ? 'border-amber-500 text-heading' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+              >
+                <Icon size={13}/>{tab.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
 function ProgressBar({ progress }) {
   return (
-    <div className="bg-zinc-900/80 p-6 rounded-xl border border-amber-500/20 shadow-2xl backdrop-blur-md">
+    <div className="bg-zinc-900/80 p-6 rounded-xl border border-zinc-800">
       <div className="flex justify-between items-end mb-4">
-        <span className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-bold">Consagración del Viaje</span>
+        <span className="text-xs uppercase tracking-[0.2em] text-zinc-500 font-bold">Semanas completadas</span>
         <span className="font-serif text-amber-500 text-lg font-bold">{progress}%</span>
       </div>
       <div className="h-2 w-full bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
         <div
-          className="h-full bg-gradient-to-r from-amber-600 to-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)] transition-all duration-1000 ease-out"
+          className="h-full bg-gradient-to-r from-amber-600 to-amber-400 transition-all duration-1000 ease-out"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -228,13 +283,13 @@ function BookManager({ books, onUpdate, onDelete, onAdd }) {
       {books.map((book) => (
         <div key={book.id} className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex items-center gap-4">
           <input value={book.emoji} onChange={e => onUpdate(book.id, 'emoji', e.target.value)} className="w-10 bg-zinc-950 border border-zinc-800 rounded p-1 text-center" />
-          <input value={book.title} onChange={e => onUpdate(book.id, 'title', e.target.value)} className="flex-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-amber-50 font-serif" />
+          <input value={book.title} onChange={e => onUpdate(book.id, 'title', e.target.value)} className="flex-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-300 font-serif" />
           <select value={book.type} onChange={e => onUpdate(book.id, 'type', e.target.value)} className="bg-zinc-950 border border-zinc-800 rounded p-2 text-xs text-zinc-400">
             <option value="novel">Novela</option>
             <option value="manga">Manga</option>
           </select>
           <input type="color" value={book.color} onChange={e => onUpdate(book.id, 'color', e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-none" />
-          <button onClick={() => onDelete(book.id)} className="p-1.5 text-zinc-600 hover:text-red-500"><Trash2 size={16}/></button>
+          <button onClick={() => onDelete(book.id)} className="p-1.5 text-zinc-600 hover:text-danger-deep"><Trash2 size={16}/></button>
         </div>
       ))}
       <button onClick={onAdd} className="py-4 border-2 border-dashed border-zinc-800 text-zinc-600 rounded-xl hover:text-amber-500 transition-all font-serif italic text-sm">+ Invocar Nuevo Tomo</button>
@@ -250,15 +305,15 @@ function PhaseManager({ phases, onUpdate, onDelete, onAdd }) {
           <div className="flex gap-3">
             <input value={phase.label} onChange={e => onUpdate(phase.id, 'label', e.target.value)} className="flex-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-amber-500 font-serif font-bold" />
             <input type="color" value={phase.color} onChange={e => onUpdate(phase.id, 'color', e.target.value)} className="w-8 h-8 rounded bg-transparent border-none" />
-            <button onClick={() => onDelete(phase.id)} className="p-1.5 text-zinc-600 hover:text-red-500"><Trash2 size={16}/></button>
+            <button onClick={() => onDelete(phase.id)} className="p-1.5 text-zinc-600 hover:text-danger-deep"><Trash2 size={16}/></button>
           </div>
           <div className="flex gap-4 items-center">
-            <span className="text-[10px] text-zinc-500 font-bold">Desde Sem.</span>
+            <span className="text-xs text-zinc-500 font-bold">Desde Sem.</span>
             <input type="number" value={phase.weeks[0]} onChange={e => onUpdate(phase.id, 'weeks', [parseInt(e.target.value), phase.weeks[1]])} className="w-16 bg-zinc-950 border border-zinc-800 rounded p-1 text-center text-xs" />
-            <span className="text-[10px] text-zinc-500 font-bold">Hasta Sem.</span>
+            <span className="text-xs text-zinc-500 font-bold">Hasta Sem.</span>
             <input type="number" value={phase.weeks[1]} onChange={e => onUpdate(phase.id, 'weeks', [phase.weeks[0], parseInt(e.target.value)])} className="w-16 bg-zinc-950 border border-zinc-800 rounded p-1 text-center text-xs" />
           </div>
-          <input value={phase.desc} onChange={e => onUpdate(phase.id, 'desc', e.target.value)} className="bg-zinc-950 border border-zinc-800 rounded p-2 text-[10px] text-zinc-400 font-serif italic" />
+          <input value={phase.desc} onChange={e => onUpdate(phase.id, 'desc', e.target.value)} className="bg-zinc-950 border border-zinc-800 rounded p-2 text-xs text-zinc-400 font-serif italic" />
         </div>
       ))}
       <button onClick={onAdd} className="py-4 border-2 border-dashed border-zinc-800 text-zinc-600 rounded-xl hover:text-amber-600 transition-all font-serif italic text-sm">+ Delimitar Nueva Fase</button>
@@ -268,13 +323,13 @@ function PhaseManager({ phases, onUpdate, onDelete, onAdd }) {
 
 function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, onToggleWeek, onUpdateWeek, onDeleteWeek, onAddWeek }) {
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-12">
       {phases.map((phase) => (
         <div key={phase.id} className="flex flex-col gap-4">
           <div className="flex justify-between items-end border-l-4 pl-4 py-1" style={{ borderColor: phase.color }}>
             <div>
-              <h3 className="font-serif text-xl text-amber-100">{phase.label}</h3>
-              <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">{phase.desc}</p>
+              <h3 className="font-serif text-xl text-heading">{phase.label}</h3>
+              <p className="text-xs text-zinc-500 uppercase tracking-widest mt-1">{phase.desc}</p>
             </div>
           </div>
 
@@ -288,24 +343,24 @@ function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, onTo
                 <div
                   key={week.week}
                   onClick={() => !isEditing && onToggleWeek(week.week)}
-                  className={`group relative bg-zinc-900 p-5 rounded-xl border transition-all duration-300 ${!isEditing ? 'cursor-pointer' : ''} ${
-                    isCompleted && !isEditing ? 'border-amber-500/40 bg-zinc-900/40 opacity-60' : 'border-zinc-800 hover:border-amber-500/30'
+                  className={`group relative bg-zinc-900 p-5 rounded-xl border transition-all duration-300 ${!isEditing ? 'cursor-pointer active:scale-[0.99]' : ''} ${
+                    isCompleted && !isEditing ? 'border-success/40 bg-zinc-900/40 opacity-60' : 'border-zinc-800 hover:border-amber-500/30'
                   }`}
                 >
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-3">
                       {!isEditing && (
-                        <div className={`p-2 rounded-lg transition-colors ${isCompleted ? 'bg-amber-500 text-zinc-950' : 'bg-zinc-800 text-zinc-500'}`}>
+                        <div className={`p-2 rounded-lg transition-colors ${isCompleted ? 'bg-success text-white' : 'bg-zinc-800 text-zinc-500'}`}>
                           {isCompleted ? <CheckCircle2 size={18} /> : <Circle size={18} />}
                         </div>
                       )}
                       <h4 className="font-serif text-lg font-bold">Semana {week.week}</h4>
                     </div>
                     {isEditing && (
-                      <button onClick={(e) => { e.stopPropagation(); onDeleteWeek(week.week); }} className="text-zinc-600 hover:text-red-500 p-1.5"><Trash2 size={16}/></button>
+                      <button onClick={(e) => { e.stopPropagation(); onDeleteWeek(week.week); }} className="text-zinc-600 hover:text-danger-deep p-1.5"><Trash2 size={16}/></button>
                     )}
                     {!isEditing && isCompleted && (
-                      <span className="text-[8px] font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded tracking-widest border border-amber-500/20">SELLADO</span>
+                      <span className="text-xs font-bold text-success bg-success/10 px-3 py-1 rounded-full tracking-widest border border-success/30 font-serif">✦ SELLADO</span>
                     )}
                   </div>
 
@@ -327,9 +382,9 @@ function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, onTo
                   </div>
 
                   {isEditing ? (
-                    <textarea value={week.tip} onChange={(e) => onUpdateWeek(week.week, 'tip', e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-[10px] text-zinc-400 outline-none resize-none font-serif" placeholder="Consejo del Archivero..." />
+                    <textarea value={week.tip} onChange={(e) => onUpdateWeek(week.week, 'tip', e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-xs text-zinc-400 outline-none resize-none font-serif" placeholder="Consejo del Archivero..." />
                   ) : (
-                    <p className="text-xs text-zinc-400 italic border-l-2 border-amber-500/20 pl-3 py-1 font-serif leading-relaxed">"{week.tip}"</p>
+                    <p className="text-sm text-zinc-300 italic border-l-2 border-amber-500/40 pl-3 py-1.5 font-serif leading-relaxed">"{week.tip}"</p>
                   )}
                 </div>
               );
@@ -353,18 +408,15 @@ function ReadingStats({ entries, books }) {
     const totalPlaces = new Set(entries.flatMap(e => (e.places || []).map(p => p.name))).size;
     const totalQuotes = entries.reduce((sum, e) => sum + (e.quotes?.length || 0), 0);
 
-    // Entries per book
     const perBook = {};
     entries.forEach(e => { perBook[e.book] = (perBook[e.book] || 0) + 1; });
 
-    // Weekly pace (entries per week over last 4 weeks)
     const now = new Date();
     const fourWeeksAgo = new Date(now);
     fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
     const recentEntries = entries.filter(e => new Date(e.date) >= fourWeeksAgo);
     const weeklyPace = Math.round((recentEntries.length / 4) * 10) / 10;
 
-    // Streak (consecutive days with entries)
     const dates = [...new Set(entries.map(e => e.date))].sort().reverse();
     let streak = 0;
     const today = now.toISOString().split('T')[0];
@@ -385,30 +437,37 @@ function ReadingStats({ entries, books }) {
   if (!stats) return null;
 
   return (
-    <div className="bg-zinc-900/80 p-5 rounded-xl border border-zinc-800 shadow-lg">
-      <div className="flex items-center gap-2 mb-4">
-        <BarChart3 size={14} className="text-amber-500" />
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Estadísticas del Viaje</span>
+    <div className="flex flex-col gap-4 py-1">
+      {/* Racha — número editorial, no widget */}
+      <div className="flex items-center gap-5">
+        <span className="text-6xl font-serif font-bold text-amber-500 leading-none tabular-nums">{stats.streak}</span>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-serif font-bold text-heading">
+            {stats.streak === 1 ? 'día de racha' : 'días de racha'}
+          </span>
+          <span className="text-xs text-zinc-500">
+            {stats.weeklyPace} crónicas · semana
+          </span>
+        </div>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-        <StatBadge label="Crónicas" value={stats.totalEntries} />
-        <StatBadge label="Personajes" value={stats.totalCharacters} />
-        <StatBadge label="Lugares" value={stats.totalPlaces} />
-        <StatBadge label="Citas" value={stats.totalQuotes} />
+
+      {/* Conteos secundarios — texto fluido, sin cajas */}
+      <div className="flex items-center gap-5 flex-wrap border-t border-zinc-800/60 pt-3 text-xs text-zinc-500">
+        <span><span className="text-zinc-200 font-serif font-bold text-sm mr-1">{stats.totalEntries}</span>crónicas</span>
+        <span><span className="text-zinc-200 font-serif font-bold text-sm mr-1">{stats.totalCharacters}</span>personajes</span>
+        <span><span className="text-zinc-200 font-serif font-bold text-sm mr-1">{stats.totalPlaces}</span>lugares</span>
+        <span><span className="text-zinc-200 font-serif font-bold text-sm mr-1">{stats.totalQuotes}</span>citas</span>
       </div>
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <StatBadge label="Ritmo semanal" value={stats.weeklyPace} suffix="/sem" />
-        <StatBadge label="Racha actual" value={stats.streak} suffix={stats.streak === 1 ? ' día' : ' días'} />
-      </div>
+
+      {/* Por libro */}
       {Object.keys(stats.perBook).length > 1 && (
-        <div className="flex flex-col gap-1.5 pt-3 border-t border-zinc-800">
-          <span className="text-[9px] text-zinc-600 uppercase tracking-widest font-bold mb-1">Por libro</span>
+        <div className="flex flex-col gap-1.5 border-t border-zinc-800/60 pt-3">
           {Object.entries(stats.perBook).sort((a, b) => b[1] - a[1]).map(([book, count]) => {
             const bookObj = books.find(b => b.title === book);
             return (
               <div key={book} className="flex items-center justify-between gap-2">
-                <span className="text-[10px] text-zinc-400 font-serif truncate">{bookObj?.emoji} {book}</span>
-                <span className="text-[10px] text-amber-500 font-bold">{count}</span>
+                <span className="text-xs text-zinc-400 font-serif truncate">{bookObj?.emoji} {book}</span>
+                <span className="text-xs text-zinc-300 font-bold">{count}</span>
               </div>
             );
           })}
@@ -418,33 +477,24 @@ function ReadingStats({ entries, books }) {
   );
 }
 
-function StatBadge({ label, value, suffix = '' }) {
-  return (
-    <div className="bg-zinc-950/60 p-3 rounded-lg border border-zinc-800/50 text-center">
-      <div className="text-lg font-serif font-bold text-amber-500">{value}{suffix}</div>
-      <div className="text-[8px] text-zinc-600 uppercase tracking-widest font-bold mt-0.5">{label}</div>
-    </div>
-  );
-}
-
 function AssetBox({ label, color, title, section, emoji, isEditing, books, onUpdateTitle, onUpdateSection }) {
   return (
     <div className="bg-zinc-950/50 p-3 rounded-lg border border-zinc-800/50 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: color || '#1F2937' }} />
-      <span className="text-[7px] uppercase tracking-[0.2em] text-zinc-600 block mb-1 ml-1">{label}</span>
+      <span className="text-xs uppercase tracking-[0.2em] text-zinc-500 block mb-1 ml-1">{label}</span>
       {isEditing ? (
         <div className="flex flex-col gap-1 ml-1">
-          <select value={title} onChange={(e) => onUpdateTitle(e.target.value)} className="bg-transparent border-0 text-amber-50 text-xs font-serif outline-none p-0 cursor-pointer">
+          <select value={title} onChange={(e) => onUpdateTitle(e.target.value)} className="bg-transparent border-0 text-zinc-300 text-xs font-serif outline-none p-0 cursor-pointer">
             <option value="">(Ninguno)</option>
             {books.map(b => <option key={b.id || b.title} value={b.title}>{b.emoji} {b.title}</option>)}
           </select>
-          <input value={section} onChange={(e) => onUpdateSection(e.target.value)} className="bg-transparent border-b border-zinc-800 text-[9px] text-zinc-500 p-0 outline-none" placeholder="Meta..." />
+          <input value={section} onChange={(e) => onUpdateSection(e.target.value)} className="bg-transparent border-b border-zinc-800 text-xs text-zinc-500 p-0 outline-none" placeholder="Meta..." />
         </div>
       ) : (
         <>
           <div className="flex items-center gap-2 ml-1">
             <span className="text-base">{emoji}</span>
-            <span className="text-sm font-serif text-amber-50/90 leading-tight">{title}</span>
+            <span className="text-sm font-serif text-heading/90 leading-tight">{title}</span>
           </div>
           <p className="text-[10px] text-zinc-500 mt-1 ml-1 italic">{section}</p>
         </>

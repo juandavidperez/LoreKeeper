@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 const NotificationContext = createContext();
 
 const STYLES = {
-  error: 'bg-red-950 border-red-500/40 text-red-200',
+  error: 'bg-danger-deep/10 border-danger-deep/40 text-danger-deep',
   success: 'bg-emerald-950 border-emerald-500/40 text-emerald-200',
   info: 'bg-zinc-900 border-amber-500/40 text-amber-200',
 };

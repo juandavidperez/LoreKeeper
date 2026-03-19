@@ -1,3 +1,5 @@
+import { supabase } from '../lib/supabase';
+
 const DB_NAME = 'lorekeeper-images';
 const STORE_NAME = 'panels';
 const DB_VERSION = 1;
@@ -66,10 +68,65 @@ export async function resolvePanels(panels) {
   for (const panel of panels) {
     if (panel.startsWith('data:')) {
       result.push(panel); // inline, keep as-is
+    } else if (panel.startsWith('supabase:')) {
+      // Supabase Storage panel: supabase:{storagePath}
+      const url = await getStorageUrl(panel.slice('supabase:'.length));
+      if (url) result.push(url);
     } else {
       const uri = await loadImage(panel);
       if (uri) result.push(uri);
     }
   }
   return result;
+}
+
+// --- Supabase Storage integration ---
+
+const BUCKET = 'manga-panels';
+
+/**
+ * Upload a data URI panel to Supabase Storage.
+ * Returns the storage path (to store as `supabase:{path}` in entry).
+ */
+export async function uploadToStorage(dataUri, userId, entryId, panelKey) {
+  if (!supabase || !userId) return null;
+
+  const blob = dataUriToBlob(dataUri);
+  const path = `${userId}/${entryId}/${panelKey}.webp`;
+
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, blob, { contentType: 'image/webp', upsert: true });
+
+  if (error) {
+    console.error('Storage upload error:', error);
+    return null;
+  }
+  return path;
+}
+
+/**
+ * Get a signed URL for a storage panel (valid 1 hour).
+ */
+export async function getStorageUrl(path) {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(path, 3600);
+
+  if (error) {
+    console.error('Storage URL error:', error);
+    return null;
+  }
+  return data.signedUrl;
+}
+
+function dataUriToBlob(dataUri) {
+  const [header, base64] = dataUri.split(',');
+  const mime = header.match(/:(.*?);/)[1];
+  const bytes = atob(base64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  return new Blob([arr], { type: mime });
 }

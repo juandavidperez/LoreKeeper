@@ -16,9 +16,14 @@ vi.mock('framer-motion', () => ({
 vi.mock('virtual:pwa-register/react', () => ({
   useRegisterSW: () => ({
     offlineReady: [false, vi.fn()],
-    needUpdate: [false, vi.fn()],
+    needRefresh: [false, vi.fn()],
     updateServiceWorker: vi.fn(),
   }),
+}));
+
+// Mock Supabase client (no env vars in test)
+vi.mock('../lib/supabase', () => ({
+  supabase: null,
 }));
 
 function filterProps(props) {

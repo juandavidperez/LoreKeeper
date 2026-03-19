@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useMemo, useCallback } from 'react';
 import { useLocalStorage } from './useLocalStorage';
-import { 
-  INITIAL_BOOKS, 
-  INITIAL_PHASES, 
-  INITIAL_SCHEDULE, 
-  INITIAL_ENTRIES 
+import {
+  INITIAL_BOOKS,
+  INITIAL_PHASES,
+  INITIAL_SCHEDULE,
+  INITIAL_ENTRIES
 } from '../data/mockData';
 
 const LorekeeperContext = createContext();
@@ -35,6 +35,15 @@ export function LorekeeperProvider({ children }) {
   const [schedule, setSchedule] = useLocalStorage('lore-schedule', INITIAL_SCHEDULE);
   const [entries, setEntries] = useLocalStorage('reading-entries', INITIAL_ENTRIES);
   const [completedWeeks, setCompletedWeeks] = useLocalStorage('completed-weeks', []);
+
+  // Expose setters so SyncProvider can update state after pull
+  const stateSetters = useMemo(() => ({
+    'lore-books': setBooks,
+    'lore-phases': setPhases,
+    'lore-schedule': setSchedule,
+    'reading-entries': setEntries,
+    'completed-weeks': setCompletedWeeks,
+  }), [setBooks, setPhases, setSchedule, setEntries, setCompletedWeeks]);
 
   const archive = useMemo(() => ({
     personajes: aggregateEntities(entries, 'characters', 'personaje'),
@@ -102,7 +111,8 @@ export function LorekeeperProvider({ children }) {
     entries, setEntries,
     completedWeeks, setCompletedWeeks,
     archive,
-    exportData, importData
+    exportData, importData,
+    stateSetters,
   };
 
   return React.createElement(LorekeeperContext.Provider, { value }, children);
