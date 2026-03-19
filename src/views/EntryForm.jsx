@@ -209,7 +209,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in pb-24 h-full">
-      <div className="flex justify-between items-center bg-zinc-950/80 p-4 rounded-xl border border-zinc-800 sticky top-16 z-40 backdrop-blur-md">
+      <div className="flex justify-between items-center bg-zinc-950 p-4 rounded-xl border border-zinc-800 sticky top-16 z-40 backdrop-blur-md">
         <h3 className="font-serif text-heading text-xl">{initialData ? 'Editar Crónica' : 'Nueva Crónica'}</h3>
         <div className="flex gap-2">
           <button onClick={handleCancel} aria-label="Cancelar" className="p-3 text-zinc-500 hover:text-zinc-300"><X size={20}/></button>
@@ -218,7 +218,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
       </div>
 
       {/* CORE INFO */}
-      <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grimoire-card bg-zinc-900 p-5 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1.5">
           <label htmlFor="entry-book" className="text-xs uppercase tracking-widest text-zinc-500 ml-1">Libro Actual</label>
           <select
@@ -251,7 +251,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
               onClick={() => setForm({...form, mood})}
               className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
                 form.mood === mood
-                  ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+                  ? 'bg-amber-500/10 text-amber-500 border-amber-500'
                   : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700'
               }`}
             >
@@ -262,7 +262,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
       </div>
 
       {/* REINGRESO */}
-      <div className="bg-zinc-900 border border-amber-500/30 p-5 rounded-xl">
+      <div className="grimoire-card bg-zinc-900 p-5 rounded-xl" style={{ borderColor: 'color-mix(in srgb, var(--text-accent) 30%, transparent)' }}>
         <div className="flex justify-between items-center mb-2">
           <label htmlFor="entry-reingreso" className="text-xs font-bold uppercase tracking-widest text-amber-500">Resumen de Reingreso</label>
           {speechSupported && (
@@ -278,7 +278,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           )}
         </div>
         {speechError && (
-          <p className="text-xs text-red-400 mb-2 italic">{speechError}</p>
+          <p className="text-xs text-danger-deep mb-2 italic">{speechError}</p>
         )}
         <textarea
           id="entry-reingreso"
@@ -286,7 +286,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-4 text-sm outline-none font-serif leading-relaxed h-28 italic text-zinc-300"
           placeholder="¿Qué sombras o luces has encontrado hoy?..."
         />
-        <button onClick={handleAIAutocomplete} disabled={isExtracting} className="mt-4 flex items-center justify-center gap-2 w-full py-3 bg-zinc-950 text-amber-500 border border-amber-500/20 rounded-xl font-bold font-serif hover:bg-amber-500/5 transition-all">
+        <button onClick={handleAIAutocomplete} disabled={isExtracting || !form.reingreso?.trim()} className="mt-4 flex items-center justify-center gap-2 w-full py-3 bg-zinc-950 text-amber-500 border rounded-xl font-bold font-serif transition-all disabled:opacity-40 disabled:cursor-default" style={{ borderColor: 'color-mix(in srgb, var(--text-accent) 25%, transparent)' }}>
           {isExtracting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
           Destilar conocimientos con IA
         </button>
@@ -324,7 +324,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           onAdd={() => addItem('characters', { name: '', tags: '', content: '' })}
         >
           {form.characters.map((c) => (
-            <div key={c.id} className="bg-zinc-950 p-4 rounded-lg border border-zinc-800 mb-2 flex flex-col gap-2 relative">
+            <div key={c.id} className="bg-zinc-950 p-4 rounded-lg border border-zinc-800 mb-2 flex flex-col gap-2 relative border-l-2 border-l-entity-character/40">
               <button onClick={() => removeItem('characters', c.id)} aria-label="Eliminar" className="absolute top-2 right-2 p-1.5 text-zinc-500 hover:text-danger-deep"><Trash2 size={14}/></button>
               <input value={c.name} onChange={e => updateItem('characters', c.id, 'name', e.target.value)} placeholder="Nombre del ser..." className="bg-transparent border-b border-zinc-800 text-sm font-bold text-heading outline-none pb-1" />
               <input value={c.tags} onChange={e => updateItem('characters', c.id, 'tags', e.target.value.split(',').map(t => t.trim()).filter(Boolean))} placeholder="Etiquetas (separadas por coma)..." className="bg-transparent text-xs text-zinc-500 outline-none" />
@@ -340,7 +340,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           onAdd={() => addItem('places', { name: '', tags: '', content: '' })}
         >
           {form.places.map((p) => (
-            <div key={p.id} className="bg-zinc-950 p-4 rounded-lg border border-zinc-800 mb-2 flex flex-col gap-2 relative border-l-2 border-l-cyan-500/40">
+            <div key={p.id} className="bg-zinc-950 p-4 rounded-lg border border-zinc-800 mb-2 flex flex-col gap-2 relative border-l-2 border-l-entity-place/40">
               <button onClick={() => removeItem('places', p.id)} aria-label="Eliminar" className="absolute top-2 right-2 p-1.5 text-zinc-500 hover:text-danger-deep"><Trash2 size={14}/></button>
               <input value={p.name} onChange={e => updateItem('places', p.id, 'name', e.target.value)} placeholder="Nombre del paraje..." className="bg-transparent border-b border-zinc-800 text-sm font-bold text-heading outline-none pb-1" />
               <textarea value={p.content} onChange={e => updateItem('places', p.id, 'content', e.target.value)} placeholder="Atmósfera o importancia..." className="bg-transparent text-xs text-zinc-400 outline-none resize-none h-12 font-serif" />
@@ -370,7 +370,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           onAdd={() => addItem('worldRules', { name: '', content: '' })}
         >
           {form.worldRules.map((w) => (
-            <div key={w.id} className="bg-zinc-950 p-4 rounded-lg border border-zinc-800 mb-2 flex flex-col gap-2 relative border-l-2 border-l-emerald-500/40">
+            <div key={w.id} className="bg-zinc-950 p-4 rounded-lg border border-zinc-800 mb-2 flex flex-col gap-2 relative border-l-2 border-l-entity-rule/40">
               <button onClick={() => removeItem('worldRules', w.id)} aria-label="Eliminar" className="absolute top-2 right-2 p-1.5 text-zinc-500 hover:text-danger-deep"><Trash2 size={14}/></button>
               <input value={w.name} onChange={e => updateItem('worldRules', w.id, 'name', e.target.value)} placeholder="Concepto (ej. El Chakra)..." className="bg-transparent border-b border-zinc-800 text-sm font-bold text-heading outline-none pb-1" />
               <textarea value={w.content} onChange={e => updateItem('worldRules', w.id, 'content', e.target.value)} placeholder="Explicación de la regla..." className="bg-transparent text-xs text-zinc-400 outline-none resize-none h-16 font-serif" />
@@ -379,7 +379,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
         </EntitySection>
 
         {/* CONNECTIONS */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-lg">
+        <div className="grimoire-card bg-zinc-900 rounded-xl overflow-hidden">
           <div className="w-full flex justify-between items-center p-4">
             <button onClick={() => setOpenSections({...openSections, connections: !openSections.connections})} className="flex items-center gap-3">
               <LinkIcon size={14} className="text-amber-500/60" />
@@ -405,7 +405,8 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
                         <button
                           key={b.id || b.title}
                           onClick={() => toggleBookInConnection(conn.id, b.title)}
-                          className={`px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${conn.bookTitles?.includes(b.title) ? 'bg-amber-500/20 text-amber-400 border-amber-500/40' : 'bg-black/40 border-zinc-800 text-zinc-600 hover:border-zinc-700'}`}
+                          className={`px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${conn.bookTitles?.includes(b.title) ? 'text-amber-500 border-amber-500' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700'}`}
+                          style={conn.bookTitles?.includes(b.title) ? { backgroundColor: 'color-mix(in srgb, var(--text-accent) 15%, transparent)' } : undefined}
                         >
                           {b.emoji} {b.title}
                         </button>
@@ -429,7 +430,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
 
         {/* MANGA PANELS - CONDITIONAL */}
         {books.find(b => b.title === form.book)?.type === 'manga' && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden shadow-lg animate-fade-in">
+          <div className="grimoire-card bg-zinc-900 rounded-xl overflow-hidden animate-fade-in">
             <button onClick={() => setOpenSections({...openSections, panels: !openSections.panels})} className="w-full flex justify-between items-center p-4 hover:bg-zinc-800/50 transition-colors">
               <div className="flex items-center gap-3">
                 <ImageIcon size={14} className="text-zinc-500" />
@@ -446,9 +447,9 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
                       <button onClick={() => setForm({...form, mangaPanels: form.mangaPanels.filter((_, idx) => idx !== i)})} className="absolute top-2 right-2 bg-black/80 rounded-full p-1.5 text-zinc-500 hover:text-danger-deep shadow-lg group-hover/panel:scale-110 transition-all"><X size={12}/></button>
                     </div>
                   ))}
-                  <label className="aspect-video bg-zinc-950 border-2 border-dashed border-zinc-800 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-amber-500/40 hover:bg-amber-500/5 transition-all group/upload">
-                    <Plus size={24} className="text-zinc-500 group-hover/upload:text-amber-500/60 transition-colors" />
-                    <span className="text-[10px] text-zinc-700 uppercase mt-2 tracking-widest font-bold group-hover/upload:text-amber-500/60 text-center">Añadir Panel</span>
+                  <label className="aspect-video bg-zinc-950 border-2 border-dashed border-zinc-800 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-amber-500 transition-all group/upload">
+                    <Plus size={24} className="text-zinc-500 group-hover/upload:text-amber-500 transition-colors" />
+                    <span className="text-[10px] text-zinc-700 uppercase mt-2 tracking-widest font-bold group-hover/upload:text-amber-500 text-center">Añadir Panel</span>
                     <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                   </label>
                 </div>
@@ -463,7 +464,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
 
 function EntitySection({ title, icon, isOpen, onToggle, onAdd, children }) {
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+    <div className="grimoire-card bg-zinc-900 rounded-xl overflow-hidden">
       <div className="w-full flex justify-between items-center p-4">
         <button onClick={onToggle} aria-expanded={isOpen} className="flex flex-1 items-center gap-3">
           <div className="w-4 h-4 flex items-center justify-center bg-zinc-800 rounded text-[10px] text-zinc-500">
