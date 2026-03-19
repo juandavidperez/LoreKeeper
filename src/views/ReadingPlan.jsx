@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { CheckCircle2, Circle, Edit3, Plus, Trash2, Save, Book, Layers, Layout, Download, Upload, FlaskConical } from 'lucide-react';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
 import { useNotification } from '../hooks/useNotification';
@@ -29,10 +29,19 @@ export function ReadingPlan() {
     }
   };
 
+  const [justSealed, setJustSealed] = useState(null);
+  const sealTimeout = useRef(null);
+
   const toggleWeek = (week) => {
+    const wasCompleted = completedWeeks.includes(week);
     setCompletedWeeks((prev) =>
       prev.includes(week) ? prev.filter(w => w !== week) : [...prev, week]
     );
+    if (!wasCompleted) {
+      setJustSealed(week);
+      if (sealTimeout.current) clearTimeout(sealTimeout.current);
+      sealTimeout.current = setTimeout(() => setJustSealed(null), 1500);
+    }
   };
 
   const progress = schedule.length > 0 ? Math.round((completedWeeks.length / schedule.length) * 100) : 0;
@@ -176,11 +185,21 @@ export function ReadingPlan() {
         <p className="text-xs text-zinc-500 italic text-center -mt-2">Toca cualquier semana para marcarla como completada.</p>
       )}
 
+      {/* EMPTY STATE — first visit, no schedule yet */}
+      {!isEditing && schedule.length === 0 && (
+        <div className="grimoire-card text-center py-20 bg-zinc-900 rounded-2xl border-dashed">
+          <div className="text-4xl mb-4 opacity-30">📖</div>
+          <p className="text-zinc-500 font-serif italic text-sm max-w-xs mx-auto leading-relaxed">
+            El grimorio aguarda sus primeras líneas. Toca Editar para forjar tu plan de lectura.
+          </p>
+        </div>
+      )}
+
       {/* STATISTICS — promoted above schedule */}
       {!isEditing && <ReadingStats entries={entries} books={books} />}
 
       {/* PROGRESS (Only View Mode) */}
-      {!isEditing && <ProgressBar progress={progress} />}
+      {!isEditing && schedule.length > 0 && <ProgressBar progress={progress} />}
 
       {/* BOOK MANAGER */}
       {isEditing && activeManager === 'books' && (
@@ -197,6 +216,7 @@ export function ReadingPlan() {
         <WeekSchedule
           phases={phases} schedule={schedule} books={books}
           completedWeeks={completedWeeks} isEditing={isEditing}
+          justSealed={justSealed}
           onToggleWeek={toggleWeek} onUpdateWeek={updateWeek}
           onDeleteWeek={deleteWeek} onAddWeek={addWeek}
         />
@@ -262,15 +282,15 @@ function PlanHeader({ isEditing, onToggleEdit, onExport, onImport, onLoadDemo, a
 
 function ProgressBar({ progress }) {
   return (
-    <div className="bg-zinc-900/80 p-6 rounded-xl border border-zinc-800">
+    <div className="grimoire-card bg-zinc-900 p-6 rounded-xl">
       <div className="flex justify-between items-end mb-4">
         <span className="text-xs uppercase tracking-[0.2em] text-zinc-500 font-bold">Semanas completadas</span>
         <span className="font-serif text-amber-500 text-lg font-bold">{progress}%</span>
       </div>
-      <div className="h-2 w-full bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
+      <div className="h-2.5 w-full bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
         <div
-          className="h-full bg-gradient-to-r from-amber-600 to-amber-400 transition-all duration-1000 ease-out"
-          style={{ width: `${progress}%` }}
+          className="h-full rounded-full transition-all duration-1000 ease-out"
+          style={{ width: `${progress}%`, backgroundColor: 'var(--text-accent)' }}
         />
       </div>
     </div>
@@ -281,7 +301,7 @@ function BookManager({ books, onUpdate, onDelete, onAdd }) {
   return (
     <div className="flex flex-col gap-4 animate-fade-in">
       {books.map((book) => (
-        <div key={book.id} className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex items-center gap-4">
+        <div key={book.id} className="grimoire-card bg-zinc-900 p-4 rounded-xl flex items-center gap-4">
           <input value={book.emoji} onChange={e => onUpdate(book.id, 'emoji', e.target.value)} className="w-10 bg-zinc-950 border border-zinc-800 rounded p-1 text-center" />
           <input value={book.title} onChange={e => onUpdate(book.id, 'title', e.target.value)} className="flex-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-300 font-serif" />
           <select value={book.type} onChange={e => onUpdate(book.id, 'type', e.target.value)} className="bg-zinc-950 border border-zinc-800 rounded p-2 text-xs text-zinc-400">
@@ -301,7 +321,7 @@ function PhaseManager({ phases, onUpdate, onDelete, onAdd }) {
   return (
     <div className="flex flex-col gap-4 animate-fade-in">
       {phases.map((phase) => (
-        <div key={phase.id} className="bg-zinc-900 border border-zinc-800 p-5 rounded-xl flex flex-col gap-3">
+        <div key={phase.id} className="grimoire-card bg-zinc-900 p-5 rounded-xl flex flex-col gap-3">
           <div className="flex gap-3">
             <input value={phase.label} onChange={e => onUpdate(phase.id, 'label', e.target.value)} className="flex-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-amber-500 font-serif font-bold" />
             <input type="color" value={phase.color} onChange={e => onUpdate(phase.id, 'color', e.target.value)} className="w-8 h-8 rounded bg-transparent border-none" />
@@ -321,7 +341,7 @@ function PhaseManager({ phases, onUpdate, onDelete, onAdd }) {
   );
 }
 
-function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, onToggleWeek, onUpdateWeek, onDeleteWeek, onAddWeek }) {
+function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, justSealed, onToggleWeek, onUpdateWeek, onDeleteWeek, onAddWeek }) {
   return (
     <div className="flex flex-col gap-12">
       {phases.map((phase) => (
@@ -343,9 +363,9 @@ function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, onTo
                 <div
                   key={week.week}
                   onClick={() => !isEditing && onToggleWeek(week.week)}
-                  className={`group relative bg-zinc-900 p-5 rounded-xl border transition-all duration-300 ${!isEditing ? 'cursor-pointer active:scale-[0.99]' : ''} ${
-                    isCompleted && !isEditing ? 'border-success/40 bg-zinc-900/40 opacity-60' : 'border-zinc-800 hover:border-amber-500/30'
-                  }`}
+                  className={`grimoire-card group relative bg-zinc-900 p-5 rounded-xl transition-all duration-300 ${!isEditing ? 'cursor-pointer active:scale-[0.99]' : ''} ${
+                    isCompleted && !isEditing ? 'border-success/40 opacity-60' : 'border-zinc-800 hover:border-amber-500/30'
+                  } ${justSealed === week.week ? 'animate-inscribe' : ''}`}
                 >
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-3">
@@ -360,7 +380,7 @@ function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, onTo
                       <button onClick={(e) => { e.stopPropagation(); onDeleteWeek(week.week); }} className="text-zinc-600 hover:text-danger-deep p-1.5"><Trash2 size={16}/></button>
                     )}
                     {!isEditing && isCompleted && (
-                      <span className="text-xs font-bold text-success bg-success/10 px-3 py-1 rounded-full tracking-widest border border-success/30 font-serif">✦ SELLADO</span>
+                      <span className={`text-xs font-bold text-success bg-success/10 px-3 py-1 rounded-full tracking-widest border border-success/30 font-serif ${justSealed === week.week ? 'animate-seal' : ''}`}>✦ SELLADO</span>
                     )}
                   </div>
 
@@ -411,7 +431,24 @@ function ReadingStats({ entries, books }) {
     const perBook = {};
     entries.forEach(e => { perBook[e.book] = (perBook[e.book] || 0) + 1; });
 
+    // Mood distribution
+    const moodCounts = {};
+    entries.forEach(e => { if (e.mood) moodCounts[e.mood] = (moodCounts[e.mood] || 0) + 1; });
+    const topMood = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0];
+
+    // Activity last 7 days
     const now = new Date();
+    const activity = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const count = entries.filter(e => e.date === dateStr).length;
+      const dayName = d.toLocaleDateString('es', { weekday: 'short' }).slice(0, 2);
+      activity.push({ day: dayName, count, date: dateStr });
+    }
+    const maxActivity = Math.max(...activity.map(a => a.count), 1);
+
     const fourWeeksAgo = new Date(now);
     fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
     const recentEntries = entries.filter(e => new Date(e.date) >= fourWeeksAgo);
@@ -431,7 +468,7 @@ function ReadingStats({ entries, books }) {
       }
     }
 
-    return { totalEntries, totalCharacters, totalPlaces, totalQuotes, perBook, weeklyPace, streak };
+    return { totalEntries, totalCharacters, totalPlaces, totalQuotes, perBook, weeklyPace, streak, moodCounts, topMood, activity, maxActivity };
   }, [entries]);
 
   if (!stats) return null;
@@ -451,6 +488,23 @@ function ReadingStats({ entries, books }) {
         </div>
       </div>
 
+      {/* Activity sparkline — last 7 days */}
+      <div className="manuscript-divider" />
+      <div className="flex items-end gap-1.5">
+        {stats.activity.map((a) => (
+          <div key={a.date} className="flex flex-col items-center gap-1 flex-1">
+            <div className="w-full flex justify-center">
+              <div
+                className={`w-full max-w-[20px] rounded-sm transition-all ${a.count > 0 ? '' : 'bg-zinc-800'}`}
+                style={{ height: `${Math.max(4, (a.count / stats.maxActivity) * 32)}px`, ...(a.count > 0 ? { backgroundColor: 'var(--text-accent)', opacity: 0.7 } : {}) }}
+                title={`${a.date}: ${a.count} crónicas`}
+              />
+            </div>
+            <span className="text-[9px] text-zinc-600 uppercase font-bold">{a.day}</span>
+          </div>
+        ))}
+      </div>
+
       {/* Conteos secundarios — texto fluido, sin cajas */}
       <div className="flex items-center gap-5 flex-wrap border-t border-zinc-800/60 pt-3 text-xs text-zinc-500">
         <span><span className="text-zinc-200 font-serif font-bold text-sm mr-1">{stats.totalEntries}</span>crónicas</span>
@@ -459,15 +513,33 @@ function ReadingStats({ entries, books }) {
         <span><span className="text-zinc-200 font-serif font-bold text-sm mr-1">{stats.totalQuotes}</span>citas</span>
       </div>
 
+      {/* Mood distribution */}
+      {stats.topMood && Object.keys(stats.moodCounts).length > 1 && (
+        <div className="flex flex-col gap-2 border-t border-zinc-800/60 pt-3">
+          <span className="text-[10px] text-zinc-600 uppercase tracking-widest font-bold">Estado dominante</span>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(stats.moodCounts).sort((a, b) => b[1] - a[1]).map(([mood, count]) => (
+              <span key={mood} className={`text-xs px-2.5 py-1 rounded-full border font-bold ${mood === stats.topMood[0] ? 'border-amber-500 text-amber-500 bg-zinc-900' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}`}>
+                {mood} <span className="text-zinc-600 ml-0.5">{count}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Por libro */}
       {Object.keys(stats.perBook).length > 1 && (
         <div className="flex flex-col gap-1.5 border-t border-zinc-800/60 pt-3">
           {Object.entries(stats.perBook).sort((a, b) => b[1] - a[1]).map(([book, count]) => {
             const bookObj = books.find(b => b.title === book);
+            const pct = Math.round((count / stats.totalEntries) * 100);
             return (
-              <div key={book} className="flex items-center justify-between gap-2">
-                <span className="text-xs text-zinc-400 font-serif truncate">{bookObj?.emoji} {book}</span>
-                <span className="text-xs text-zinc-300 font-bold">{count}</span>
+              <div key={book} className="flex items-center gap-2">
+                <span className="text-xs text-zinc-400 font-serif truncate flex-1">{bookObj?.emoji} {book}</span>
+                <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: 'var(--text-accent)', opacity: 0.6 }} />
+                </div>
+                <span className="text-xs text-zinc-300 font-bold w-6 text-right">{count}</span>
               </div>
             );
           })}
@@ -479,7 +551,7 @@ function ReadingStats({ entries, books }) {
 
 function AssetBox({ label, color, title, section, emoji, isEditing, books, onUpdateTitle, onUpdateSection }) {
   return (
-    <div className="bg-zinc-950/50 p-3 rounded-lg border border-zinc-800/50 relative overflow-hidden">
+    <div className="bg-zinc-950 p-3 rounded-lg border border-zinc-800 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: color || '#1F2937' }} />
       <span className="text-xs uppercase tracking-[0.2em] text-zinc-500 block mb-1 ml-1">{label}</span>
       {isEditing ? (
