@@ -37,6 +37,29 @@ export default defineConfig({
             type: 'image/png',
             purpose: 'any maskable'
           }
+        ],
+        screenshots: [
+          {
+            src: 'screenshots/bitacora.png',
+            sizes: '390x844',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Bitácora — Registro de crónicas de lectura'
+          },
+          {
+            src: 'screenshots/archivo.png',
+            sizes: '390x844',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'El Archivo — Enciclopedia de personajes y lugares'
+          },
+          {
+            src: 'screenshots/plan.png',
+            sizes: '390x844',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Plan Maestro — Organiza tu lectura por semanas'
+          }
         ]
       },
       workbox: {
