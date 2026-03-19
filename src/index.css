@@ -1,32 +1,69 @@
 @import "tailwindcss";
 
 :root {
-  --bg-app: #09090b;
-  --bg-card: #111113;
-  --bg-input: #18181b;
-  --text-primary: #d4d4d8;
-  --text-muted: #a1a1aa;
+  --bg-app: #0c0a08;
+  --bg-card: #141210;
+  --bg-input: #1c1916;
   --text-accent: #f59e0b;
-  --border-primary: #1e1e21;
+  --text-primary: #d6d3d1;
+  --text-heading: #f5f5f4;
+  --text-emphasis: #e7e5e4;
+  --text-secondary: #a8a29e;
+  --text-muted: #a8a29e;
+  --text-dim: #57534e;
+  --border-primary: #221e1a;
+  --border-subtle: #3d3832;
+  /* Semantic colors */
+  --success: #4a7a5c;
+  --danger: #8b2332;
+  --oracle: #6d28d9;
+  /* Entity type colors */
+  --entity-character: #a78bfa;
+  --entity-place: #67e8f9;
+  --entity-rule: #6ee7b7;
 }
 
 .light {
   --bg-app: #f4ead5;
-  --bg-card: #ece0c5;
-  --bg-input: #e4d5b7;
+  --bg-card: #e8d9b8;
+  --bg-input: #dcc9a3;
   --text-primary: #4e342e;
+  --text-heading: #1c0f0a;
+  --text-emphasis: #2e1a12;
+  --text-secondary: #5d4037;
   --text-muted: #795548;
-  --text-accent: #b45309;
-  --border-primary: #d7ccc8;
+  --text-dim: #a1887f;
+  --text-accent: #92400e;
+  --border-primary: #c9b68e;
+  --border-subtle: #b5a07a;
+  /* Semantic colors — parchment variants */
+  --success: #2d6a4f;
+  --danger: #7f1d1d;
+  --oracle: #4c1d95;
+  /* Entity type colors — warmer in light mode */
+  --entity-character: #7c3aed;
+  --entity-place: #0891b2;
+  --entity-rule: #059669;
 }
 
 @theme {
   --color-zinc-950: var(--bg-app);
   --color-zinc-900: var(--bg-card);
   --color-zinc-800: var(--bg-input);
-  --color-zinc-300: var(--text-primary);
+  --color-zinc-700: var(--border-subtle);
+  --color-zinc-600: var(--text-dim);
   --color-zinc-500: var(--text-muted);
+  --color-zinc-400: var(--text-secondary);
+  --color-zinc-300: var(--text-primary);
+  --color-zinc-200: var(--text-emphasis);
   --color-amber-500: var(--text-accent);
+  --color-heading: var(--text-heading);
+  --color-success: var(--success);
+  --color-danger-deep: var(--danger);
+  --color-oracle: var(--oracle);
+  --color-entity-character: var(--entity-character);
+  --color-entity-place: var(--entity-place);
+  --color-entity-rule: var(--entity-rule);
 }
 
 @layer base {
@@ -52,6 +89,86 @@
   }
 }
 
+/* Parchment texture overlay — light mode only */
+.light::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+@layer base {
+  .light > * {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* Grimoire card — double manuscript border */
+.grimoire-card {
+  position: relative;
+  border: 1px solid var(--border-primary);
+}
+
+.grimoire-card::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  border: 1px solid var(--text-accent);
+  opacity: 0.16;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.light .grimoire-card::after {
+  opacity: 0.35;
+}
+
+/* Light mode: warm amber shadow on cards */
+.light .grimoire-card {
+  box-shadow: 0 1px 4px rgba(180, 130, 50, 0.08), 0 0 0 1px rgba(180, 130, 50, 0.06);
+}
+
+/* Light mode: warm tints for key elements */
+.light .bg-zinc-800 {
+  background-color: var(--bg-input);
+}
+
+
+/* Manuscript divider */
+.manuscript-divider {
+  position: relative;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--text-accent) 20%,
+    var(--text-accent) 80%,
+    transparent
+  );
+  opacity: 0.2;
+  margin: 1rem 0;
+}
+
+.manuscript-divider::before,
+.manuscript-divider::after {
+  content: "◆";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.5rem;
+  color: var(--text-accent);
+  opacity: 0.5;
+}
+
+.manuscript-divider::before { left: 15%; }
+.manuscript-divider::after { right: 15%; }
+
 .glass {
   @apply backdrop-blur-lg border-t;
   background-color: var(--bg-app);
@@ -59,6 +176,7 @@
   border-color: var(--border-primary);
 }
 
+/* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -66,6 +184,65 @@
 
 .animate-fade-in {
   animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes sealStamp {
+  0% { transform: scale(1.8) rotate(-15deg); opacity: 0; }
+  50% { transform: scale(1.05) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.animate-seal {
+  animation: sealStamp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes inscribe {
+  0% { opacity: 0; transform: translateY(8px) scale(0.95); }
+  60% { opacity: 1; transform: translateY(-2px) scale(1.01); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-inscribe {
+  animation: inscribe 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes oracleGlow {
+  0% { box-shadow: 0 0 0 0 rgba(109, 40, 217, 0); }
+  50% { box-shadow: 0 0 20px 4px rgba(109, 40, 217, 0.15); }
+  100% { box-shadow: 0 0 0 0 rgba(109, 40, 217, 0); }
+}
+
+.animate-oracle-glow {
+  animation: oracleGlow 2s ease-in-out;
+}
+
+@keyframes quillWrite {
+  0% { width: 0; }
+  100% { width: 100%; }
+}
+
+.animate-quill {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: quillWrite 0.8s ease-out forwards;
+}
+
+/* Light mode: amber warmth on interactive surfaces */
+.light input,
+.light textarea,
+.light select {
+  border-color: var(--border-primary) !important;
+}
+
+.light input:focus,
+.light textarea:focus,
+.light select:focus {
+  border-color: var(--text-accent) !important;
+}
+
+/* Light mode: warm progress bars */
+.light .bg-gradient-to-r {
+  background: linear-gradient(to right, #b45309, #d97706) !important;
 }
 
 .scrollbar-hide {

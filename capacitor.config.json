@@ -1,0 +1,13 @@
+{
+  "appId": "com.lorekeeper.app",
+  "appName": "Lorekeeper",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}
