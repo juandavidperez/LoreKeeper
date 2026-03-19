@@ -21,16 +21,21 @@ async function fetchWithRetry(url, options, retries = MAX_RETRIES) {
           continue;
         }
       }
-      throw new Error(`Error del Oráculo (${response.status})`);
+      const errMsg = response.status === 429
+        ? 'El Oráculo está abrumado por demasiadas consultas. Aguarda un momento y vuelve a invocar.'
+        : response.status >= 500
+          ? 'Las fuerzas del Éter están inestables. El Oráculo no puede responder ahora.'
+          : `El Oráculo rechaza esta consulta (código ${response.status}).`;
+      throw new Error(errMsg);
     } catch (error) {
-      if (error.message.startsWith('Error del Oráculo')) throw error;
+      if (error.message.startsWith('El Oráculo') || error.message.startsWith('Las fuerzas')) throw error;
       // Network errors — retry
       if (attempt < retries) {
         const delay = INITIAL_DELAY * Math.pow(2, attempt);
         await new Promise(r => setTimeout(r, delay));
         continue;
       }
-      throw new Error('Error de conexión. Verifica tu red e intenta de nuevo.');
+      throw new Error('La conexión con el Éter se ha roto. Verifica tu red e intenta de nuevo.');
     }
   }
 }
