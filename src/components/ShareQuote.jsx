@@ -15,7 +15,7 @@ export function ShareQuote({ quote, book, chapter, onClose }) {
     canvas.width = W;
     canvas.height = H;
 
-    // Background
+    // Background — dark for share image contrast
     ctx.fillStyle = '#0c0a08';
     ctx.fillRect(0, 0, W, H);
 
@@ -111,26 +111,26 @@ export function ShareQuote({ quote, book, chapter, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center px-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-      <div className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800">
-          <h3 className="font-serif text-sm text-heading font-bold">Compartir Cita</h3>
-          <button onClick={onClose} aria-label="Cerrar" className="p-1.5 text-zinc-500 hover:text-zinc-300">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      <div className="relative w-full max-w-md bg-white border border-[#c9b08a] rounded-sm shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#c9b08a]/50">
+          <h3 className="font-serif text-sm text-primary-text font-bold">Compartir Cita</h3>
+          <button onClick={onClose} aria-label="Cerrar" className="p-1.5 text-stone-400 hover:text-stone-600">
             <X size={16} />
           </button>
         </div>
 
         {/* Preview */}
         <div className="p-5">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 mb-4">
-            <p className="text-sm text-heading italic font-serif leading-relaxed">&ldquo;{quote}&rdquo;</p>
-            <p className="text-xs text-zinc-500 mt-3 font-serif">{book}{chapter ? ` \u2014 ${chapter}` : ''}</p>
+          <div className="bg-[#f7edd8] border border-[#c9b08a]/50 rounded-sm p-5 mb-4">
+            <p className="text-sm text-primary-text italic font-serif leading-relaxed">&ldquo;{quote}&rdquo;</p>
+            <p className="text-xs text-stone-500 mt-3 font-serif">{book}{chapter ? ` \u2014 ${chapter}` : ''}</p>
           </div>
 
           <div className="flex gap-3">
             <button
               onClick={shareNative}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-amber-600 hover:bg-amber-500 text-zinc-950 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-accent hover:bg-accent-secondary text-white rounded-sm text-xs font-bold uppercase tracking-widest transition-colors"
             >
               <Share2 size={14} />
               {navigator.share ? 'Compartir' : 'Copiar'}
@@ -138,7 +138,7 @@ export function ShareQuote({ quote, book, chapter, onClose }) {
             {navigator.share && (
               <button
                 onClick={copyText}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors border border-zinc-800"
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-[#f7edd8] hover:bg-[#f1e7d2] text-primary-text rounded-sm text-xs font-bold uppercase tracking-widest transition-colors border border-[#c9b08a]/50"
               >
                 <Copy size={14} />
               </button>

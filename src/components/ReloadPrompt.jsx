@@ -25,33 +25,33 @@ export function ReloadPrompt() {
 
   return (
     <div className="fixed bottom-24 left-4 right-4 z-[200] animate-fade-in">
-      <div className="bg-zinc-900 border border-amber-500/30 backdrop-blur-md p-4 rounded-2xl shadow-2xl flex items-center justify-between gap-4">
+      <div className="bg-white border border-[#c9b08a] backdrop-blur-md p-4 rounded-sm shadow-2xl flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-amber-500/10 rounded-full text-amber-500">
+          <div className="p-2 bg-accent/10 rounded-full text-accent">
             <RefreshCw size={18} className={needRefresh ? 'animate-spin-slow' : ''} />
           </div>
           <div>
-            <p className="text-sm font-serif font-bold text-heading">
-              {offlineReady ? 'Aplicación lista para usar sin conexión' : 'Nueva versión disponible'}
+            <p className="text-sm font-serif font-bold text-primary-text">
+              {offlineReady ? 'Aplicacion lista para usar sin conexion' : 'Nueva version disponible'}
             </p>
-            <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold">
-              {offlineReady ? 'El conocimiento ha sido preservado' : 'Actualiza para obtener el último saber'}
+            <p className="text-xs text-stone-500 uppercase tracking-widest font-bold">
+              {offlineReady ? 'El conocimiento ha sido preservado' : 'Actualiza para obtener el ultimo saber'}
             </p>
           </div>
         </div>
-        
+
         <div className="flex gap-2">
           {needRefresh && (
             <button
               onClick={() => updateServiceWorker(true)}
-              className="bg-amber-600 hover:bg-amber-500 text-zinc-950 px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg active:scale-95"
+              className="bg-accent hover:bg-accent-secondary text-white px-4 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all shadow-lg active:scale-95"
             >
               Recargar
             </button>
           )}
           <button
             onClick={close}
-            className="p-2 text-zinc-500 hover:text-zinc-300 transition-colors"
+            className="p-2 text-stone-400 hover:text-stone-600 transition-colors"
             aria-label="Cerrar aviso"
           >
             <X size={18} />

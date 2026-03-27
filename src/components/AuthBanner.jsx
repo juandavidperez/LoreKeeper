@@ -17,13 +17,13 @@ export function AuthBanner() {
   // Signed in: show user info with sign out
   if (user) {
     return (
-      <div className="flex items-center gap-2 text-xs text-zinc-500">
-        <Zap size={14} className="text-amber-500" />
+      <div className="flex items-center gap-2 text-xs text-stone-500">
+        <Zap size={14} className="text-accent" />
         <span className="truncate max-w-[160px]">{user.email}</span>
         <button
           onClick={signOut}
           aria-label="Desconectar del Eter"
-          className="p-1 hover:text-zinc-300 transition-colors"
+          className="p-1 hover:text-accent transition-colors"
         >
           <LogOut size={14} />
         </button>
@@ -34,10 +34,10 @@ export function AuthBanner() {
   // Magic link sent
   if (sent) {
     return (
-      <div className="flex items-center gap-2 text-xs text-amber-500/80 font-serif">
+      <div className="flex items-center gap-2 text-xs text-accent/80 font-serif">
         <Zap size={14} />
         <span>Enlace enviado. Revisa tu correo.</span>
-        <button onClick={() => { setSent(false); setExpanded(false); }} className="p-1 hover:text-zinc-300">
+        <button onClick={() => { setSent(false); setExpanded(false); }} className="p-1 hover:text-accent">
           <X size={14} />
         </button>
       </div>
@@ -49,10 +49,10 @@ export function AuthBanner() {
     return (
       <button
         onClick={() => setExpanded(true)}
-        className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-amber-500/80 transition-colors font-serif"
+        className="flex items-center gap-1.5 text-xs text-stone-500 hover:text-accent transition-colors font-serif"
       >
         <Zap size={14} />
-        <span>Conectar al Eter</span>
+        <span className="hidden sm:inline">Conectar al Eter</span>
       </button>
     );
   }
@@ -81,27 +81,27 @@ export function AuthBanner() {
         onSubmit={handleSubmit}
         className="flex items-center gap-2"
       >
-        <Zap size={14} className="text-amber-500 shrink-0" />
+        <Zap size={14} className="text-accent shrink-0" />
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="tu@correo.com"
           aria-label="Correo para conectar al Eter"
-          className="text-xs bg-transparent border-b border-zinc-700 focus:border-amber-500 outline-none px-1 py-0.5 w-40 text-zinc-300 placeholder:text-zinc-600"
+          className="text-xs bg-transparent border-b border-[#c9b08a] focus:border-accent outline-none px-1 py-0.5 w-40 text-primary-text placeholder:text-stone-400"
           autoFocus
         />
         <button
           type="submit"
           disabled={sending}
-          className="text-xs text-amber-500 hover:text-amber-400 disabled:opacity-50 font-serif font-bold"
+          className="text-xs text-accent hover:text-accent-secondary disabled:opacity-50 font-serif font-bold"
         >
           {sending ? <Loader2 size={14} className="animate-spin" /> : 'Invocar'}
         </button>
         <button
           type="button"
           onClick={() => setExpanded(false)}
-          className="p-1 text-zinc-600 hover:text-zinc-400"
+          className="p-1 text-stone-400 hover:text-accent"
           aria-label="Cerrar"
         >
           <X size={14} />
