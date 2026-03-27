@@ -70,6 +70,7 @@ export const DEMO_DATA = {
       chapter: "Caps. 1–5",
       mood: "Fluído ✨",
       reingreso: "Primera inmersión en la Comarca. Tolkien construye el mundo hobbit con una calidez desarmante: la descripción del hogar de Bilbo, la despensa llena de jamones y quesos, el mapa en la chimenea. Thorin y su compañía irrumpen en la vida de Bilbo como el caos irrumpe en el orden. La firma de Bilbo en el contrato se siente como un salto al vacío.",
+      summary: "En este primer encuentro con el Archivo de Tolkien, exploramos la reticencia del héroe y la irrupción de lo épico en lo doméstico. Bilbo Bolsón, un hobbit antitético a la aventura, se ve impelido por Gandalf a un viaje que cambiará su percepción del mundo y de sí mismo.",
       quotes: [
         "Es una mañana sin salidas cuando uno tiene prisa, y la mañana siguió a la tarde.",
         "Nunca es demasiado tarde para una aventura, aunque la barba haya crecido demasiado."

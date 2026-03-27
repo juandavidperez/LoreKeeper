@@ -52,13 +52,35 @@ export function LorekeeperProvider({ children }) {
     reglas: aggregateEntities(entries, 'worldRules', 'regla')
   }), [entries]);
 
-  const exportData = useCallback(() => {
+  const exportData = useCallback(async () => {
     const data = { books, phases, schedule, entries, completedWeeks, exportedAt: new Date().toISOString() };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const fileName = `lorekeeper-backup-${new Date().toISOString().split('T')[0]}.json`;
+    const jsonString = JSON.stringify(data, null, 2);
+
+    // Check if we can use the Share API (standard for "Save to Files" on iOS PWA)
+    if (navigator.canShare && navigator.share) {
+      try {
+        const file = new File([jsonString], fileName, { type: 'application/json' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Lorekeeper Backup',
+            text: 'Copia de seguridad de mi Archivo Dorado.'
+          });
+          return;
+        }
+      } catch (err) {
+        // Carry on to fallback if share fails or is cancelled
+        console.warn('Share API failed, falling back to download:', err);
+      }
+    }
+
+    // Fallback: standard blob download for desktop
+    const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `lorekeeper-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
   }, [books, phases, schedule, entries, completedWeeks]);
