@@ -20,8 +20,8 @@ export default defineConfig({
         description: 'Archivo digital para guardianes del conocimiento literario. Gestiona lecturas, captura reflexiones y explora un archivo de conocimiento.',
         lang: 'es',
         categories: ['books', 'education'],
-        theme_color: '#09090b',
-        background_color: '#09090b',
+        theme_color: '#f4ead5',
+        background_color: '#f4ead5',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
@@ -65,7 +65,7 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // Don't let the service worker intercept Supabase API calls
-        navigateFallbackDenylist: [/^\/auth/, /^\/rest/, /^\/storage/],
+        navigateFallbackDenylist: [/^\/auth/, /^\/rest/, /^\/storage/, /v1beta\/models/],
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.mode === 'navigate',
@@ -77,8 +77,33 @@ export default defineConfig({
             }
           },
           {
-            // Supabase calls: always go to network
-            urlPattern: ({ url }) => url.hostname.endsWith('.supabase.co'),
+            // Google Fonts Stylesheets
+            urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com',
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'google-fonts-stylesheets',
+            },
+          },
+          {
+            // Google Fonts Files
+            urlPattern: ({ url }) => url.origin === 'https://fonts.gstatic.com',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Gemini API & Supabase calls: always go to network
+            urlPattern: ({ url }) => 
+              url.hostname.endsWith('.supabase.co') || 
+              url.hostname === 'generativelanguage.googleapis.com',
             handler: 'NetworkOnly',
           }
         ]

@@ -12,7 +12,7 @@ const TYPE_ICONS = {
 };
 
 const TYPE_LABELS = {
-  entry: 'Crónica',
+  entry: 'Cronica',
   personaje: 'Personaje',
   lugar: 'Lugar',
   glosario: 'Glosario',
@@ -102,14 +102,14 @@ export function GlobalSearch({ onNavigate, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[300] flex items-start justify-center pt-20 px-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-lg bg-white border border-[#c9b08a] rounded-sm shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Input */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-zinc-800">
-          <Search size={18} className="text-zinc-600 shrink-0" />
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-[#c9b08a]/50">
+          <Search size={18} className="text-stone-400 shrink-0" />
           <input
             ref={inputRef}
             type="text"
@@ -117,10 +117,10 @@ export function GlobalSearch({ onNavigate, onClose }) {
             onChange={e => setQuery(e.target.value)}
             placeholder="Buscar en todo el Archivo..."
             aria-label="Busqueda global"
-            className="flex-1 bg-transparent text-sm text-zinc-200 outline-none font-serif placeholder:text-zinc-600 placeholder:italic"
+            className="flex-1 bg-transparent text-sm text-primary-text outline-none font-serif placeholder:text-stone-400 placeholder:italic"
           />
-          <kbd className="hidden sm:block text-[10px] text-zinc-600 border border-zinc-800 rounded px-1.5 py-0.5 font-mono">ESC</kbd>
-          <button onClick={onClose} aria-label="Cerrar busqueda" className="sm:hidden p-1 text-zinc-600 hover:text-zinc-400">
+          <kbd className="hidden sm:block text-[10px] text-stone-400 border border-stone-300 rounded px-1.5 py-0.5 font-mono">ESC</kbd>
+          <button onClick={onClose} aria-label="Cerrar busqueda" className="sm:hidden p-1 text-stone-400 hover:text-stone-600">
             <X size={16} />
           </button>
         </div>
@@ -129,11 +129,11 @@ export function GlobalSearch({ onNavigate, onClose }) {
         <div className="max-h-[60vh] overflow-y-auto">
           {query.length < 2 ? (
             <div className="px-5 py-8 text-center">
-              <p className="text-xs text-zinc-600 font-serif italic">Escribe al menos 2 caracteres para buscar</p>
+              <p className="text-xs text-stone-400 font-serif italic">Escribe al menos 2 caracteres para buscar</p>
             </div>
           ) : results.length === 0 ? (
             <div className="px-5 py-8 text-center">
-              <p className="text-xs text-zinc-600 font-serif italic">El Archivo no guarda registros bajo ese nombre</p>
+              <p className="text-xs text-stone-400 font-serif italic">El Archivo no guarda registros bajo ese nombre</p>
             </div>
           ) : (
             <ul role="listbox">
@@ -144,23 +144,23 @@ export function GlobalSearch({ onNavigate, onClose }) {
                     <button
                       role="option"
                       onClick={() => handleSelect(result)}
-                      className="w-full px-5 py-3 flex items-start gap-3 hover:bg-zinc-900 transition-colors text-left border-b border-zinc-900/50 last:border-0"
+                      className="w-full px-5 py-3 flex items-start gap-3 hover:bg-[#f7edd8] transition-colors text-left border-b border-[#c9b08a]/20 last:border-0"
                     >
                       <div className="mt-0.5 shrink-0">
-                        <Icon size={14} className="text-zinc-600" />
+                        <Icon size={14} className="text-stone-400" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-sm text-heading font-serif truncate">{result.name}</span>
-                          <span className="text-[10px] text-zinc-600 uppercase tracking-widest font-bold shrink-0">
+                          <span className="text-sm text-primary-text font-serif truncate">{result.name}</span>
+                          <span className="text-[10px] text-stone-400 uppercase tracking-widest font-bold shrink-0">
                             {TYPE_LABELS[result.type] || result.type}
                           </span>
                         </div>
-                        <p className="text-xs text-zinc-500 truncate font-serif italic">{result.preview}</p>
+                        <p className="text-xs text-stone-500 truncate font-serif italic">{result.preview}</p>
                       </div>
                       <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                        <BookOpen size={10} className="text-zinc-700" />
-                        <span className="text-[10px] text-zinc-600">{result.book}</span>
+                        <BookOpen size={10} className="text-stone-300" />
+                        <span className="text-[10px] text-stone-400">{result.book}</span>
                       </div>
                     </button>
                   </li>

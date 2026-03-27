@@ -44,9 +44,9 @@ describe('Smoke test', () => {
     expect(screen.getByText('LOREKEEPER')).toBeTruthy();
   });
 
-  it('renders the Bitácora tab by default', () => {
+  it('renders the Crónicas tab by default', () => {
     render(React.createElement(App));
-    expect(screen.getAllByText('Bitácora').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Crónicas').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders the navigation tabs', () => {
