@@ -1,7 +1,10 @@
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
+const DEFAULT_MODEL = "gemini-flash-latest";
 
 const MAX_RETRIES = 2;
-const INITIAL_DELAY = 1000;
+const INITIAL_DELAY = 2000;
+
+let IS_AI_GLOBAL_BUSY = false;
 
 // To avoid exposing the API key in the browser, set VITE_API_PROXY_URL
 // to a server-side proxy (e.g. Cloudflare Worker, Vercel edge function).
@@ -16,14 +19,17 @@ async function fetchWithRetry(url, options, retries = MAX_RETRIES) {
       if (response.ok) return response;
       if (response.status === 429 || response.status >= 500) {
         if (attempt < retries) {
-          const delay = INITIAL_DELAY * Math.pow(2, attempt);
+          // Double the delay for 429 to avoid hammering
+          const factor = response.status === 429 ? 3 : 2;
+          const delay = INITIAL_DELAY * Math.pow(factor, attempt);
           await new Promise(r => setTimeout(r, delay));
           continue;
         }
       }
-      const errMsg = response.status === 429
-        ? 'El Oráculo está abrumado por demasiadas consultas. Aguarda un momento y vuelve a invocar.'
-        : response.status >= 500
+      if (response.status === 429) {
+        throw new Error('El Oráculo está abrumado por demasiadas consultas. Aguarda un momento y vuelve a invocar.');
+      }
+      const errMsg = response.status >= 500
           ? 'Las fuerzas del Éter están inestables. El Oráculo no puede responder ahora.'
           : `El Oráculo rechaza esta consulta (código ${response.status}).`;
       throw new Error(errMsg);
@@ -41,6 +47,11 @@ async function fetchWithRetry(url, options, retries = MAX_RETRIES) {
 }
 
 export const callGemini = async (prompt, systemInstruction = "", schema = null) => {
+  if (IS_AI_GLOBAL_BUSY) {
+    console.warn('AI request blocked by global lock.');
+    throw new Error('El Oráculo ya está procesando una consulta. Aguarda un momento.');
+  }
+
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
   const proxyUrl = import.meta.env.VITE_API_PROXY_URL;
 
@@ -48,32 +59,41 @@ export const callGemini = async (prompt, systemInstruction = "", schema = null) 
     return mockAIResponse(prompt);
   }
 
-  // In production, require proxy to avoid exposing the API key in the browser
-  if (!proxyUrl && import.meta.env.PROD) {
-    console.warn('Gemini API key is exposed client-side. Set VITE_API_PROXY_URL for production.');
+  IS_AI_GLOBAL_BUSY = true;
+  try {
+    const model = import.meta.env.VITE_GEMINI_MODEL || DEFAULT_MODEL;
+    // In production, require proxy to avoid exposing the API key in the browser
+    if (!proxyUrl && import.meta.env.PROD) {
+      console.warn('Gemini API key is exposed client-side. Set VITE_API_PROXY_URL for production.');
+    }
+
+    const url = proxyUrl || `${GEMINI_API_BASE}/models/${model}:generateContent?key=${apiKey}`;
+
+    const payload = {
+      contents: [
+        { role: 'user', parts: [{ text: `[SISTEMA: ${systemInstruction || 'Eres el Oráculo del Archivo.'}]` }] },
+        { role: 'model', parts: [{ text: 'Entendido. Las sombras se aclaran ante mi vista. Procede.' }] },
+        { role: 'user', parts: [{ text: prompt }] }
+      ],
+      generation_config: schema ? {
+        response_mime_type: "application/json",
+        response_schema: schema
+      } : undefined
+    };
+
+    const response = await fetchWithRetry(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error("El Oráculo no devolvió respuesta.");
+    return text;
+  } finally {
+    IS_AI_GLOBAL_BUSY = false;
   }
-
-  const url = proxyUrl || `${GEMINI_API_URL}?key=${apiKey}`;
-
-  const payload = {
-    contents: [{ parts: [{ text: prompt }] }],
-    systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
-    generationConfig: schema ? {
-      responseMimeType: "application/json",
-      responseSchema: schema
-    } : undefined
-  };
-
-  const response = await fetchWithRetry(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error("El Oráculo no devolvió respuesta.");
-  return text;
 };
 
 const mockAIResponse = (prompt) => {

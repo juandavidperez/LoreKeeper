@@ -1,0 +1,273 @@
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Sparkles, Send, User, MessageSquare, Clock, X, ChevronDown, ChevronUp, Loader2, RotateCcw, Mic, MicOff } from 'lucide-react';
+import { useLorekeeperState } from '../hooks/useLorekeeperState';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useNotification } from '../hooks/useNotification';
+import { callGemini } from '../utils/ai';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+
+export function OracleView({ initialFocus, onClearFocus }) {
+  const { archive } = useLorekeeperState();
+  const notify = useNotification();
+  
+  // States
+  const [messages, setMessages] = useLocalStorage('oracle-messages-v4', [
+    { id: 1, role: 'oracle', text: '"Hablad, buscador de historias. Las sombras del Archivo se agitan ante vuestra presencia. ¿Qué secreto deseáis desentrañar de los anales hoy?"' }
+  ]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [selectedEntity, setSelectedEntity] = useState(null); // { name, type, category }
+  const [showHistory, setShowHistory] = useState(false);
+  const [conversations, setConversations] = useLocalStorage('oracle-history-v4', []);
+  const { recordingField, toggle: toggleRecording, error: speechError, isSupported: speechSupported } = useSpeechRecognition();
+  const isProcessing = useRef(false);
+  
+  // Handle initial focus from Encyclopedia or Log
+  useEffect(() => {
+    if (initialFocus) {
+      // initialFocus might not have category, let's find it
+      const found = allEntities.find(e => e.name === initialFocus.name);
+      if (found) {
+        setSelectedEntity(found);
+        // Optional: Trigger a special greeting?
+      }
+    }
+  }, [initialFocus]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clear focus on unmount
+  useEffect(() => {
+    return () => {
+      if (onClearFocus) onClearFocus();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  
+  const scrollRef = useRef(null);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isTyping]);
+
+  const allEntities = useMemo(() => {
+    const list = [];
+    ['personajes', 'lugares', 'reglas', 'glosario'].forEach(cat => {
+      (archive[cat] || []).forEach(item => list.push({ ...item, category: cat }));
+    });
+    return list.sort((a, b) => a.name.localeCompare(b.name));
+  }, [archive]);
+
+  const handleSend = async (e) => {
+    e?.preventDefault();
+    if (!input.trim() || isTyping || isProcessing.current) return;
+    
+    isProcessing.current = true;
+
+    const userText = input.trim();
+    const newMessages = [...messages, { id: Date.now(), role: 'user', text: userText }];
+    setMessages(newMessages);
+    setInput('');
+    setIsTyping(true);
+
+    try {
+      let contextPrompt = "";
+      if (selectedEntity) {
+        contextPrompt = `Estás hablando específicamente sobre ${selectedEntity.name} (${selectedEntity.category}). 
+        Contexto del archivo: ${selectedEntity.content || ''}. Tags: ${selectedEntity.tags?.join(', ') || ''}.`;
+      } else {
+        contextPrompt = "Te consultan sobre los archivos del grimorio en general.";
+      }
+
+      const prompt = `${contextPrompt}\n\nPregunta del usuario: "${userText}"\n\nResponde como un Oráculo solemne y poético en español. Usa un tono místico pero informativo. No seas demasiado extenso.`;
+      
+      const response = await callGemini(prompt, "Eres el Oráculo del Gran Archivo, un sabio eterno que conoce todos los hilos del destino.");
+      
+      setMessages(prev => [...prev, { id: Date.now() + 1, role: 'oracle', text: response }]);
+    } catch (err) {
+      notify("El Oráculo se ha sumido en el silencio. Intenta de nuevo.", "error");
+    } finally {
+      setIsTyping(false);
+      isProcessing.current = false;
+    }
+  };
+
+  const startNewConversation = () => {
+    if (messages.length > 1) {
+      setConversations([{ id: Date.now(), date: new Date().toISOString(), messages }, ...conversations]);
+    }
+    setMessages([{ id: Date.now(), role: 'oracle', text: '"El hilo anterior se ha tejido. Empecemos de nuevo, buscador."' }]);
+    setSelectedEntity(null);
+  };
+
+  const restoreConversation = (history) => {
+    setMessages(history.messages);
+    setShowHistory(false);
+    notify("Conversación recuperada de las sombras.", "info");
+  };
+
+  return (
+    <div className="flex flex-col gap-6 animate-fade-in pb-20 min-h-[calc(100dvh-180px)]">
+      {/* Header Estilo Grimorio & Selector (Sticky) */}
+      <div className="sticky top-[-24px] z-30 bg-header-bg/90 backdrop-blur-md pb-4 border-b border-primary/20 flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <h2 className="text-4xl font-serif text-primary-text tracking-tight">El Oráculo</h2>
+        <p className="text-xs text-stone-500 font-serif italic tracking-wide">Consulta los misterios del Archivo</p>
+      </div>
+
+        {/* Selector de Contexto */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+        <button
+          onClick={() => setSelectedEntity(null)}
+          className={`flex-shrink-0 px-4 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all border ${
+            !selectedEntity 
+            ? 'bg-accent text-white border-accent' 
+            : 'bg-header-bg text-stone-500 border-accent/20'
+          }`}
+        >
+          Consulta Libre
+        </button>
+        {allEntities.slice(0, 10).map(entity => (
+          <button
+            key={`${entity.category}-${entity.name}`}
+            onClick={() => setSelectedEntity(entity)}
+            className={`flex-shrink-0 px-4 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all border flex items-center gap-2 ${
+              selectedEntity?.name === entity.name 
+              ? 'bg-accent text-zinc-950 border-accent' 
+            : 'bg-header-bg text-stone-500 border-primary/30 hover:border-accent/40 transition-colors'
+          }`}
+          >
+            <User size={10} />
+            {entity.name}
+          </button>
+        ))}
+        </div>
+      </div>
+
+      {/* Historial Colapsable */}
+      <div className="grimoire-card bg-header-bg border-primary rounded-sm overflow-hidden transition-all shadow-sm">
+        <button 
+          onClick={() => setShowHistory(!showHistory)}
+          className="w-full flex justify-between items-center p-3 hover:bg-item-bg/50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Clock size={14} className="text-accent" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-500">Ecos del Pasado</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={(e) => { e.stopPropagation(); startNewConversation(); }}
+              className="p-1 px-2 text-[9px] font-bold uppercase tracking-tighter text-accent-secondary hover:bg-accent/10 rounded-sm"
+            >
+              Nuevo Trance
+            </button>
+            {showHistory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </div>
+        </button>
+        {showHistory && (
+          <div className="p-3 pt-0 max-h-48 overflow-y-auto border-t border-primary/20 flex flex-col gap-2 mt-2">
+            {conversations.length === 0 ? (
+              <p className="text-[10px] text-stone-400 italic py-4 text-center">No hay ecos registrados aún...</p>
+            ) : (
+              conversations.map(conv => (
+                <button
+                  key={conv.id}
+                  onClick={() => restoreConversation(conv)}
+                  className="w-full text-left p-2 rounded-sm bg-item-bg border border-primary/20 hover:border-accent/30 group transition-all"
+                >
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10px] text-primary-text/60 font-serif line-clamp-1">{conv.messages[1]?.text || "Consulta"}</span>
+                    <span className="text-[8px] text-stone-400 uppercase tracking-tighter">{new Date(conv.date).toLocaleDateString()}</span>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Chat Area */}
+      <div 
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto pr-2 space-y-6 scroll-smooth scrollbar-thin scrollbar-thumb-accent/20 pb-32"
+      >
+        {messages.map((msg, i) => (
+          <div 
+            key={msg.id} 
+            className={`flex flex-col gap-2 ${msg.role === 'oracle' ? 'items-start' : 'items-end'}`}
+          >
+            {msg.role === 'oracle' ? (
+              <div className="flex items-center gap-2 text-[9px] font-bold text-accent uppercase tracking-widest ml-1">
+                <Sparkles size={10} /> EL ORÁCULO
+              </div>
+            ) : (
+              <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest mr-1">TÚ</div>
+            )}
+            <div className={`max-w-[90%] px-6 py-5 rounded-sm shadow-sm border animate-fade-in ${
+              msg.role === 'oracle' 
+              ? 'bg-item-bg border-primary/50 text-primary-text font-serif italic leading-relaxed text-sm sm:text-base' 
+              : 'bg-accent/10 border-accent/20 text-accent-secondary text-xs sm:text-sm font-serif'
+            }`}>
+              {msg.text}
+            </div>
+          </div>
+        ))}
+        {isTyping && (
+          <div className="flex flex-col gap-2 items-start animate-pulse">
+            <div className="flex items-center gap-2 text-[9px] font-bold text-accent uppercase tracking-widest ml-1">
+              <Sparkles size={10} /> EL ORÁCULO
+            </div>
+            <div className="bg-item-bg border border-primary/50 px-6 py-5 rounded-sm">
+              <Loader2 size={16} className="text-accent animate-spin" />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Input Area */}
+      <div className="fixed bottom-20 left-4 right-4 z-50 safe-bottom">
+        {speechError && (
+          <div className="max-w-2xl mx-auto mb-2 px-4 py-2 bg-danger/10 border border-danger/20 rounded-sm">
+            <p className="text-[10px] text-danger italic font-serif">{speechError}</p>
+          </div>
+        )}
+        <form 
+          onSubmit={handleSend}
+          className="max-w-2xl mx-auto flex items-center gap-2 bg-header-bg/95 border border-accent/30 p-2 rounded-sm shadow-2xl backdrop-blur-md"
+        >
+          {speechSupported && (
+            <button
+              type="button"
+              onClick={() => toggleRecording('oracle', (text) => {
+                setInput(prev => (prev + ' ' + text).trim());
+              })}
+              className={`p-3 rounded-sm transition-all flex items-center justify-center ${
+                recordingField === 'oracle' 
+                ? 'bg-red-500 text-white animate-pulse' 
+                : 'text-stone-400 hover:text-accent'
+              }`}
+            >
+              {recordingField === 'oracle' ? <MicOff size={18} /> : <Mic size={18} />}
+            </button>
+          )}
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={isTyping}
+            inputMode="text"
+            enterKeyHint="send"
+            placeholder={selectedEntity ? `Pregunta al Oráculo sobre ${selectedEntity.name}...` : "Pregunta al Oráculo..."}
+            className="flex-1 bg-transparent px-3 py-2 text-sm outline-none font-serif italic text-primary-text placeholder:text-stone-400"
+          />
+          <button 
+            type="submit"
+            disabled={!input.trim() || isTyping}
+            className="p-3 bg-accent text-white rounded-sm hover:bg-accent-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+          >
+            {isTyping ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}

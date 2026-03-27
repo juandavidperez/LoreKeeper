@@ -1,11 +1,11 @@
-import { useState, useMemo, useRef } from 'react';
-import { CheckCircle2, Circle, Edit3, Plus, Trash2, Save, Book, Layers, Layout, Download, Upload, FlaskConical } from 'lucide-react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { Trash2, Book, Layers, Layout, Download, Upload, ChevronDown, ChevronRight } from 'lucide-react';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
 import { useNotification } from '../hooks/useNotification';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { DEMO_DATA } from '../data/mockData';
 
-export function ReadingPlan() {
+export function ReadingPlan({ onLogWeek }) {
   const {
     phases, setPhases,
     schedule, setSchedule,
@@ -19,6 +19,7 @@ export function ReadingPlan() {
   const [isEditing, setIsEditing] = useState(false);
   const [activeManager, setActiveManager] = useState('weeks');
   const [confirmModal, setConfirmModal] = useState(null);
+  const [expandedPhases, setExpandedPhases] = useState(new Set());
 
   const handleLoadDemo = () => {
     try {
@@ -31,6 +32,36 @@ export function ReadingPlan() {
 
   const [justSealed, setJustSealed] = useState(null);
   const sealTimeout = useRef(null);
+  const initialExpansionDone = useRef(false);
+
+  // Identify the "Next Up" week (needed for initial expansion)
+  const nextUpWeek = useMemo(() => {
+    if (isEditing) return null;
+    const sortedPending = schedule
+      .filter(w => !completedWeeks.includes(w.week))
+      .sort((a, b) => a.week - b.week);
+    return sortedPending.length > 0 ? sortedPending[0].week : null;
+  }, [schedule, completedWeeks, isEditing]);
+
+  // Initial expansion of the active phase
+  useEffect(() => {
+    if (nextUpWeek && !initialExpansionDone.current) {
+      const activePhase = phases.find(p => nextUpWeek >= p.weeks[0] && nextUpWeek <= p.weeks[1]);
+      if (activePhase) {
+        setExpandedPhases(new Set([activePhase.id]));
+        initialExpansionDone.current = true;
+      }
+    }
+  }, [nextUpWeek, phases]);
+
+  const togglePhase = (phaseId) => {
+    setExpandedPhases(prev => {
+      const next = new Set(prev);
+      if (next.has(phaseId)) next.delete(phaseId);
+      else next.add(phaseId);
+      return next;
+    });
+  };
 
   const toggleWeek = (week) => {
     const wasCompleted = completedWeeks.includes(week);
@@ -95,7 +126,7 @@ export function ReadingPlan() {
   // CRUD: Phases
   const addPhase = () => {
     const lastWeek = schedule.length > 0 ? schedule[schedule.length - 1].week : 1;
-    setPhases([...phases, { id: Date.now(), label: "Nueva Fase", weeks: [lastWeek, lastWeek], color: "#78716C", desc: "Descripción de fase" }]);
+    setPhases([...phases, { id: Date.now(), label: "Nueva Fase", weeks: [lastWeek, lastWeek], color: "var(--accent)", desc: "Descripción de fase" }]);
   };
 
   const updatePhase = (id, field, value) => {
@@ -115,7 +146,7 @@ export function ReadingPlan() {
 
   // CRUD: Books
   const addBook = () => {
-    setBooks([...books, { id: `book-${Date.now()}`, title: "Nuevo Libro", emoji: "📖", color: "#78716C", type: "novel" }]);
+    setBooks([...books, { id: `book-${Date.now()}`, title: "Nuevo Libro", emoji: "📖", color: "var(--accent)", type: "novel" }]);
   };
 
   const updateBook = (id, field, value) => {
@@ -157,7 +188,7 @@ export function ReadingPlan() {
   };
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in pb-24 h-full">
+    <div className="flex flex-col gap-6 sm:gap-8 animate-fade-in pb-24 h-full">
       {confirmModal && (
         <ConfirmModal
           title={confirmModal.title}
@@ -170,36 +201,42 @@ export function ReadingPlan() {
       )}
 
       {/* HEADER */}
-      <PlanHeader
-        isEditing={isEditing}
-        onToggleEdit={() => setIsEditing(!isEditing)}
-        onExport={exportData}
-        onImport={handleImport}
-        onLoadDemo={handleLoadDemo}
-        activeManager={activeManager}
-        onSelectManager={setActiveManager}
-      />
+      <div className="sticky top-[-24px] z-30 bg-header-bg pb-4 border-b border-primary/20">
+        <PlanHeader
+          isEditing={isEditing}
+          onToggleEdit={() => setIsEditing(!isEditing)}
+          onExport={exportData}
+          onImport={handleImport}
+          onLoadDemo={handleLoadDemo}
+          activeManager={activeManager}
+          onSelectManager={setActiveManager}
+        />
+      </div>
+
+      {/* PROGRESS / STATS WIDGET (The Archival Widget) */}
+      {!isEditing && schedule.length > 0 && (
+        <ArchivalStats
+          completedTotal={completedWeeks.length}
+          totalWeeks={schedule.length}
+          progress={progress}
+          entries={entries}
+        />
+      )}
 
       {/* ONBOARDING HINT */}
       {!isEditing && completedWeeks.length === 0 && schedule.length > 0 && (
-        <p className="text-xs text-zinc-500 italic text-center -mt-2">Toca cualquier semana para marcarla como completada.</p>
+        <p className="text-[10px] text-stone-500 italic text-center -mt-4 font-serif opacity-70">Toca cualquier semana para sellar tu progreso en el tiempo.</p>
       )}
 
-      {/* EMPTY STATE — first visit, no schedule yet */}
+      {/* EMPTY STATE */}
       {!isEditing && schedule.length === 0 && (
-        <div className="grimoire-card text-center py-20 bg-zinc-900 rounded-2xl border-dashed">
-          <div className="text-4xl mb-4 opacity-30">📖</div>
-          <p className="text-zinc-500 font-serif italic text-sm max-w-xs mx-auto leading-relaxed">
-            El grimorio aguarda sus primeras líneas. Toca Editar para forjar tu plan de lectura.
+        <div className="text-center py-24 border-2 border-dashed border-accent/20 rounded-lg mx-2 bg-item-bg/30">
+          <div className="text-5xl mb-6 opacity-20 text-primary-text">📜</div>
+          <p className="text-stone-400 font-serif italic text-sm max-w-[200px] mx-auto leading-relaxed">
+            El Archivo Dorado aguarda... Forja tu primer plan de lectura pulsando Editar.
           </p>
         </div>
       )}
-
-      {/* STATISTICS — promoted above schedule */}
-      {!isEditing && <ReadingStats entries={entries} books={books} />}
-
-      {/* PROGRESS (Only View Mode) */}
-      {!isEditing && schedule.length > 0 && <ProgressBar progress={progress} />}
 
       {/* BOOK MANAGER */}
       {isEditing && activeManager === 'books' && (
@@ -217,9 +254,27 @@ export function ReadingPlan() {
           phases={phases} schedule={schedule} books={books}
           completedWeeks={completedWeeks} isEditing={isEditing}
           justSealed={justSealed}
+          expandedPhases={expandedPhases} onTogglePhase={togglePhase}
+          nextUpWeek={nextUpWeek}
           onToggleWeek={toggleWeek} onUpdateWeek={updateWeek}
           onDeleteWeek={deleteWeek} onAddWeek={addWeek}
+          onLogWeek={onLogWeek}
         />
+      )}
+      
+      {/* DECORATIVE ILLUSTRATION (Generated AI Manuscript Art) */}
+      {!isEditing && schedule.length > 0 && (
+        <div className="mt-12 opacity-80 flex flex-col items-center gap-4 animate-fade-in duration-1000">
+           <div className="w-full max-w-sm border-2 border-primary/30 p-2.5 bg-item-bg shadow-md relative overflow-hidden group">
+             <div className="absolute inset-0 bg-stone-900/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+             <img 
+               src="/manuscript_footer.png" 
+               alt="Scribit in Aeternum"
+               className="w-full h-auto grayscale-[0.2] contrast-[1.1] sepia-[0.1]"
+             />
+           </div>
+           <span className="text-[10px] font-serif italic text-stone-400 tracking-widest mt-2 uppercase">Scribit in Aeternum</span>
+        </div>
       )}
     </div>
   );
@@ -227,71 +282,118 @@ export function ReadingPlan() {
 
 function PlanHeader({ isEditing, onToggleEdit, onExport, onImport, onLoadDemo, activeManager, onSelectManager }) {
   const managerTabs = [
-    { id: 'weeks', icon: Layout, label: 'Semanas' },
-    { id: 'phases', icon: Layers, label: 'Fases' },
-    { id: 'books', icon: Book, label: 'Libros' },
+    { id: 'weeks', icon: Layout, label: 'SEMANAS' },
+    { id: 'phases', icon: Layers, label: 'FASES' },
+    { id: 'books', icon: Book, label: 'LIBROS' },
   ];
 
   return (
-    <div className="flex flex-col gap-2">
-      {/* Primary row: title + edit action */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-serif text-heading">Plan Maestro</h2>
-        <button
-          onClick={onToggleEdit}
-          className={`flex items-center gap-2 px-5 py-2 rounded-full border text-xs font-bold uppercase tracking-widest transition-all ${isEditing ? 'bg-amber-500 text-zinc-950 border-amber-500' : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:border-zinc-700'}`}
-        >
-          {isEditing ? <Save size={14}/> : <Edit3 size={14}/>}
-          {isEditing ? 'Finalizar' : 'Editar'}
-        </button>
-      </div>
-
-      {/* Secondary row: utilities (non-edit) or manager tabs (edit) */}
-      {!isEditing ? (
-        <div className="flex items-center gap-4">
-          <button onClick={onExport} className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-1">
-            <Download size={12}/> Exportar
+    <div className="flex flex-col gap-6">
+      <div className="flex justify-between items-start">
+        <div className="flex flex-col">
+          <h2 className="text-4xl font-serif text-primary-text leading-tight tracking-tight">Plan Maestro</h2>
+          <p className="text-stone-500 font-serif italic text-sm -mt-1 opacity-80">Crónica del Tiempo</p>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={onExport} className="p-2 text-stone-400 hover:text-accent transition-all hover:scale-110 flex items-center justify-center" title="Exportar">
+            <Download size={20}/>
           </button>
-          <label aria-label="Importar datos" className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-1 cursor-pointer">
-            <Upload size={12}/> Importar
+          <label className="p-2 text-stone-400 hover:text-accent transition-all hover:scale-110 cursor-pointer flex items-center justify-center" title="Importar">
+            <Upload size={20}/>
             <input type="file" accept=".json" onChange={onImport} className="hidden" />
           </label>
-          <button onClick={onLoadDemo} className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-1">
-            <FlaskConical size={12}/> Demo
-          </button>
         </div>
-      ) : (
-        <div className="flex gap-5 border-b border-zinc-800 pb-1 mt-1">
-          {managerTabs.map(tab => {
-            const Icon = tab.icon;
-            return (
+      </div>
+
+      <div className="flex flex-col gap-4">
+        {isEditing && (
+          <div className="grid grid-cols-3 bg-section-bg/50 p-1 rounded-full border border-accent/20">
+            {managerTabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => onSelectManager(tab.id)}
-                className={`flex items-center gap-1.5 pb-2 text-xs font-bold transition-all border-b-2 -mb-px ${activeManager === tab.id ? 'border-amber-500 text-heading' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+                className={`py-2 text-[10px] font-bold tracking-widest transition-all rounded-full ${activeManager === tab.id ? 'bg-item-bg text-accent shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
               >
-                <Icon size={13}/>{tab.label}
+                {tab.label}
               </button>
-            );
-          })}
+            ))}
+          </div>
+        )}
+
+        <div className="flex justify-between items-center">
+          <div className="flex gap-4">
+            {!isEditing && (
+              <button 
+                onClick={onLoadDemo} 
+                className="text-[9px] uppercase tracking-[0.2em] font-bold text-stone-300 hover:text-stone-500 transition-colors"
+              >
+                Restaurar Registro Demo
+              </button>
+            )}
+          </div>
+          <button
+            onClick={onToggleEdit}
+            className={`px-8 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.25em] transition-all border-2 ${isEditing ? 'bg-accent text-white border-accent' : 'border-primary/30 text-stone-600 hover:bg-item-bg hover:border-accent hover:text-accent'}`}
+          >
+            {isEditing ? 'Guardar Cambios' : 'Editar Archivo'}
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
 
-function ProgressBar({ progress }) {
+function ArchivalStats({ completedTotal, totalWeeks, progress, entries }) {
+  // Real streak calculation
+  const streak = useMemo(() => {
+    if (!entries.length) return 0;
+    const dates = [...new Set(entries.map(e => e.date))].sort().reverse();
+    let currentStreak = 0;
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
+    if (dates[0] !== today && dates[0] !== yesterdayStr) return 0;
+
+    let checkDate = new Date(dates[0]);
+    for (const d of dates) {
+      if (d === checkDate.toISOString().split('T')[0]) {
+        currentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    return currentStreak;
+  }, [entries]);
+
   return (
-    <div className="grimoire-card bg-zinc-900 p-6 rounded-xl">
-      <div className="flex justify-between items-end mb-4">
-        <span className="text-xs uppercase tracking-[0.2em] text-zinc-500 font-bold">Semanas completadas</span>
-        <span className="font-serif text-amber-500 text-lg font-bold">{progress}%</span>
-      </div>
-      <div className="h-2.5 w-full bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
-        <div
-          className="h-full rounded-full transition-all duration-1000 ease-out"
-          style={{ width: `${progress}%`, backgroundColor: 'var(--text-accent)' }}
-        />
+    <div className="relative group">
+      {/* Decorative inner shadow/glow */}
+      <div className="absolute -inset-1 bg-stone-900/5 blur opacity-25 rounded-lg" />
+      
+      <div className="relative grid grid-cols-1 sm:grid-cols-3 bg-header-bg border border-accent/20 rounded-sm divide-y sm:divide-y-0 sm:divide-x divide-accent/20 shadow-sm transform hover:translate-y-[-1px] transition-transform duration-300">
+        <div className="flex flex-col items-center py-5 relative px-4">
+          <span className="text-3xl font-serif text-primary-text drop-shadow-sm">{completedTotal}</span>
+          <span className="text-[8px] font-bold text-stone-600 uppercase tracking-tighter text-center mt-1">Semanas Selladas</span>
+        </div>
+        <div className="flex flex-col items-center py-5 px-4 bg-section-bg">
+          <span className="text-3xl font-serif text-accent flex items-center gap-1.5 drop-shadow-sm">
+            <span className="text-2xl leading-none">✦</span>{streak}
+          </span>
+          <span className="text-[8px] font-bold text-stone-600 uppercase tracking-tighter text-center mt-1">Racha Actual</span>
+        </div>
+        <div className="flex flex-col items-center py-5 px-4">
+          <div className="flex items-baseline gap-1">
+            <span className="text-3xl font-serif text-primary-text drop-shadow-sm">{progress}%</span>
+          </div>
+          <span className="text-[8px] font-bold text-stone-600 uppercase tracking-tighter text-center mt-1">
+            {completedTotal} de {totalWeeks} semanas
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -299,278 +401,269 @@ function ProgressBar({ progress }) {
 
 function BookManager({ books, onUpdate, onDelete, onAdd }) {
   return (
-    <div className="flex flex-col gap-4 animate-fade-in">
+    <div className="flex flex-col gap-4 animate-fade-in px-2">
+      <h3 className="font-serif italic text-stone-500 text-sm border-b border-accent/20 pb-2">Registro de Tomos del Archivo</h3>
       {books.map((book) => (
-        <div key={book.id} className="grimoire-card bg-zinc-900 p-4 rounded-xl flex items-center gap-4">
-          <input value={book.emoji} onChange={e => onUpdate(book.id, 'emoji', e.target.value)} className="w-10 bg-zinc-950 border border-zinc-800 rounded p-1 text-center" />
-          <input value={book.title} onChange={e => onUpdate(book.id, 'title', e.target.value)} className="flex-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-zinc-300 font-serif" />
-          <select value={book.type} onChange={e => onUpdate(book.id, 'type', e.target.value)} className="bg-zinc-950 border border-zinc-800 rounded p-2 text-xs text-zinc-400">
-            <option value="novel">Novela</option>
-            <option value="manga">Manga</option>
-          </select>
-          <input type="color" value={book.color} onChange={e => onUpdate(book.id, 'color', e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent border-none" />
-          <button onClick={() => onDelete(book.id)} className="p-1.5 text-zinc-600 hover:text-danger-deep"><Trash2 size={16}/></button>
+        <div key={book.id} className="bg-header-bg border-primary/40 p-4 rounded-sm flex items-center gap-3 shadow-sm border">
+          <input value={book.emoji} onChange={e => onUpdate(book.id, 'emoji', e.target.value)} className="w-10 bg-item-bg border border-accent/10 rounded p-1 text-center text-lg" />
+          <div className="flex flex-col flex-1 gap-1">
+            <input value={book.title} onChange={e => onUpdate(book.id, 'title', e.target.value)} className="w-full bg-transparent border-0 p-0 text-sm font-serif font-bold text-primary-text focus:ring-0" placeholder="Título del Tomo" />
+            <select value={book.type} onChange={e => onUpdate(book.id, 'type', e.target.value)} className="bg-transparent border-0 p-0 text-[10px] text-stone-500 uppercase font-bold focus:ring-0 cursor-pointer">
+              <option value="novel">Novela</option>
+              <option value="manga">Manga</option>
+            </select>
+          </div>
+          <input type="color" value={book.color} onChange={e => onUpdate(book.id, 'color', e.target.value)} className="w-8 h-8 rounded-full cursor-pointer border-2 border-white shadow-sm" />
+          <button onClick={() => onDelete(book.id)} className="p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
         </div>
       ))}
-      <button onClick={onAdd} className="py-4 border-2 border-dashed border-zinc-800 text-zinc-600 rounded-xl hover:text-amber-500 transition-all font-serif italic text-sm">+ Invocar Nuevo Tomo</button>
+      <button onClick={onAdd} className="py-4 border-2 border-dashed border-primary/30 text-stone-400 rounded-lg hover:text-accent hover:border-accent/50 transition-all font-serif italic text-sm bg-item-bg/40">+ Invocar nuevo Tomo al Archivo</button>
     </div>
   );
 }
 
 function PhaseManager({ phases, onUpdate, onDelete, onAdd }) {
   return (
-    <div className="flex flex-col gap-4 animate-fade-in">
+    <div className="flex flex-col gap-6 animate-fade-in px-2">
+      <h3 className="font-serif italic text-stone-500 text-sm border-b border-accent/20 pb-2">Cronología de Eras</h3>
       {phases.map((phase) => (
-        <div key={phase.id} className="grimoire-card bg-zinc-900 p-5 rounded-xl flex flex-col gap-3">
-          <div className="flex gap-3">
-            <input value={phase.label} onChange={e => onUpdate(phase.id, 'label', e.target.value)} className="flex-1 bg-zinc-950 border border-zinc-800 rounded p-2 text-sm text-amber-500 font-serif font-bold" />
-            <input type="color" value={phase.color} onChange={e => onUpdate(phase.id, 'color', e.target.value)} className="w-8 h-8 rounded bg-transparent border-none" />
-            <button onClick={() => onDelete(phase.id)} className="p-1.5 text-zinc-600 hover:text-danger-deep"><Trash2 size={16}/></button>
+        <div className="w-full bg-input-bg border border-primary rounded-xl p-4 flex flex-col gap-3 group relative transition-all hover:bg-card-bg shadow-sm">
+          <button onClick={() => onDelete(phase.id)} className="absolute top-4 right-4 p-3 text-stone-200 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
+          <div className="flex flex-col gap-1.5">
+            <input value={phase.label} onChange={e => onUpdate(phase.id, 'label', e.target.value)} className="bg-transparent border-0 border-b border-accent/20 p-0 text-xl font-serif font-bold text-primary-text focus:ring-0 focus:border-accent" placeholder="Nombre de la Era/Fase" />
+            <input value={phase.desc} onChange={e => onUpdate(phase.id, 'desc', e.target.value)} className="bg-transparent border-0 p-0 text-xs font-serif italic text-stone-600 focus:ring-0 placeholder:text-stone-400" placeholder="Breve descripción histórica..." />
           </div>
-          <div className="flex gap-4 items-center">
-            <span className="text-xs text-zinc-500 font-bold">Desde Sem.</span>
-            <input type="number" value={phase.weeks[0]} onChange={e => onUpdate(phase.id, 'weeks', [parseInt(e.target.value), phase.weeks[1]])} className="w-16 bg-zinc-950 border border-zinc-800 rounded p-1 text-center text-xs" />
-            <span className="text-xs text-zinc-500 font-bold">Hasta Sem.</span>
-            <input type="number" value={phase.weeks[1]} onChange={e => onUpdate(phase.id, 'weeks', [phase.weeks[0], parseInt(e.target.value)])} className="w-16 bg-zinc-950 border border-zinc-800 rounded p-1 text-center text-xs" />
+          <div className="flex gap-6 items-center">
+            <div className="flex flex-col gap-1.5 flex-1">
+              <span className="text-[9px] uppercase font-bold text-stone-500 tracking-wider">Origen (Semana)</span>
+              <input type="number" value={phase.weeks[0]} onChange={e => onUpdate(phase.id, 'weeks', [parseInt(e.target.value), phase.weeks[1]])} inputMode="numeric" className="bg-section-bg border border-accent/20 rounded px-3 py-2 text-sm text-primary-text focus:border-accent outline-none" />
+            </div>
+            <div className="flex flex-col gap-1.5 flex-1">
+              <span className="text-[9px] uppercase font-bold text-stone-500 tracking-wider">Ocaso (Semana)</span>
+              <input type="number" value={phase.weeks[1]} onChange={e => onUpdate(phase.id, 'weeks', [phase.weeks[0], parseInt(e.target.value)])} inputMode="numeric" className="bg-section-bg border border-accent/20 rounded px-3 py-2 text-sm text-primary-text focus:border-accent outline-none" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[9px] uppercase font-bold text-stone-400 tracking-wider">Estandarte</span>
+              <input type="color" value={phase.color} onChange={e => onUpdate(phase.id, 'color', e.target.value)} className="w-10 h-10 rounded-full border-2 border-white shadow-md cursor-pointer overflow-hidden p-0" />
+            </div>
           </div>
-          <input value={phase.desc} onChange={e => onUpdate(phase.id, 'desc', e.target.value)} className="bg-zinc-950 border border-zinc-800 rounded p-2 text-xs text-zinc-400 font-serif italic" />
         </div>
       ))}
-      <button onClick={onAdd} className="py-4 border-2 border-dashed border-zinc-800 text-zinc-600 rounded-xl hover:text-amber-600 transition-all font-serif italic text-sm">+ Delimitar Nueva Fase</button>
+      <button onClick={onAdd} className="py-4 border-2 border-dashed border-primary/30 text-stone-400 rounded-lg hover:text-accent hover:border-accent/50 transition-all font-serif italic text-sm bg-item-bg/40">+ Registrar nueva Era en la Cronología</button>
     </div>
   );
 }
 
-function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, justSealed, onToggleWeek, onUpdateWeek, onDeleteWeek, onAddWeek }) {
+function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, justSealed, expandedPhases, onTogglePhase, nextUpWeek, onToggleWeek, onUpdateWeek, onDeleteWeek, onAddWeek, onLogWeek }) {
   return (
-    <div className="flex flex-col gap-12">
-      {phases.map((phase) => (
-        <div key={phase.id} className="flex flex-col gap-4">
-          <div className="flex justify-between items-end border-l-4 pl-4 py-1" style={{ borderColor: phase.color }}>
-            <div>
-              <h3 className="font-serif text-xl text-heading">{phase.label}</h3>
-              <p className="text-xs text-zinc-500 uppercase tracking-widest mt-1">{phase.desc}</p>
-            </div>
-          </div>
+    <div className="flex flex-col gap-10">
+      {phases.map((phase) => {
+        const weekItems = schedule.filter(w => w.week >= phase.weeks[0] && w.week <= phase.weeks[1]);
+        if (weekItems.length === 0 && !isEditing) return null;
 
-          <div className="flex flex-col gap-4">
-            {schedule.filter(w => w.week >= phase.weeks[0] && w.week <= phase.weeks[1]).map((week) => {
-              const isCompleted = completedWeeks.includes(week.week);
-              const mangaBook = books.find(b => b.title === week.mangaTitle);
-              const novelBook = books.find(b => b.title === week.novelTitle);
+        const isExpanded = expandedPhases.has(phase.id) || isEditing;
 
-              return (
-                <div
-                  key={week.week}
-                  onClick={() => !isEditing && onToggleWeek(week.week)}
-                  className={`grimoire-card group relative bg-zinc-900 p-5 rounded-xl transition-all duration-300 ${!isEditing ? 'cursor-pointer active:scale-[0.99]' : ''} ${
-                    isCompleted && !isEditing ? 'border-success/40 opacity-60' : 'border-zinc-800 hover:border-amber-500/30'
-                  } ${justSealed === week.week ? 'animate-inscribe' : ''}`}
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-3">
-                      {!isEditing && (
-                        <div className={`p-2 rounded-lg transition-colors ${isCompleted ? 'bg-success text-white' : 'bg-zinc-800 text-zinc-500'}`}>
-                          {isCompleted ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+        return (
+          <div key={phase.id} className="flex flex-col gap-6">
+            <button 
+              disabled={isEditing}
+              onClick={() => onTogglePhase(phase.id)}
+              className={`flex justify-between items-baseline border-b-2 border-accent/20 pb-3 mb-2 relative text-left transition-all ${!isEditing ? 'hover:bg-accent/5 -mx-2 px-2 cursor-pointer' : ''}`}
+            >
+               <div className="absolute -bottom-0.5 left-0 w-16 h-0.5 bg-accent" />
+               <div className="flex items-center gap-3">
+                 {!isEditing && (
+                    <span className="text-stone-400 group-hover:text-accent transition-colors">
+                      {isExpanded ? <ChevronDown size={18}/> : <ChevronRight size={18}/>}
+                    </span>
+                 )}
+                 <h3 className="font-serif text-2xl text-primary-text tracking-tight">{phase.label}</h3>
+               </div>
+               <span className="text-xs font-serif italic text-stone-400 tracking-wide">Eras {phase.weeks[0]}—{phase.weeks[1]}</span>
+            </button>
+
+            <div className={`flex flex-col divide-y divide-primary/10 transition-all duration-500 overflow-hidden rounded-sm px-4 ${isExpanded ? 'max-h-[5000px] opacity-100 bg-item-bg/80 border border-accent/20 shadow-sm' : 'max-h-0 opacity-0 pointer-events-none'}`}>
+              {weekItems.map((week) => {
+                const isCompleted = completedWeeks.includes(week.week);
+                const isNextUp = nextUpWeek === week.week;
+                const mangaBook = books.find(b => b.title === week.mangaTitle);
+                const novelBook = books.find(b => b.title === week.novelTitle);
+
+                return (
+                  <div
+                    key={week.week}
+                    onClick={() => !isEditing && onToggleWeek(week.week)}
+                    className={`group py-5 flex items-center justify-between gap-4 sm:gap-6 transition-all duration-500 relative ${!isEditing ? 'cursor-pointer hover:bg-accent/5' : 'bg-item-bg shadow-lg border-l-4 border-accent' } ${isNextUp && !isEditing ? 'bg-accent/5' : ''} -mx-4 px-4 my-2 rounded-sm`}
+                  >
+                    {isNextUp && (
+                       <div className="absolute left-0 top-0 w-1 h-full bg-accent/40" />
+                    )}
+                    
+                    <div className="flex items-start gap-4 sm:gap-6 flex-1">
+                      <div className="flex flex-col items-center">
+                        {isEditing ? (
+                          <input 
+                            type="number" 
+                            value={week.week} 
+                            onChange={(e) => onUpdateWeek(week.week, 'week', parseInt(e.target.value))}
+                            inputMode="numeric"
+                            className="w-16 bg-item-bg border-2 border-accent/30 rounded p-1 text-2xl font-serif font-bold text-accent text-center focus:border-accent outline-none"
+                          />
+                        ) : (
+                          <span className={`text-4xl font-serif font-bold transition-colors duration-500 ${isCompleted ? 'text-stone-200' : isNextUp ? 'text-accent' : 'text-stone-300'}`}>
+                            {week.week}
+                          </span>
+                        )}
+                        {isNextUp && <span className="text-[7px] font-bold text-accent tracking-tighter uppercase mt-[-4px]">Siguiente</span>}
+                      </div>
+
+                      <div className="flex flex-col gap-3 flex-1 mt-1">
+                        <div className="flex items-center gap-2">
+                          {isCompleted && <span className="text-[10px] font-serif italic text-stone-300">Sellada transitoriamente</span>}
+                          {isEditing && isCompleted && <span className="text-[10px] font-serif italic text-accent/60">(Editando sello histórico)</span>}
+                        </div>
+                        
+                        <div className={`grid grid-cols-1 gap-2 transition-all ${isCompleted && !isEditing ? 'opacity-40 grayscale' : 'opacity-100'}`}>
+                          {isEditing ? (
+                             <>
+                               {/* Novel Edit */}
+                               <div className="flex flex-col gap-1 bg-item-bg p-2.5 rounded border border-accent/20 shadow-md transition-all focus-within:ring-2 focus-within:ring-accent/20">
+                                 <div className="flex items-center gap-2">
+                                   <span className="text-xl">📖</span>
+                                   <select 
+                                     value={week.novelTitle} 
+                                     onChange={(e) => onUpdateWeek(week.week, 'novelTitle', e.target.value)}
+                                     className="flex-1 bg-transparent border-0 p-0 text-sm font-serif font-bold text-primary-text focus:ring-0 cursor-pointer appearance-none"
+                                   >
+                                     <option value="">(Sin Novela)</option>
+                                     {books.filter(b => b.type === 'novel').map(b => (
+                                       <option key={b.id} value={b.title} style={{ color: b.color || 'inherit' }}>{b.title}</option>
+                                     ))}
+                                   </select>
+                                 </div>
+                                 <input 
+                                   type="text" 
+                                   value={week.novelSection}
+                                   onChange={(e) => onUpdateWeek(week.week, 'novelSection', e.target.value)}
+                                   className="w-full bg-section-bg mt-1 px-2 py-1.5 rounded border border-accent/30 text-[11px] text-primary-text font-serif font-bold italic uppercase tracking-wider focus:ring-1 focus:ring-accent/50 outline-none placeholder:text-stone-400"
+                                   placeholder="Capítulos / Sección / Tomo..."
+                                 />
+                               </div>
+
+                               {/* Manga Edit */}
+                               <div className="flex flex-col gap-1 bg-item-bg p-2.5 rounded border border-accent/20 shadow-md transition-all focus-within:ring-2 focus-within:ring-accent/20">
+                                 <div className="flex items-center gap-2">
+                                   <span className="text-xl">📚</span>
+                                   <select 
+                                     value={week.mangaTitle} 
+                                     onChange={(e) => onUpdateWeek(week.week, 'mangaTitle', e.target.value)}
+                                     className="flex-1 bg-transparent border-0 p-0 text-sm font-serif font-bold text-primary-text focus:ring-0 cursor-pointer appearance-none"
+                                   >
+                                     <option value="">(Sin Manga)</option>
+                                     {books.filter(b => b.type === 'manga').map(b => (
+                                       <option key={b.id} value={b.title} style={{ color: b.color || 'inherit' }}>{b.title}</option>
+                                     ))}
+                                   </select>
+                                 </div>
+                                 <input 
+                                   type="text" 
+                                   value={week.mangaVols}
+                                   onChange={(e) => onUpdateWeek(week.week, 'mangaVols', e.target.value)}
+                                   className="w-full bg-section-bg mt-1 px-2 py-1.5 rounded border border-accent/30 text-[11px] text-primary-text font-serif font-bold italic uppercase tracking-wider focus:ring-1 focus:ring-accent/50 outline-none placeholder:text-stone-400"
+                                   placeholder="Capítulos / Tomos / Arcos..."
+                                 />
+                               </div>
+                             </>
+                          ) : (
+                             <>
+                               <div className="flex items-center gap-2.5 text-xs text-primary-text/80 bg-item-bg/40 p-1.5 rounded border border-primary/10 shadow-sm">
+                                  <span className="text-lg">{novelBook?.emoji || '📖'}</span>
+                                  <div className="flex flex-col">
+                                    <span className="font-serif font-bold text-primary-text leading-tight">{week.novelTitle || 'Sin título'}</span>
+                                    <span className="text-[10px] text-stone-500 italic uppercase tracking-tighter">{week.novelSection || 'Tomo 1'}</span>
+                                  </div>
+                               </div>
+                               <div className="flex items-center gap-2.5 text-xs text-primary-text/80 bg-item-bg/40 p-1.5 rounded border border-primary/10 shadow-sm">
+                                  <span className="text-lg">{mangaBook?.emoji || '📚'}</span>
+                                  <div className="flex flex-col">
+                                    <span className="font-serif font-bold text-primary-text leading-tight">{week.mangaTitle || 'Sin título'}</span>
+                                    <span className="text-[10px] text-stone-500 italic uppercase tracking-tighter">{week.mangaVols || 'Tomo 1'}</span>
+                                  </div>
+                               </div>
+                             </>
+                          )}
+                        </div>
+                        
+                        {!isEditing && week.tip && (
+                           <p className={`text-[11px] font-serif italic text-stone-400 border-l-2 border-stone-200/50 pl-3 mt-1 leading-relaxed ${isCompleted ? 'opacity-30' : 'opacity-100'}`}>
+                             "{week.tip}"
+                           </p>
+                        )}
+                        
+                         {isEditing && (
+                            <textarea 
+                              value={week.tip} 
+                              onChange={(e) => onUpdateWeek(week.week, 'tip', e.target.value)} 
+                              className="w-full bg-section-bg border border-accent/20 rounded p-2 text-[10px] text-primary-text outline-none resize-none font-serif italic mt-1 focus:border-accent transition-colors shadow-inner" 
+                              placeholder="Inscribe un consejo del archivero para esta semana..." 
+                            />
+                         )}
+                      </div>
+                    </div>
+
+                    <div className="flex-shrink-0 flex items-center justify-center w-24 group/seal">
+                      {isEditing ? (
+                        <button onClick={(e) => { e.stopPropagation(); onDeleteWeek(week.week); }} className="p-3 text-stone-200 hover:text-red-500 hover:bg-red-50 rounded-full transition-all group-hover:text-stone-400"><Trash2 size={20}/></button>
+                      ) : (
+                        <div className="relative w-20 h-20 flex items-center justify-center">
+                          {isCompleted ? (
+                            <>
+                              <div className={`bg-accent text-white rounded-full w-16 h-16 flex flex-col items-center justify-center shadow-lg transform -rotate-12 border-2 border-accent-secondary animate-seal transition-all hover:scale-110 active:scale-95 group-hover/seal:rotate-0 duration-500`}>
+                                 <span className="text-[7px] font-bold tracking-[0.2em] uppercase mb-0.5 opacity-80">ARCHIVOS</span>
+                                 <span className="text-[9px] font-serif font-bold leading-tight tracking-widest text-center px-1">SELLADO</span>
+                                 <div className="mt-1 flex gap-0.5 opacity-50">
+                                   <span className="text-[6px]">✦</span>
+                                   <span className="text-[6px]">✦</span>
+                                   <span className="text-[6px]">✦</span>
+                                 </div>
+                              </div>
+                              {onLogWeek && (
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onLogWeek({
+                                      book: week.novelTitle || week.mangaTitle,
+                                      chapter: `Semana ${week.week}: ${week.novelSection || week.mangaVols}`,
+                                      date: new Date().toISOString().split('T')[0]
+                                    });
+                                  }}
+                                  className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold uppercase tracking-widest text-accent hover:text-accent-secondary transition-colors animate-fade-in"
+                                >
+                                  ✎ Inscribir Crónica
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <button className={`bg-item-bg border-2 border-accent text-accent rounded-sm py-2 px-4 text-[9px] font-bold uppercase tracking-[0.2em] hover:bg-accent hover:text-white transition-all shadow-md group-hover:scale-105 ${isNextUp ? 'ring-4 ring-accent/10' : ''}`}>
+                              SELLAR
+                            </button>
+                          )}
                         </div>
                       )}
-                      <h4 className="font-serif text-lg font-bold">Semana {week.week}</h4>
                     </div>
-                    {isEditing && (
-                      <button onClick={(e) => { e.stopPropagation(); onDeleteWeek(week.week); }} className="text-zinc-600 hover:text-danger-deep p-1.5"><Trash2 size={16}/></button>
-                    )}
-                    {!isEditing && isCompleted && (
-                      <span className={`text-xs font-bold text-success bg-success/10 px-3 py-1 rounded-full tracking-widest border border-success/30 font-serif ${justSealed === week.week ? 'animate-seal' : ''}`}>✦ SELLADO</span>
-                    )}
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                    <AssetBox
-                      label="Novela" color={novelBook?.color}
-                      title={week.novelTitle} section={week.novelSection} emoji={novelBook?.emoji}
-                      isEditing={isEditing} books={books.filter(b => b.type === 'novel')}
-                      onUpdateTitle={(val) => onUpdateWeek(week.week, 'novelTitle', val)}
-                      onUpdateSection={(val) => onUpdateWeek(week.week, 'novelSection', val)}
-                    />
-                    <AssetBox
-                      label="Manga" color={mangaBook?.color}
-                      title={week.mangaTitle} section={week.mangaVols} emoji={mangaBook?.emoji}
-                      isEditing={isEditing} books={books.filter(b => b.type === 'manga')}
-                      onUpdateTitle={(val) => onUpdateWeek(week.week, 'mangaTitle', val)}
-                      onUpdateSection={(val) => onUpdateWeek(week.week, 'mangaVols', val)}
-                    />
-                  </div>
-
-                  {isEditing ? (
-                    <textarea value={week.tip} onChange={(e) => onUpdateWeek(week.week, 'tip', e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded p-2 text-xs text-zinc-400 outline-none resize-none font-serif" placeholder="Consejo del Archivero..." />
-                  ) : (
-                    <p className="text-sm text-zinc-300 italic border-l-2 border-amber-500/40 pl-3 py-1.5 font-serif leading-relaxed">"{week.tip}"</p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-      {isEditing && (
-        <button onClick={onAddWeek} className="py-4 border-2 border-dashed border-zinc-800 text-zinc-600 rounded-xl hover:text-amber-500 transition-all font-serif italic text-sm">+ Forjar Nueva Semana</button>
-      )}
-    </div>
-  );
-}
-
-function ReadingStats({ entries, books }) {
-  const stats = useMemo(() => {
-    if (!entries.length) return null;
-
-    const totalEntries = entries.length;
-    const totalCharacters = new Set(entries.flatMap(e => (e.characters || []).map(c => c.name))).size;
-    const totalPlaces = new Set(entries.flatMap(e => (e.places || []).map(p => p.name))).size;
-    const totalQuotes = entries.reduce((sum, e) => sum + (e.quotes?.length || 0), 0);
-
-    const perBook = {};
-    entries.forEach(e => { perBook[e.book] = (perBook[e.book] || 0) + 1; });
-
-    // Mood distribution
-    const moodCounts = {};
-    entries.forEach(e => { if (e.mood) moodCounts[e.mood] = (moodCounts[e.mood] || 0) + 1; });
-    const topMood = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0];
-
-    // Activity last 7 days
-    const now = new Date();
-    const activity = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      const count = entries.filter(e => e.date === dateStr).length;
-      const dayName = d.toLocaleDateString('es', { weekday: 'short' }).slice(0, 2);
-      activity.push({ day: dayName, count, date: dateStr });
-    }
-    const maxActivity = Math.max(...activity.map(a => a.count), 1);
-
-    const fourWeeksAgo = new Date(now);
-    fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
-    const recentEntries = entries.filter(e => new Date(e.date) >= fourWeeksAgo);
-    const weeklyPace = Math.round((recentEntries.length / 4) * 10) / 10;
-
-    const dates = [...new Set(entries.map(e => e.date))].sort().reverse();
-    let streak = 0;
-    const today = now.toISOString().split('T')[0];
-    let checkDate = new Date(today);
-    for (const d of dates) {
-      const dateStr = checkDate.toISOString().split('T')[0];
-      if (d === dateStr) {
-        streak++;
-        checkDate.setDate(checkDate.getDate() - 1);
-      } else if (d < dateStr) {
-        break;
-      }
-    }
-
-    return { totalEntries, totalCharacters, totalPlaces, totalQuotes, perBook, weeklyPace, streak, moodCounts, topMood, activity, maxActivity };
-  }, [entries]);
-
-  if (!stats) return null;
-
-  return (
-    <div className="flex flex-col gap-4 py-1">
-      {/* Racha — número editorial, no widget */}
-      <div className="flex items-center gap-5">
-        <span className="text-6xl font-serif font-bold text-amber-500 leading-none tabular-nums">{stats.streak}</span>
-        <div className="flex flex-col gap-0.5">
-          <span className="text-sm font-serif font-bold text-heading">
-            {stats.streak === 1 ? 'día de racha' : 'días de racha'}
-          </span>
-          <span className="text-xs text-zinc-500">
-            {stats.weeklyPace} crónicas · semana
-          </span>
-        </div>
-      </div>
-
-      {/* Activity sparkline — last 7 days */}
-      <div className="manuscript-divider" />
-      <div className="flex items-end gap-1.5">
-        {stats.activity.map((a) => (
-          <div key={a.date} className="flex flex-col items-center gap-1 flex-1">
-            <div className="w-full flex justify-center">
-              <div
-                className={`w-full max-w-[20px] rounded-sm transition-all ${a.count > 0 ? '' : 'bg-zinc-800'}`}
-                style={{ height: `${Math.max(4, (a.count / stats.maxActivity) * 32)}px`, ...(a.count > 0 ? { backgroundColor: 'var(--text-accent)', opacity: 0.7 } : {}) }}
-                title={`${a.date}: ${a.count} crónicas`}
-              />
+                );
+              })}
             </div>
-            <span className="text-[9px] text-zinc-600 uppercase font-bold">{a.day}</span>
+            
+            {isEditing && (
+              <button onClick={onAddWeek} className="mt-4 py-4 border-2 border-dashed border-primary/30 text-stone-400 rounded-lg hover:text-accent hover:border-accent/50 transition-all font-serif italic text-sm text-center bg-item-bg/30">
+                + Inscribir nueva semana en este arco histórico
+              </button>
+            )}
           </div>
-        ))}
-      </div>
-
-      {/* Conteos secundarios — texto fluido, sin cajas */}
-      <div className="flex items-center gap-5 flex-wrap border-t border-zinc-800/60 pt-3 text-xs text-zinc-500">
-        <span><span className="text-zinc-200 font-serif font-bold text-sm mr-1">{stats.totalEntries}</span>crónicas</span>
-        <span><span className="text-zinc-200 font-serif font-bold text-sm mr-1">{stats.totalCharacters}</span>personajes</span>
-        <span><span className="text-zinc-200 font-serif font-bold text-sm mr-1">{stats.totalPlaces}</span>lugares</span>
-        <span><span className="text-zinc-200 font-serif font-bold text-sm mr-1">{stats.totalQuotes}</span>citas</span>
-      </div>
-
-      {/* Mood distribution */}
-      {stats.topMood && Object.keys(stats.moodCounts).length > 1 && (
-        <div className="flex flex-col gap-2 border-t border-zinc-800/60 pt-3">
-          <span className="text-[10px] text-zinc-600 uppercase tracking-widest font-bold">Estado dominante</span>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(stats.moodCounts).sort((a, b) => b[1] - a[1]).map(([mood, count]) => (
-              <span key={mood} className={`text-xs px-2.5 py-1 rounded-full border font-bold ${mood === stats.topMood[0] ? 'border-amber-500 text-amber-500 bg-zinc-900' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}`}>
-                {mood} <span className="text-zinc-600 ml-0.5">{count}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Por libro */}
-      {Object.keys(stats.perBook).length > 1 && (
-        <div className="flex flex-col gap-1.5 border-t border-zinc-800/60 pt-3">
-          {Object.entries(stats.perBook).sort((a, b) => b[1] - a[1]).map(([book, count]) => {
-            const bookObj = books.find(b => b.title === book);
-            const pct = Math.round((count / stats.totalEntries) * 100);
-            return (
-              <div key={book} className="flex items-center gap-2">
-                <span className="text-xs text-zinc-400 font-serif truncate flex-1">{bookObj?.emoji} {book}</span>
-                <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                  <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: 'var(--text-accent)', opacity: 0.6 }} />
-                </div>
-                <span className="text-xs text-zinc-300 font-bold w-6 text-right">{count}</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function AssetBox({ label, color, title, section, emoji, isEditing, books, onUpdateTitle, onUpdateSection }) {
-  return (
-    <div className="bg-zinc-950 p-3 rounded-lg border border-zinc-800 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: color || '#1F2937' }} />
-      <span className="text-xs uppercase tracking-[0.2em] text-zinc-500 block mb-1 ml-1">{label}</span>
-      {isEditing ? (
-        <div className="flex flex-col gap-1 ml-1">
-          <select value={title} onChange={(e) => onUpdateTitle(e.target.value)} className="bg-transparent border-0 text-zinc-300 text-xs font-serif outline-none p-0 cursor-pointer">
-            <option value="">(Ninguno)</option>
-            {books.map(b => <option key={b.id || b.title} value={b.title}>{b.emoji} {b.title}</option>)}
-          </select>
-          <input value={section} onChange={(e) => onUpdateSection(e.target.value)} className="bg-transparent border-b border-zinc-800 text-xs text-zinc-500 p-0 outline-none" placeholder="Meta..." />
-        </div>
-      ) : (
-        <>
-          <div className="flex items-center gap-2 ml-1">
-            <span className="text-base">{emoji}</span>
-            <span className="text-sm font-serif text-heading/90 leading-tight">{title}</span>
-          </div>
-          <p className="text-[10px] text-zinc-500 mt-1 ml-1 italic">{section}</p>
-        </>
-      )}
+        );
+      })}
     </div>
   );
 }

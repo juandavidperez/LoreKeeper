@@ -5,6 +5,7 @@ import { MOODS } from '../data/mockData';
 import { externalizePanels } from '../utils/imageStore';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useNotification } from '../hooks/useNotification';
+import { useTheme } from '../context/ThemeContext';
 
 let nextItemId = 0;
 function uid() { return `item-${Date.now()}-${nextItemId++}-${Math.random().toString(36).slice(2, 7)}`; }
@@ -16,30 +17,14 @@ function ensureIds(items) {
 
 export function EntryForm({ books, onSave, onCancel, initialData = null }) {
   const notify = useNotification();
+  const { theme } = useTheme();
   const { recordingField, toggle: toggleRecording, error: speechError, isSupported: speechSupported } = useSpeechRecognition();
 
   const DRAFT_KEY = 'lore-entry-draft';
   const isNewEntry = !initialData;
 
   const [form, setForm] = useState(() => {
-    if (initialData) {
-      return {
-        ...initialData,
-        characters: ensureIds(initialData.characters),
-        places: ensureIds(initialData.places),
-        glossary: ensureIds(initialData.glossary),
-        connections: ensureIds(initialData.connections),
-      };
-    }
-    // Restore draft if available
-    try {
-      const draft = window.localStorage.getItem(DRAFT_KEY);
-      if (draft) {
-        const parsed = JSON.parse(draft);
-        return { ...parsed, characters: ensureIds(parsed.characters), places: ensureIds(parsed.places), glossary: ensureIds(parsed.glossary), connections: ensureIds(parsed.connections) };
-      }
-    } catch { /* ignore */ }
-    return {
+    const defaultState = {
       id: Date.now(),
       date: new Date().toISOString().split('T')[0],
       book: books[0]?.title || '',
@@ -54,6 +39,33 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
       connections: [],
       mangaPanels: []
     };
+
+    if (initialData) {
+      const merged = { ...defaultState, ...initialData };
+      return {
+        ...merged,
+        characters: ensureIds(merged.characters),
+        places: ensureIds(merged.places),
+        glossary: ensureIds(merged.glossary),
+        connections: ensureIds(merged.connections),
+      };
+    }
+    // Restore draft if available
+    try {
+      const draft = window.localStorage.getItem(DRAFT_KEY);
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        const merged = { ...defaultState, ...parsed };
+        return { 
+          ...merged, 
+          characters: ensureIds(merged.characters), 
+          places: ensureIds(merged.places), 
+          glossary: ensureIds(merged.glossary), 
+          connections: ensureIds(merged.connections) 
+        };
+      }
+    } catch { /* ignore */ }
+    return defaultState;
   });
 
   // Auto-save draft for new entries (debounced)
@@ -131,15 +143,18 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
     onCancel();
   };
 
+  const [expressMode, setExpressMode] = useState(!initialData);
   const [isExtracting, setIsExtracting] = useState(false);
+  const isExtractingLock = useRef(false);
   const [openSections, setOpenSections] = useState({
     quotes: true, characters: false, places: false,
     glossary: false, world: false, connections: false, panels: false
   });
 
   const handleAIAutocomplete = async () => {
-    if (!form.reingreso) return;
+    if (!form.reingreso || isExtracting || isExtractingLock.current) return;
     setIsExtracting(true);
+    isExtractingLock.current = true;
     try {
       const prompt = `Analiza: "${form.reingreso}". Extrae Personajes, Lugares, Glosario, Frases memorables y Reglas del Mundo (anotaciones sobre cómo funciona el mundo). Devuelve JSON: { characters: [{name, tags:[], content}], places: [{name, tags:[], content}], glossary: [{name, tags:[], content}], quotes: [string], worldRules: [{name, content}] }.`;
       const result = await callGemini(prompt, "Eres un bibliotecario solemne.");
@@ -153,11 +168,13 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
         worldRules: [...prev.worldRules, ...ensureIds(data.worldRules || [])]
       }));
       setOpenSections(prev => ({ ...prev, characters: true, places: true, quotes: true, world: true }));
+      if (expressMode) setExpressMode(false);
       notify("Conocimientos destilados con éxito.", "success");
     } catch {
       notify("El Oráculo no pudo destilar los conocimientos. Intenta de nuevo.", "error");
     } finally {
       setIsExtracting(false);
+      isExtractingLock.current = false;
     }
   };
 
@@ -209,50 +226,63 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in pb-24 h-full">
-      <div className="flex justify-between items-center bg-zinc-950 p-4 rounded-xl border border-zinc-800 sticky top-16 z-40 backdrop-blur-md">
-        <h3 className="font-serif text-heading text-xl">{initialData ? 'Editar Crónica' : 'Nueva Crónica'}</h3>
-        <div className="flex gap-2">
-          <button onClick={handleCancel} aria-label="Cancelar" className="p-3 text-zinc-500 hover:text-zinc-300"><X size={20}/></button>
-          <button onClick={() => handleSave(form)} aria-label="Guardar crónica" className="p-3 bg-amber-600 text-zinc-950 rounded-lg shadow-lg hover:bg-amber-500 transition-colors"><Save size={20}/></button>
+        <h3 className="font-serif text-primary-text text-2xl tracking-tight">
+          {initialData ? 'Editar Crónica' : expressMode ? 'Crónica Rápida' : 'Nueva Crónica'}
+        </h3>
+        <div className="flex items-center gap-4">
+          <button onClick={handleCancel} aria-label="Cancelar" className="p-2 text-stone-400 hover:text-stone-600 flex items-center justify-center">
+            <X size={20}/>
+          </button>
+          <button 
+            onClick={() => handleSave(form)} 
+            aria-label="Guardar crónica" 
+            className="flex items-center gap-2 px-6 py-2.5 bg-accent text-white rounded-sm hover:bg-accent-secondary active:scale-95 transition-all border border-accent-secondary/30"
+          >
+            <Save size={16}/>
+            <span className="font-bold text-xs uppercase tracking-[0.2em] font-serif">
+              {theme === 'dark' ? 'FORJAR' : 'GUARDAR'}
+            </span>
+          </button>
         </div>
-      </div>
 
       {/* CORE INFO */}
-      <div className="grimoire-card bg-zinc-900 p-5 rounded-xl grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="entry-book" className="text-xs uppercase tracking-widest text-zinc-500 ml-1">Libro Actual</label>
+      <div className="bg-section-bg p-6 rounded-sm grid grid-cols-1 sm:grid-cols-2 gap-6 shadow-inner">
+        <div className="flex flex-col gap-1.5 group">
+          <label htmlFor="entry-book" className="text-[10px] uppercase tracking-[0.2em] font-bold text-accent/60 ml-1">Libro Actual</label>
           <select
             id="entry-book"
             value={form.book} onChange={e => setForm({...form, book: e.target.value})}
-            className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-sm outline-none font-serif text-zinc-300"
+            className="bg-transparent border-0 border-b-2 border-stone-300 py-2 px-1 text-lg outline-none focus:border-accent transition-all font-serif text-primary-text"
           >
             {books.map(b => <option key={b.id || b.title} value={b.title}>{b.emoji} {b.title}</option>)}
           </select>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="entry-chapter" className="text-xs uppercase tracking-widest text-zinc-500 ml-1">Ubicación (Cap/Pág)</label>
+        <div className="flex flex-col gap-1.5 group">
+          <label htmlFor="entry-chapter" className="text-[10px] uppercase tracking-[0.2em] font-bold text-accent/60 ml-1">Ubicación (Cap/Pág)</label>
           <input
             id="entry-chapter"
             value={form.chapter} onChange={e => setForm({...form, chapter: e.target.value})}
-            className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-sm outline-none font-serif text-zinc-300"
+            inputMode="text"
+            enterKeyHint="next"
+            className="bg-transparent border-0 border-b-2 border-stone-300 py-2 px-1 text-lg outline-none focus:border-accent transition-all font-serif text-primary-text placeholder:text-stone-300 italic"
             placeholder="Ej. Cap 12"
           />
         </div>
       </div>
 
       {/* MOOD */}
-      <div className="flex flex-col gap-2">
-        <span className="text-xs uppercase tracking-widest text-zinc-500 ml-1">Estado de ánimo</span>
+      <div className="flex flex-col gap-3 px-1">
+        <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-accent/60 ml-1">Estado de ánimo</span>
         <div className="flex gap-2 flex-wrap">
           {MOODS.map(mood => (
             <button
               key={mood}
               type="button"
               onClick={() => setForm({...form, mood})}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
                 form.mood === mood
-                  ? 'bg-amber-500/10 text-amber-500 border-amber-500'
-                  : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700'
+                  ? 'bg-accent text-white shadow-md scale-105'
+                  : 'bg-item-bg border border-stone-200 text-stone-500 hover:border-accent/50'
               }`}
             >
               {mood}
@@ -262,47 +292,54 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
       </div>
 
       {/* REINGRESO */}
-      <div className="grimoire-card bg-zinc-900 p-5 rounded-xl" style={{ borderColor: 'color-mix(in srgb, var(--text-accent) 30%, transparent)' }}>
-        <div className="flex justify-between items-center mb-2">
-          <label htmlFor="entry-reingreso" className="text-xs font-bold uppercase tracking-widest text-amber-500">Resumen de Reingreso</label>
+      <div className="bg-section-bg p-6 rounded-sm shadow-inner relative overflow-hidden">
+        <div className="flex justify-between items-center mb-4">
+          <label htmlFor="entry-reingreso" className="text-xs font-bold uppercase tracking-[0.15em] text-accent">Resumen de Reingreso</label>
           {speechSupported && (
             <button
               onClick={() => toggleRecording('reingreso', (text) => {
                 setForm(prev => ({ ...prev, reingreso: (prev.reingreso + ' ' + text).trim() }));
               })}
               aria-label={recordingField === 'reingreso' ? 'Detener grabación' : 'Dictar por voz'}
-              className={`p-2.5 rounded-full ${recordingField === 'reingreso' ? 'bg-red-500 text-white animate-pulse' : 'text-zinc-500 hover:bg-zinc-800'}`}
+              className={`p-3 rounded-full transition-all flex items-center justify-center min-w-[48px] min-h-[48px] ${recordingField === 'reingreso' ? 'bg-red-500 text-white animate-pulse' : 'text-stone-400 hover:text-accent'}`}
             >
-              <Mic size={14}/>
+              <Mic size={18}/>
             </button>
           )}
         </div>
         {speechError && (
-          <p className="text-xs text-danger-deep mb-2 italic">{speechError}</p>
+          <p className="text-xs text-red-600 mb-2 italic font-serif">{speechError}</p>
         )}
         <textarea
           id="entry-reingreso"
           value={form.reingreso} onChange={e => setForm({...form, reingreso: e.target.value})}
-          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-4 text-sm outline-none font-serif leading-relaxed h-28 italic text-zinc-300"
+          inputMode="text"
+          enterKeyHint="enter"
+          className="w-full bg-transparent border-0 border-b-2 border-stone-300 py-2 px-1 text-lg outline-none focus:border-accent transition-all font-serif leading-relaxed h-32 italic text-primary-text placeholder:text-stone-300"
           placeholder="¿Qué sombras o luces has encontrado hoy?..."
         />
-        <button onClick={handleAIAutocomplete} disabled={isExtracting || !form.reingreso?.trim()} className="mt-4 flex items-center justify-center gap-2 w-full py-3 bg-zinc-950 text-amber-500 border rounded-xl font-bold font-serif transition-all disabled:opacity-40 disabled:cursor-default" style={{ borderColor: 'color-mix(in srgb, var(--text-accent) 25%, transparent)' }}>
-          {isExtracting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-          Destilar conocimientos con IA
+        <button 
+          onClick={handleAIAutocomplete} 
+          disabled={isExtracting || !form.reingreso?.trim()} 
+          className="mt-6 flex items-center justify-center gap-2 w-full py-4 bg-app-bg text-accent border border-accent/20 rounded-sm font-bold font-serif tracking-wide hover:bg-accent hover:text-white transition-all disabled:opacity-40 disabled:cursor-default shadow-sm"
+        >
+          {isExtracting ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+          <span>Destilar conocimientos con IA</span>
         </button>
       </div>
 
+
       {/* DYNAMIC SECTIONS */}
-      <div className="flex flex-col gap-3">
+      {!expressMode && <div className="flex flex-col gap-3">
         {/* FRASES */}
         <EntitySection
-          title="Frases Memorables" icon={<Plus size={14}/>}
+          title="Frase Memorable" icon={<Plus size={14}/>}
           isOpen={openSections.quotes} onToggle={() => setOpenSections({...openSections, quotes: !openSections.quotes})}
           onAdd={() => setForm({...form, quotes: [...form.quotes, '']})}
         >
           {form.quotes.map((q, i) => (
-            <div key={i} className="bg-zinc-950 p-4 rounded-lg border border-zinc-800 mb-2 flex flex-col gap-2 relative border-l-2 border-l-amber-500/40">
-              <button onClick={() => setForm({...form, quotes: form.quotes.filter((_, idx) => idx !== i)})} aria-label="Eliminar" className="absolute top-2 right-2 p-1.5 text-zinc-500 hover:text-danger-deep"><Trash2 size={14}/></button>
+            <div key={i} className="bg-item-bg p-5 rounded-sm border-l-4 border-l-accent/40 mb-3 flex flex-col gap-2 relative shadow-sm transition-all hover:shadow-md">
+              <button onClick={() => setForm({...form, quotes: form.quotes.filter((_, idx) => idx !== i)})} aria-label="Eliminar" className="absolute top-3 right-3 p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
               <textarea
                 value={q}
                 onChange={e => {
@@ -311,7 +348,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
                   setForm({...form, quotes: newQuotes});
                 }}
                 placeholder="Escribe la frase..."
-                className="bg-transparent text-xs text-zinc-400 outline-none resize-none h-16 font-serif italic"
+                className="bg-transparent border-0 border-b border-primary/20 text-sm text-primary-text outline-none resize-none h-20 font-serif italic py-1 focus:border-accent/30 transition-all"
               />
             </div>
           ))}
@@ -324,11 +361,11 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           onAdd={() => addItem('characters', { name: '', tags: '', content: '' })}
         >
           {form.characters.map((c) => (
-            <div key={c.id} className="bg-zinc-950 p-4 rounded-lg border border-zinc-800 mb-2 flex flex-col gap-2 relative border-l-2 border-l-entity-character/40">
-              <button onClick={() => removeItem('characters', c.id)} aria-label="Eliminar" className="absolute top-2 right-2 p-1.5 text-zinc-500 hover:text-danger-deep"><Trash2 size={14}/></button>
-              <input value={c.name} onChange={e => updateItem('characters', c.id, 'name', e.target.value)} placeholder="Nombre del ser..." className="bg-transparent border-b border-zinc-800 text-sm font-bold text-heading outline-none pb-1" />
-              <input value={c.tags} onChange={e => updateItem('characters', c.id, 'tags', e.target.value.split(',').map(t => t.trim()).filter(Boolean))} placeholder="Etiquetas (separadas por coma)..." className="bg-transparent text-xs text-zinc-500 outline-none" />
-              <textarea value={c.content} onChange={e => updateItem('characters', c.id, 'content', e.target.value)} placeholder="Observación..." className="bg-transparent text-xs text-zinc-400 outline-none resize-none h-16 font-serif" />
+            <div key={c.id} className="bg-item-bg p-5 rounded-sm border-l-4 border-l-entity-character/40 mb-3 flex flex-col gap-3 relative shadow-sm hover:shadow-md transition-all">
+              <button onClick={() => removeItem('characters', c.id)} aria-label="Eliminar" className="absolute top-3 right-3 p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
+              <input value={c.name} onChange={e => updateItem('characters', c.id, 'name', e.target.value)} placeholder="Nombre del ser..." className="bg-transparent border-0 border-b-2 border-primary-text/10 text-lg font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
+              <input value={c.tags} onChange={e => updateItem('characters', c.id, 'tags', e.target.value.split(',').map(t => t.trim()).filter(Boolean))} placeholder="Etiquetas (separadas por coma)..." className="bg-transparent border-0 border-b border-primary-text/5 text-xs text-stone-400 outline-none focus:border-accent/20 transition-all font-serif italic" />
+              <textarea value={c.content} onChange={e => updateItem('characters', c.id, 'content', e.target.value)} placeholder="Observación..." className="bg-transparent border-0 border-b border-primary-text/5 text-sm text-primary-text/70 outline-none resize-none h-16 font-serif focus:border-accent/20 transition-all" />
             </div>
           ))}
         </EntitySection>
@@ -340,10 +377,10 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           onAdd={() => addItem('places', { name: '', tags: '', content: '' })}
         >
           {form.places.map((p) => (
-            <div key={p.id} className="bg-zinc-950 p-4 rounded-lg border border-zinc-800 mb-2 flex flex-col gap-2 relative border-l-2 border-l-entity-place/40">
-              <button onClick={() => removeItem('places', p.id)} aria-label="Eliminar" className="absolute top-2 right-2 p-1.5 text-zinc-500 hover:text-danger-deep"><Trash2 size={14}/></button>
-              <input value={p.name} onChange={e => updateItem('places', p.id, 'name', e.target.value)} placeholder="Nombre del paraje..." className="bg-transparent border-b border-zinc-800 text-sm font-bold text-heading outline-none pb-1" />
-              <textarea value={p.content} onChange={e => updateItem('places', p.id, 'content', e.target.value)} placeholder="Atmósfera o importancia..." className="bg-transparent text-xs text-zinc-400 outline-none resize-none h-12 font-serif" />
+            <div key={p.id} className="bg-item-bg p-5 rounded-sm border-l-4 border-l-entity-place/40 mb-3 flex flex-col gap-3 relative shadow-sm hover:shadow-md transition-all">
+              <button onClick={() => removeItem('places', p.id)} aria-label="Eliminar" className="absolute top-3 right-3 p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
+              <input value={p.name} onChange={e => updateItem('places', p.id, 'name', e.target.value)} placeholder="Nombre del paraje..." className="bg-transparent border-0 border-b-2 border-primary/20 text-lg font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
+              <textarea value={p.content} onChange={e => updateItem('places', p.id, 'content', e.target.value)} placeholder="Atmósfera o importancia..." className="bg-transparent border-0 border-b border-primary/10 text-sm text-primary-text/70 outline-none resize-none h-12 font-serif focus:border-accent/20 transition-all" />
             </div>
           ))}
         </EntitySection>
@@ -355,10 +392,10 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           onAdd={() => addItem('glossary', { name: '', tags: '', content: '' })}
         >
           {form.glossary.map((g) => (
-            <div key={g.id} className="bg-zinc-950 p-4 rounded-lg border border-zinc-800 mb-2 flex flex-col gap-2 relative border-l-2 border-l-oracle/40">
-              <button onClick={() => removeItem('glossary', g.id)} aria-label="Eliminar" className="absolute top-2 right-2 p-1.5 text-zinc-500 hover:text-danger-deep"><Trash2 size={14}/></button>
-              <input value={g.name} onChange={e => updateItem('glossary', g.id, 'name', e.target.value)} placeholder="Término o pregunta..." className="bg-transparent border-b border-zinc-800 text-sm font-bold text-heading outline-none pb-1" />
-              <textarea value={g.content} onChange={e => updateItem('glossary', g.id, 'content', e.target.value)} placeholder="Significado o duda persistente..." className="bg-transparent text-xs text-zinc-400 outline-none resize-none h-12 font-serif" />
+            <div key={g.id} className="bg-item-bg p-5 rounded-sm border-l-4 border-l-oracle/40 mb-3 flex flex-col gap-3 relative shadow-sm hover:shadow-md transition-all">
+              <button onClick={() => removeItem('glossary', g.id)} aria-label="Eliminar" className="absolute top-3 right-3 p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
+              <input value={g.name} onChange={e => updateItem('glossary', g.id, 'name', e.target.value)} placeholder="Término o pregunta..." className="bg-transparent border-0 border-b-2 border-primary/20 text-lg font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
+              <textarea value={g.content} onChange={e => updateItem('glossary', g.id, 'content', e.target.value)} placeholder="Significado o duda persistente..." className="bg-transparent border-0 border-b border-primary/10 text-sm text-primary-text/70 outline-none resize-none h-12 font-serif focus:border-accent/20 transition-all" />
             </div>
           ))}
         </EntitySection>
@@ -370,43 +407,44 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           onAdd={() => addItem('worldRules', { name: '', content: '' })}
         >
           {form.worldRules.map((w) => (
-            <div key={w.id} className="bg-zinc-950 p-4 rounded-lg border border-zinc-800 mb-2 flex flex-col gap-2 relative border-l-2 border-l-entity-rule/40">
-              <button onClick={() => removeItem('worldRules', w.id)} aria-label="Eliminar" className="absolute top-2 right-2 p-1.5 text-zinc-500 hover:text-danger-deep"><Trash2 size={14}/></button>
-              <input value={w.name} onChange={e => updateItem('worldRules', w.id, 'name', e.target.value)} placeholder="Concepto (ej. El Chakra)..." className="bg-transparent border-b border-zinc-800 text-sm font-bold text-heading outline-none pb-1" />
-              <textarea value={w.content} onChange={e => updateItem('worldRules', w.id, 'content', e.target.value)} placeholder="Explicación de la regla..." className="bg-transparent text-xs text-zinc-400 outline-none resize-none h-16 font-serif" />
+            <div key={w.id} className="bg-item-bg p-5 rounded-sm border-l-4 border-l-entity-rule/40 mb-3 flex flex-col gap-3 relative shadow-sm hover:shadow-md transition-all">
+              <button onClick={() => removeItem('worldRules', w.id)} aria-label="Eliminar" className="absolute top-3 right-3 p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
+              <input value={w.name} onChange={e => updateItem('worldRules', w.id, 'name', e.target.value)} placeholder="Concepto (ej. El Chakra)..." className="bg-transparent border-0 border-b-2 border-primary/20 text-lg font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
+              <textarea value={w.content} onChange={e => updateItem('worldRules', w.id, 'content', e.target.value)} placeholder="Explicación de la regla..." className="bg-transparent border-0 border-b border-primary/10 text-sm text-primary-text/70 outline-none resize-none h-16 font-serif focus:border-accent/20 transition-all" />
             </div>
           ))}
         </EntitySection>
 
         {/* CONNECTIONS */}
-        <div className="grimoire-card bg-zinc-900 rounded-xl overflow-hidden">
-          <div className="w-full flex justify-between items-center p-4">
-            <button onClick={() => setOpenSections({...openSections, connections: !openSections.connections})} className="flex items-center gap-3">
-              <LinkIcon size={14} className="text-amber-500/60" />
-              <span className="font-serif text-xs font-bold text-zinc-400 uppercase tracking-widest">Conexiones Multiversales</span>
+        <div className="bg-section-bg rounded-sm overflow-hidden shadow-inner border border-primary/10">
+          <div className="w-full flex justify-between items-center p-5">
+            <button onClick={() => setOpenSections({...openSections, connections: !openSections.connections})} className="flex items-center gap-4">
+              <div className={`w-6 h-6 flex items-center justify-center rounded-sm transition-all shadow-sm ${openSections.connections ? 'bg-accent text-white rotate-0' : 'bg-item-bg text-stone-400 -rotate-90'}`}>
+                <ChevronDown size={14} strokeWidth={3} />
+              </div>
+              <span className="font-serif text-[10px] sm:text-xs font-bold text-accent uppercase tracking-[0.2em]">Conexiones Multiversales</span>
             </button>
-            <button onClick={() => addItem('connections', { bookTitles: [], description: '' })} className="p-2.5 bg-zinc-800 text-amber-500 rounded-full hover:bg-zinc-700 transition-colors">
+            <button onClick={() => addItem('connections', { bookTitles: [], description: '' })} className="w-10 h-10 bg-item-bg text-accent rounded-full hover:bg-accent hover:text-white transition-all shadow-sm border border-accent/10 flex items-center justify-center">
               <Plus size={14}/>
             </button>
           </div>
           {openSections.connections && (
-            <div className="p-4 pt-0 flex flex-col gap-4">
+            <div className="px-5 pb-5 flex flex-col gap-4">
               {form.connections.length === 0 && (
-                <p className="text-xs text-zinc-600 italic leading-relaxed text-center py-4">¿Este relato resuena con otros mundos? Añade una conexión para entrelazar destinos.</p>
+                <p className="text-xs text-stone-500 italic leading-relaxed text-center py-6 font-serif">¿Este relato resuena con otros mundos? Añade una conexión para entrelazar destinos.</p>
               )}
               {form.connections.map((conn) => (
-                <div key={conn.id} className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 flex flex-col gap-3 relative group/conn">
-                  <button onClick={() => removeItem('connections', conn.id)} className="absolute top-3 right-3 text-zinc-500 hover:text-danger-deep opacity-0 group-hover/conn:opacity-100 transition-all"><Trash2 size={14}/></button>
+                <div key={conn.id} className="bg-item-bg p-5 rounded-sm flex flex-col gap-4 relative group/conn shadow-sm border border-primary/5">
+                  <button onClick={() => removeItem('connections', conn.id)} className="absolute top-4 right-4 text-stone-300 hover:text-red-500 opacity-0 group-hover/conn:opacity-100 transition-all"><Trash2 size={16}/></button>
 
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Libros Vinculados</label>
-                    <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1 mt-1">
+                  <div className="flex flex-col gap-3">
+                    <label className="text-[10px] uppercase tracking-widest text-stone-400 font-bold">Libros Vinculados</label>
+                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-1">
                       {books.filter(b => b.title !== form.book).map(b => (
                         <button
                           key={b.id || b.title}
                           onClick={() => toggleBookInConnection(conn.id, b.title)}
-                          className={`px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${conn.bookTitles?.includes(b.title) ? 'text-amber-500 border-amber-500' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700'}`}
-                          style={conn.bookTitles?.includes(b.title) ? { backgroundColor: 'color-mix(in srgb, var(--text-accent) 15%, transparent)' } : undefined}
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${conn.bookTitles?.includes(b.title) ? 'bg-accent text-white border-accent' : 'bg-item-bg border-primary/30 text-stone-500 hover:border-accent/30'}`}
                         >
                           {b.emoji} {b.title}
                         </button>
@@ -414,11 +452,11 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1.5 pt-2 border-t border-zinc-900">
-                    <label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Naturaleza del Entrelazamiento</label>
+                  <div className="flex flex-col gap-2 pt-4 border-t border-stone-100">
+                    <label className="text-[10px] uppercase tracking-widest text-stone-400 font-bold">Naturaleza del Entrelazamiento</label>
                     <textarea
                       value={conn.description} onChange={e => updateItem('connections', conn.id, 'description', e.target.value)}
-                      className="bg-transparent text-xs text-zinc-400 outline-none resize-none h-16 font-serif leading-relaxed italic"
+                      className="bg-transparent text-sm text-primary-text outline-none resize-none h-20 font-serif leading-relaxed italic py-1 border-0 border-b border-primary/10 focus:border-accent/20 transition-all"
                       placeholder="Describe la razón de esta conexión..."
                     />
                   </div>
@@ -430,26 +468,27 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
 
         {/* MANGA PANELS - CONDITIONAL */}
         {books.find(b => b.title === form.book)?.type === 'manga' && (
-          <div className="grimoire-card bg-zinc-900 rounded-xl overflow-hidden animate-fade-in">
-            <button onClick={() => setOpenSections({...openSections, panels: !openSections.panels})} className="w-full flex justify-between items-center p-4 hover:bg-zinc-800/50 transition-colors">
-              <div className="flex items-center gap-3">
-                <ImageIcon size={14} className="text-zinc-500" />
-                <span className="font-serif text-xs font-bold text-zinc-400 uppercase tracking-widest">Paneles de Impacto</span>
+          <div className="bg-section-bg rounded-sm overflow-hidden shadow-inner">
+            <button onClick={() => setOpenSections({...openSections, panels: !openSections.panels})} className="w-full flex justify-between items-center p-5 transition-colors">
+              <div className="flex items-center gap-4">
+                <div className={`w-6 h-6 flex items-center justify-center rounded-sm transition-all shadow-sm ${openSections.panels ? 'bg-accent text-white rotate-0' : 'bg-item-bg text-stone-400 -rotate-90'}`}>
+                  <ChevronDown size={14} strokeWidth={3} />
+                </div>
+                <span className="font-serif text-[10px] sm:text-xs font-bold text-accent uppercase tracking-[0.2em]">Paneles de Impacto</span>
               </div>
-              {openSections.panels ? <ChevronUp size={14} className="text-zinc-600" /> : <ChevronDown size={14} className="text-zinc-600" />}
             </button>
             {openSections.panels && (
-              <div className="p-4 pt-0">
-                <div className="grid grid-cols-2 gap-3 mb-2">
+              <div className="px-5 pb-5">
+                <div className="grid grid-cols-2 gap-4 mb-2">
                   {form.mangaPanels.map((img, i) => (
-                    <div key={i} className="relative aspect-video bg-black rounded-lg overflow-hidden border border-zinc-800 group/panel shadow-inner">
-                      <img src={img} loading="lazy" className="w-full h-full object-cover opacity-80 group-hover/panel:opacity-100 transition-opacity" alt={`Panel de manga ${i + 1}`} />
-                      <button onClick={() => setForm({...form, mangaPanels: form.mangaPanels.filter((_, idx) => idx !== i)})} className="absolute top-2 right-2 bg-black/80 rounded-full p-1.5 text-zinc-500 hover:text-danger-deep shadow-lg group-hover/panel:scale-110 transition-all"><X size={12}/></button>
+                    <div key={i} className="relative aspect-video bg-black rounded-sm overflow-hidden border border-stone-200 group/panel shadow-md">
+                      <img src={img} loading="lazy" className="w-full h-full object-cover opacity-90 group-hover/panel:opacity-100 transition-opacity" alt={`Panel de manga ${i + 1}`} />
+                      <button onClick={() => setForm({...form, mangaPanels: form.mangaPanels.filter((_, idx) => idx !== i)})} className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded-full p-2 text-white hover:bg-red-600 transition-all group-hover/panel:scale-110 shadow-lg"><X size={14}/></button>
                     </div>
                   ))}
-                  <label className="aspect-video bg-zinc-950 border-2 border-dashed border-zinc-800 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-amber-500 transition-all group/upload">
-                    <Plus size={24} className="text-zinc-500 group-hover/upload:text-amber-500 transition-colors" />
-                    <span className="text-[10px] text-zinc-700 uppercase mt-2 tracking-widest font-bold group-hover/upload:text-amber-500 text-center">Añadir Panel</span>
+                  <label className="aspect-video bg-item-bg border-2 border-dashed border-stone-300 rounded-sm flex flex-col items-center justify-center cursor-pointer hover:border-accent transition-all group/upload shadow-sm">
+                    <Plus size={28} className="text-stone-300 group-hover/upload:text-accent transition-colors" />
+                    <span className="text-[10px] text-stone-400 uppercase mt-2 tracking-[0.2em] font-bold group-hover/upload:text-accent text-center px-2">Añadir Panel</span>
                     <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                   </label>
                 </div>
@@ -457,26 +496,37 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
             )}
           </div>
         )}
-      </div>
+      </div>}
+
+      {/* EXPRESS MODE EXPAND */}
+      {expressMode && (
+        <button
+          onClick={() => setExpressMode(false)}
+          className="flex items-center justify-center gap-3 py-5 text-sm text-accent hover:text-accent-secondary font-serif italic transition-all bg-header-bg rounded-sm border border-accent/10 shadow-sm mx-1"
+        >
+          <Plus size={16} />
+          <span>Expandir al grimorio completo</span>
+        </button>
+      )}
     </div>
   );
 }
 
 function EntitySection({ title, icon, isOpen, onToggle, onAdd, children }) {
   return (
-    <div className="grimoire-card bg-zinc-900 rounded-xl overflow-hidden">
-      <div className="w-full flex justify-between items-center p-4">
-        <button onClick={onToggle} aria-expanded={isOpen} className="flex flex-1 items-center gap-3">
-          <div className="w-4 h-4 flex items-center justify-center bg-zinc-800 rounded text-[10px] text-zinc-500">
-            {isOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+    <div className="bg-section-bg rounded-sm overflow-hidden shadow-inner">
+      <div className="w-full flex justify-between items-center p-5">
+        <button onClick={onToggle} aria-expanded={isOpen} className="flex flex-1 items-center gap-4">
+          <div className={`w-6 h-6 flex items-center justify-center rounded-sm transition-all shadow-sm ${isOpen ? 'bg-accent text-white rotate-0' : 'bg-item-bg text-stone-400 -rotate-90'}`}>
+            <ChevronDown size={14} strokeWidth={3} />
           </div>
-          <span className="font-serif text-xs font-bold text-zinc-400 uppercase tracking-widest">{title}</span>
+          <span className="font-serif text-[10px] sm:text-xs font-bold text-accent theme-uppercase tracking-[0.2em]">{title}</span>
         </button>
-        <button onClick={(e) => { e.stopPropagation(); onAdd(); }} className="p-2.5 bg-zinc-800 text-amber-500 rounded-full hover:bg-zinc-700 transition-colors">
+        <button onClick={(e) => { e.stopPropagation(); onAdd(); }} className="w-10 h-10 bg-item-bg text-accent rounded-full hover:bg-accent hover:text-white transition-all shadow-sm border border-accent/10 flex items-center justify-center">
           {icon}
         </button>
       </div>
-      {isOpen && <div className="p-4 pt-0 flex flex-col gap-2">{children}</div>}
+      {isOpen && <div className="px-5 pb-5 flex flex-col gap-1">{children}</div>}
     </div>
   );
 }

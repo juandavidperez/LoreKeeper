@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Plus, History, Search, Filter, User, Globe, HelpCircle, Edit3, Trash2, Link as LinkIcon, Image as ImageIcon, CalendarDays, CheckSquare, Square, X, Share2 } from 'lucide-react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { Plus, Search, User, Globe, HelpCircle, Edit3, Trash2, Link as LinkIcon, Image as ImageIcon, CalendarDays, CheckSquare, Square, X, Share2, ChevronDown, Shield, ScrollText, Sparkles } from 'lucide-react';
 import { ShareQuote } from '../components/ShareQuote';
 import { EntryForm } from './EntryForm';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
@@ -10,9 +10,10 @@ import { ConfirmModal } from '../components/ConfirmModal';
 let _nextId = 0;
 function uid() { return `entry-${Date.now()}-${_nextId++}-${Math.random().toString(36).slice(2, 7)}`; }
 
-export function ReadingLog({ onNavigateToEntity }) {
-  const { entries, setEntries, books } = useLorekeeperState();
+export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData, onClearPrefilled }) {
+  const { entries, setEntries, books, archive } = useLorekeeperState();
   const notify = useNotification();
+
   const [editingId, setEditingId] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -27,6 +28,8 @@ export function ReadingLog({ onNavigateToEntity }) {
   const [selected, setSelected] = useState(new Set());
   const [shareQuote, setShareQuote] = useState(null);
   const [showDateRange, setShowDateRange] = useState(false);
+  const [expandedEntries, setExpandedEntries] = useState(new Set());
+  const hasInitializedExpansion = useRef(false);
   const PAGE_SIZE = 20;
 
   const setSearchTerm = useCallback((v) => { setSearchTermRaw(v); setVisibleCount(PAGE_SIZE); }, []);
@@ -56,6 +59,31 @@ export function ReadingLog({ onNavigateToEntity }) {
     return result;
   }, [entries, searchTerm, bookFilter, dateFrom, dateTo]);
 
+  // Handle prefilled data from ReadingPlan
+  useEffect(() => {
+    if (prefilledData) {
+      setIsAdding(true);
+      setEditingId(null);
+      // We keep the prefilledData as it's passed below to EntryForm
+    }
+  }, [prefilledData]);
+
+  // Initial expansion: open the first entry only once on load
+  useEffect(() => {
+    if (filteredEntries.length > 0 && !hasInitializedExpansion.current) {
+      setExpandedEntries(new Set([filteredEntries[0].id]));
+      hasInitializedExpansion.current = true;
+    }
+  }, [filteredEntries]);
+
+  const toggleEntry = useCallback((id) => {
+    setExpandedEntries(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
   const visibleEntries = filteredEntries.slice(0, visibleCount);
   const hasMore = visibleCount < filteredEntries.length;
 
@@ -77,6 +105,7 @@ export function ReadingLog({ onNavigateToEntity }) {
     setIsAdding(false);
     setEditingId(null);
     setPendingSave(null);
+    if (onClearPrefilled) onClearPrefilled();
   };
 
   const saveEntry = (newEntry) => {
@@ -132,12 +161,23 @@ export function ReadingLog({ onNavigateToEntity }) {
   };
 
   if (isAdding) {
-    const initialData = editingId ? entries.find(e => e.id === editingId) : null;
-    return <EntryForm books={books} onSave={saveEntry} onCancel={() => { setIsAdding(false); setEditingId(null); }} initialData={initialData} />;
+    const initialData = editingId ? entries.find(e => e.id === editingId) : prefilledData;
+    return (
+      <EntryForm 
+        books={books} 
+        onSave={saveEntry} 
+        onCancel={() => { 
+          setIsAdding(false); 
+          setEditingId(null); 
+          if (onClearPrefilled) onClearPrefilled();
+        }} 
+        initialData={initialData} 
+      />
+    );
   }
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in pb-24">
+    <div className="flex flex-col gap-8 animate-fade-in pb-28">
       {shareQuote && (
         <ShareQuote
           quote={shareQuote.quote}
@@ -177,53 +217,56 @@ export function ReadingLog({ onNavigateToEntity }) {
       )}
 
       {/* HEADER */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-serif text-heading">Bitácora</h2>
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-4xl font-serif text-primary-text tracking-tight">Crónicas</h2>
         {bulkMode && (
           <div className="flex items-center gap-2">
             <button onClick={bulkDelete} disabled={selected.size === 0} className="px-4 py-2 text-xs font-bold uppercase tracking-widest bg-danger-deep hover:bg-danger-deep/80 text-white rounded-lg transition-colors disabled:opacity-40">
               Eliminar ({selected.size})
             </button>
-            <button onClick={exitBulk} aria-label="Salir de selección" className="p-2 text-zinc-500 hover:text-zinc-300">
+            <button onClick={exitBulk} aria-label="Salir de selección" className="p-2 text-stone-400 hover:text-stone-600">
               <X size={20} />
             </button>
           </div>
         )}
         {!bulkMode && entries.length > 1 && (
-          <button onClick={() => setBulkMode(true)} aria-label="Selección múltiple" className="p-2 text-zinc-500 hover:text-amber-500 transition-colors">
+          <button onClick={() => setBulkMode(true)} aria-label="Selección múltiple" className="p-2 text-stone-400 hover:text-accent transition-colors">
             <CheckSquare size={20} />
           </button>
         )}
       </div>
 
       {/* FLOATING FAB — always accessible */}
+      {/* WAX SEAL FAB */}
       {!bulkMode && (
         <button
           onClick={() => setIsAdding(true)}
           aria-label="Nueva crónica"
-          className="fixed bottom-20 right-4 z-[110] bg-amber-600 hover:bg-amber-500 text-zinc-950 p-4 rounded-full shadow-2xl transition-all active:scale-95"
+          className="fixed bottom-24 right-6 z-[110] bg-accent text-white w-16 h-16 rounded-full shadow-md transition-all active:scale-90 flex flex-col items-center justify-center border-2 border-accent-secondary"
         >
-          <Plus size={24} />
+          <span className="text-[7px] font-bold tracking-[0.2em] mb-0.5">NUEVA</span>
+          <Plus size={20} strokeWidth={3} />
         </button>
       )}
 
       {/* SEARCH & FILTER */}
       {entries.length > 0 && (
-        <div className="flex flex-col gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+        <div className="flex flex-col gap-4">
+          <div className="relative group">
+            <Search className="absolute left-0 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-accent transition-colors" size={18} />
             <input
-              type="text" placeholder="Buscar en tus crónicas..."
+              type="text" placeholder="Inscribir búsqueda..."
               aria-label="Buscar en tus crónicas"
               value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 pl-10 pr-4 text-sm outline-none focus:border-amber-500/50 transition-all font-serif italic"
+              inputMode="search"
+              enterKeyHint="search"
+              className="w-full bg-transparent border-b-2 border-accent/40 py-3 pl-8 pr-4 text-lg outline-none focus:border-accent transition-all font-serif italic text-primary-text placeholder:text-stone-400/60"
             />
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            <Filter size={14} className="text-zinc-600 flex-shrink-0" />
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
             <button
               onClick={() => setBookFilter('todos')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex-shrink-0 ${bookFilter === 'todos' ? 'bg-amber-500 text-zinc-950 border-amber-500' : 'bg-zinc-900 border-zinc-800 text-zinc-500'}`}
+              className={`px-4 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest border transition-all flex-shrink-0 ${bookFilter === 'todos' ? 'bg-accent text-zinc-950 border-accent shadow-sm' : 'bg-item-bg border-primary/30 text-stone-500 hover:border-accent/40'}`}
             >
               Todos
             </button>
@@ -231,15 +274,14 @@ export function ReadingLog({ onNavigateToEntity }) {
               <button
                 key={b.id || b.title}
                 onClick={() => setBookFilter(b.title)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex-shrink-0 ${bookFilter === b.title ? 'bg-amber-600/20 border-amber-500/50 text-amber-400' : 'bg-zinc-950 border-zinc-800 text-zinc-600'}`}
+                className={`px-4 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest border transition-all flex-shrink-0 ${bookFilter === b.title ? 'bg-header-bg border-accent text-accent shadow-inner' : 'bg-item-bg border-primary/30 text-stone-500 hover:border-accent/40'}`}
               >
                 {b.emoji} {b.title}
               </button>
             ))}
-            {/* Date range toggle */}
             <button
               onClick={() => setShowDateRange(prev => !prev)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex-shrink-0 ${(dateFrom || dateTo) ? 'border-amber-500/50 text-amber-400 bg-amber-600/20' : 'bg-zinc-950 border-zinc-800 text-zinc-600 hover:border-zinc-700'}`}
+              className={`px-4 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest border transition-all flex-shrink-0 ${(dateFrom || dateTo) ? 'bg-header-bg border-accent text-accent' : 'bg-item-bg border-primary/30 text-stone-500 hover:border-accent/40'}`}
             >
               <CalendarDays size={12} className="inline mr-1" />
               {(dateFrom || dateTo) ? `${dateFrom || '…'} — ${dateTo || '…'}` : 'Fechas'}
@@ -247,21 +289,21 @@ export function ReadingLog({ onNavigateToEntity }) {
           </div>
           {/* DATE RANGE — collapsed by default */}
           {showDateRange && (
-            <div className="flex items-center gap-2 animate-fade-in">
+            <div className="flex items-center gap-3 animate-fade-in bg-header-bg p-3 rounded-lg border border-stone-200/50">
               <input
                 type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setVisibleCount(PAGE_SIZE); }}
                 aria-label="Fecha desde"
-                className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg py-2 px-3 text-xs text-zinc-400 outline-none focus:border-amber-500/50 font-serif"
+                className="flex-1 bg-item-bg/50 border border-stone-200 rounded-md py-2 px-3 text-xs text-primary-text outline-none focus:border-accent font-serif"
               />
-              <span className="text-zinc-600 text-xs">—</span>
+              <span className="text-stone-400 text-xs">—</span>
               <input
                 type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setVisibleCount(PAGE_SIZE); }}
                 aria-label="Fecha hasta"
-                className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg py-2 px-3 text-xs text-zinc-400 outline-none focus:border-amber-500/50 font-serif"
+                className="flex-1 bg-item-bg/50 border border-stone-200 rounded-md py-2 px-3 text-xs text-primary-text outline-none focus:border-accent font-serif"
               />
               {(dateFrom || dateTo) && (
-                <button onClick={() => { setDateFrom(''); setDateTo(''); }} aria-label="Limpiar fechas" className="p-1.5 text-zinc-600 hover:text-amber-500">
-                  <X size={14} />
+                <button onClick={() => { setDateFrom(''); setDateTo(''); }} aria-label="Limpiar fechas" className="p-3 text-stone-400 hover:text-accent flex items-center justify-center min-w-[44px] min-h-[44px]">
+                  <X size={18} />
                 </button>
               )}
             </div>
@@ -271,9 +313,9 @@ export function ReadingLog({ onNavigateToEntity }) {
 
       <div className="flex flex-col gap-6">
         {filteredEntries.length === 0 ? (
-          <div className="grimoire-card text-center py-24 bg-zinc-900 rounded-2xl border-dashed">
+          <div className="bg-header-bg/60 text-center py-24 rounded-sm border-2 border-dashed border-primary/20 shadow-inner">
             <div className="text-4xl mb-4 opacity-30">📜</div>
-            <p className="text-zinc-500 font-serif italic text-sm max-w-xs mx-auto leading-relaxed">
+            <p className="text-stone-500 font-serif italic text-sm max-w-xs mx-auto leading-relaxed">
               {(searchTerm || dateFrom || dateTo || bookFilter !== 'todos')
                 ? 'Las páginas del grimorio no guardan registros bajo estos criterios. Ajusta tu búsqueda.'
                 : 'El grimorio aguarda su primera inscripción. Toca el sello dorado para forjar una crónica.'}
@@ -290,14 +332,17 @@ export function ReadingLog({ onNavigateToEntity }) {
                 bulkMode={bulkMode}
                 isSelected={selected.has(entry.id)}
                 onToggleSelect={() => toggleSelect(entry.id)}
+                isExpanded={expandedEntries.has(entry.id)}
+                onToggleExpand={() => toggleEntry(entry.id)}
                 onShareQuote={(q) => setShareQuote({ quote: q, book: entry.book, chapter: entry.chapter })}
                 onNavigateToEntity={onNavigateToEntity}
+                onConsultOracle={onConsultOracle}
               />
             ))}
             {hasMore && (
               <button
                 onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}
-                className="py-4 text-sm text-amber-500 font-serif italic border border-zinc-800 rounded-xl hover:bg-zinc-900 transition-colors"
+                className="py-5 text-sm text-accent font-serif italic bg-header-bg hover:bg-section-bg rounded-sm transition-colors shadow-sm tracking-wide"
               >
                 Mostrar más crónicas ({filteredEntries.length - visibleCount} restantes)
               </button>
@@ -309,63 +354,88 @@ export function ReadingLog({ onNavigateToEntity }) {
   );
 }
 
-const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, bulkMode, isSelected, onToggleSelect, onShareQuote, onNavigateToEntity }) {
+const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, bulkMode, isSelected, onToggleSelect, isExpanded, onToggleExpand, onShareQuote, onNavigateToEntity, onConsultOracle }) {
+  const contentRef = useRef(null);
+
   return (
     <div
-      onClick={bulkMode ? onToggleSelect : undefined}
-      className={`grimoire-card group bg-zinc-900 rounded-2xl overflow-hidden transition-all flex flex-col ${
+      className={`group bg-header-bg rounded-sm transition-all flex flex-col shadow-sm relative ${
         bulkMode ? 'cursor-pointer' : ''
-      } ${isSelected ? 'border-amber-500 ring-1 ring-amber-500/30' : 'border-zinc-800 hover:border-amber-500/30'}`}
+      } ${isSelected ? 'ring-2 ring-accent' : 'hover:shadow-md'}`}
     >
-      <div className="bg-zinc-950 p-4 flex justify-between items-center border-b border-zinc-800">
-        <div className="flex items-center gap-3">
+      <div 
+        onClick={bulkMode ? onToggleSelect : onToggleExpand}
+        className={`bg-section-bg p-3.5 sm:p-5 flex justify-between items-center transition-colors cursor-pointer ${isExpanded ? 'border-b border-primary/50' : ''} hover:bg-item-bg/50`}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          {!bulkMode && (
+            <span className={`flex-shrink-0 text-accent transition-transform duration-300 ${isExpanded ? 'rotate-0' : '-rotate-90'}`}>
+               <ChevronDown size={18} />
+            </span>
+          )}
           {bulkMode && (
-            <div className="text-amber-500">
+            <div className="flex-shrink-0 text-accent">
               {isSelected ? <CheckSquare size={18} /> : <Square size={18} />}
             </div>
           )}
-          <div>
-            <h3 className="font-serif text-heading text-lg">{entry.book}</h3>
-            <p className="text-xs text-zinc-500 uppercase tracking-[0.2em] font-bold">{entry.date} • {entry.chapter || 'S/N'}</p>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-serif text-primary-text text-lg sm:text-xl leading-snug truncate">{entry.book}</h3>
+            <p className="text-[10px] text-stone-500 uppercase tracking-widest font-bold mt-0.5">{entry.date} • {entry.chapter || 'S/N'}</p>
           </div>
         </div>
         {!bulkMode && (
-          <div className="flex items-center gap-1">
-            <span className="bg-zinc-950 text-amber-500 px-3 py-1 rounded-full text-xs border border-amber-500 font-bold" style={{ borderColor: 'color-mix(in srgb, var(--text-accent) 30%, transparent)' }}>
+          <div className="flex items-center gap-2 shrink-0 ml-2">
+            <span className="hidden sm:inline-block bg-accent/5 text-accent px-2 py-0.5 rounded-sm text-[9px] border border-accent/20 font-bold uppercase tracking-wider">
               {entry.mood}
             </span>
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
-              <button onClick={onEdit} aria-label="Editar crónica" className="p-3 text-zinc-500 hover:text-amber-500 active:text-amber-500"><Edit3 size={16}/></button>
-              <button onClick={onDelete} aria-label="Eliminar crónica" className="p-3 text-zinc-500 hover:text-danger-deep active:text-danger-deep"><Trash2 size={16}/></button>
+            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+              <button onClick={onEdit} aria-label="Editar crónica" className="p-2 text-stone-400 hover:text-accent active:text-accent flex items-center justify-center min-w-[40px] min-h-[40px]"><Edit3 size={18}/></button>
+              <button onClick={onDelete} aria-label="Eliminar crónica" className="p-2 text-stone-400 hover:text-red-600 active:text-red-700 flex items-center justify-center min-w-[40px] min-h-[40px]"><Trash2 size={18}/></button>
             </div>
           </div>
         )}
       </div>
 
-      <div className="p-5 flex flex-col gap-4">
+      <div 
+        ref={contentRef}
+        className={`transition-all duration-500 overflow-hidden ${isExpanded ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0'}`}
+      >
+        <div className="p-6 flex flex-col gap-8 bg-item-bg/80">
+        {entry.summary && (
+          <div className="px-1">
+            <div className="flex items-center gap-2 text-accent/50 mb-2">
+              <ScrollText size={12}/>
+              <span className="text-[9px] uppercase font-bold tracking-widest">Resumen de la Sesión</span>
+            </div>
+            <p className="text-sm text-primary-text/80 font-serif leading-relaxed px-1 italic">
+              {entry.summary}
+            </p>
+          </div>
+        )}
+
         {entry.reingreso && (
-          <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 italic font-serif text-sm text-zinc-300 leading-relaxed relative">
-             <span className="absolute -top-3 left-3 bg-zinc-900 px-2 text-xs text-amber-600 uppercase tracking-widest font-bold">Reingreso</span>
+          <div className="bg-item-bg p-5 rounded-sm border-l-4 border-accent italic font-serif text-primary-text leading-relaxed relative shadow-inner">
+             <span className="absolute -top-3 left-4 bg-header-bg px-2 text-[9px] text-accent uppercase tracking-widest font-bold">Reingreso</span>
             &ldquo;{entry.reingreso}&rdquo;
           </div>
         )}
 
         {entry.quotes?.length > 0 && (
-          <div className="flex flex-col gap-3 px-1">
+          <div className="flex flex-col gap-4 px-1">
             {entry.quotes.map((q, i) => (
-              <div key={i} className="relative pl-6 py-1 group/quote">
-                <span className="absolute left-0 top-0 text-amber-500 text-2xl font-serif opacity-40">&ldquo;</span>
-                <p className="text-sm italic font-serif text-heading leading-relaxed">
+              <div key={i} className="relative pl-8 py-2 group/quote">
+                <span className="absolute left-0 top-0 text-accent text-3xl font-serif opacity-30">&ldquo;</span>
+                <p className="text-base italic font-serif text-primary-text leading-relaxed">
                   {q}
                 </p>
-                <div className="absolute left-0 bottom-0 w-1 h-full rounded-full" style={{ backgroundColor: 'var(--text-accent)', opacity: 0.2 }} />
+                <div className="absolute left-0 bottom-0 w-1 h-full rounded-full bg-accent/10" />
                 {onShareQuote && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onShareQuote(q); }}
                     aria-label="Compartir cita"
-                    className="absolute right-0 top-1 p-1.5 text-zinc-600 hover:text-amber-500 opacity-0 group-hover/quote:opacity-100 [@media(hover:none)]:opacity-100 transition-all"
+                    className="absolute right-0 top-1 p-3 text-stone-300 hover:text-accent opacity-0 group-hover/quote:opacity-100 [@media(hover:none)]:opacity-100 transition-all font-bold flex items-center justify-center min-w-[44px] min-h-[44px]"
                   >
-                    <Share2 size={12} />
+                    <Share2 size={16} />
                   </button>
                 )}
               </div>
@@ -374,25 +444,26 @@ const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, bulkMode,
         )}
 
         {/* MULTI-ENTRY PREVIEWS */}
-        <div className="grid grid-cols-1 gap-3">
-          {entry.characters?.length > 0 && <EntrySection icon={<User size={12}/>} label="Personajes" list={entry.characters.map(c => c.name)} color="character" onNavigate={onNavigateToEntity} />}
-          {entry.places?.length > 0 && <EntrySection icon={<Globe size={12}/>} label="Lugares" list={entry.places.map(p => p.name)} color="place" onNavigate={onNavigateToEntity} />}
-          {entry.glossary?.length > 0 && <EntrySection icon={<HelpCircle size={12}/>} label="Glosario" list={entry.glossary.map(g => g.name)} color="glossary" onNavigate={onNavigateToEntity} />}
+        <div className="grid grid-cols-1 gap-4">
+          {entry.characters?.length > 0 && <EntrySection label="Personajes que intervienen en este relato" list={entry.characters.map(c => c.name)} color="character" onNavigate={onNavigateToEntity} onConsult={onConsultOracle} />}
+          {entry.places?.length > 0 && <EntrySection label="Lugares recorridos durante esta jornada" list={entry.places.map(p => p.name)} color="place" onNavigate={onNavigateToEntity} onConsult={onConsultOracle} />}
+          {entry.worldRules?.length > 0 && <EntrySection label="Principios y leyes de este mundo" list={entry.worldRules.map(r => typeof r === 'string' ? r : r.name)} color="rule" onNavigate={onNavigateToEntity} onConsult={onConsultOracle} />}
+          {entry.glossary?.length > 0 && <EntrySection label="Saberes y dudas del archivero" list={entry.glossary.map(g => g.name)} color="glossary" onNavigate={onNavigateToEntity} onConsult={onConsultOracle} />}
           {entry.connections?.length > 0 && (
-            <div className="mt-2 space-y-2">
-              <div className="flex items-center gap-2 text-amber-500/60 ml-1">
+            <div className="mt-2 space-y-3">
+              <div className="flex items-center gap-2 text-accent/70 ml-1">
                 <LinkIcon size={12}/>
-                <span className="text-xs uppercase font-bold tracking-widest">Conexiones</span>
+                <span className="text-[9px] uppercase font-bold tracking-widest">Conexiones</span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {entry.connections.map((conn, idx) => (
-                  <div key={idx} className="bg-zinc-950 border border-zinc-800 p-3 rounded-xl" style={{ borderLeftWidth: '2px', borderLeftColor: 'var(--text-accent)' }}>
-                    <div className="flex flex-wrap gap-1 mb-2">
+                  <div key={idx} className="bg-item-bg border border-primary/10 p-4 rounded-sm shadow-sm" style={{ borderLeftWidth: '3px', borderLeftColor: 'var(--accent)' }}>
+                    <div className="flex flex-wrap gap-2 mb-3">
                       {conn.bookTitles?.map(t => (
-                        <span key={t} className="text-xs bg-zinc-900 text-amber-500 px-2 py-0.5 rounded border border-zinc-800 font-bold">{t}</span>
+                        <span key={t} className="text-[9px] bg-header-bg text-accent px-2 py-1 rounded-sm border border-primary/20 font-bold uppercase tracking-tight">{t}</span>
                       ))}
                     </div>
-                    {conn.description && <p className="text-xs text-zinc-400 italic font-serif leading-relaxed line-clamp-2">&ldquo;{conn.description}&rdquo;</p>}
+                    {conn.description && <p className="text-xs text-stone-600 italic font-serif leading-relaxed line-clamp-3">&ldquo;{conn.description}&rdquo;</p>}
                   </div>
                 ))}
               </div>
@@ -400,10 +471,10 @@ const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, bulkMode,
           )}
         </div>
 
-        {/* MANGA PANELS PREVIEW */}
-        {entry.mangaPanels?.length > 0 && (
-          <MangaPanelsPreview panels={entry.mangaPanels} />
-        )}
+          {entry.mangaPanels?.length > 0 && (
+            <MangaPanelsPreview panels={entry.mangaPanels} />
+          )}
+        </div>
       </div>
     </div>
   );
@@ -425,12 +496,12 @@ function MangaPanelsPreview({ panels }) {
   if (resolved.length === 0) return null;
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 pt-2">
+    <div className="flex gap-3 overflow-x-auto pb-3 pt-2 scrollbar-hide">
       {resolved.map((img, i) => (
-        <div key={i} className="flex-shrink-0 w-24 aspect-video bg-black rounded-lg border border-zinc-800 overflow-hidden relative group/img">
-          <img src={img} loading="lazy" className="w-full h-full object-cover opacity-60 group-hover/img:opacity-100 transition-opacity" alt={`Panel de manga ${i + 1}`} />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-1">
-            <ImageIcon size={10} className="text-zinc-500" />
+        <div key={i} className="flex-shrink-0 w-32 aspect-video bg-item-bg rounded-sm border border-stone-300 overflow-hidden relative group/img shadow-sm">
+          <img src={img} loading="lazy" className="w-full h-full object-cover opacity-80 group-hover/img:opacity-100 transition-opacity" alt={`Panel de manga ${i + 1}`} />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex items-end p-2">
+            <ImageIcon size={12} className="text-white/70" />
           </div>
         </div>
       ))}
@@ -438,33 +509,40 @@ function MangaPanelsPreview({ panels }) {
   );
 }
 
-function EntrySection({ icon, label, list, color, onNavigate }) {
-  const colors = {
-    character: 'text-entity-character border-entity-character',
-    place: 'text-entity-place border-entity-place',
-    glossary: 'text-oracle border-oracle',
-    amber: 'text-amber-500 border-amber-500',
-  };
-
+function EntrySection({ label, list, onNavigate, onConsult }) {
   return (
-    <div className={`p-2.5 rounded-lg border flex flex-col gap-2 ${colors[color]}`}>
-      <div className="flex items-center gap-2">
-        {icon}
-        <span className="text-xs font-bold uppercase tracking-widest">{label}</span>
-      </div>
-      <div className="flex flex-wrap gap-1">
-        {list.map(item => (
-          onNavigate ? (
-            <button
-              key={item}
-              onClick={(e) => { e.stopPropagation(); onNavigate(item); }}
-              className="text-xs bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800 text-zinc-300 hover:text-amber-400 hover:border-amber-500/30 transition-colors cursor-pointer"
-            >
-              {item}
-            </button>
-          ) : (
-            <span key={item} className="text-xs bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800 text-zinc-300">{item}</span>
-          )
+    <div className="py-2 flex flex-col gap-1.5 border-t border-stone-200/40 first:border-t-0 mt-2 first:mt-0">
+      <span className="text-[10px] font-serif italic text-stone-400 leading-tight uppercase tracking-widest px-1">
+        {label}
+      </span>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1">
+        {list.map((item, i) => (
+          <React.Fragment key={item}>
+            <div className="flex items-center gap-1 group">
+              {onNavigate ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onNavigate(item); }}
+                  className="text-sm font-serif text-primary-text hover:text-accent transition-all decoration-accent/30 hover:underline underline-offset-4 decoration-dotted"
+                >
+                  {item}
+                </button>
+              ) : (
+                <span className="text-sm font-serif text-primary-text">{item}</span>
+              )}
+              {onConsult && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onConsult({ name: item }); }}
+                  className="p-1 opacity-0 group-hover:opacity-100 transition-opacity text-accent hover:text-accent-secondary"
+                  aria-label={`Consultar sobre ${item}`}
+                >
+                  <Sparkles size={10} />
+                </button>
+              )}
+            </div>
+            {i < list.length - 1 && (
+              <span className="text-[10px] text-stone-300 pointer-events-none select-none">✦</span>
+            )}
+          </React.Fragment>
         ))}
       </div>
     </div>
