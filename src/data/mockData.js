@@ -208,16 +208,16 @@ export const DEMO_DATA = {
         "Voy de regreso a casa. Y los caminos de regreso siempre parecen más cortos."
       ],
       characters: [
-        { id: "c-d11", name: "Bard el Arquero", tags: ["héroe", "linaje", "lago-ciudad"], content: "Descendiente de Girion de Valle. Mata a Smaug con la flecha negra heredada de su padre. No es un héroe épico: es un barquero pobre con responsabilidades reales." }
+        { id: "c-d11", name: "Bard el Arquero", tags: ["héroe", "linaje"], content: "Descendiente de Girion de Valle. Mata a Smaug con la flecha negra heredada de su padre." }
       ],
       places: [
-        { id: "p-d8", name: "Ciudad del Lago (Esgaroth)", tags: ["político", "ambición", "pueblo"], content: "Ciudad sobre el agua gobernada por un Maestro codicioso. Tolkien satiriza la política municipal con humor ácido." }
+        { id: "p-d8", name: "Ciudad del Lago (Esgaroth)", tags: ["pueblo", "humano"], content: "Ciudad sobre el agua gobernada por un Maestro codicioso." }
       ],
       glossary: [
-        { id: "g-d4", name: "La Piedra del Arca (Arkenstone)", tags: ["símbolo", "obsesión", "poder"], content: "El corazón de la Montaña. Para Thorin es legítimamente suya, pero la obsesión que genera refleja el Anillo que vendrá después. Tolkien siembra el tema de la codicia como veneno." }
+        { id: "g-d4", name: "La Piedra del Arca (Arkenstone)", tags: ["símbolo", "tesoro"], content: "El corazón de la Montaña. Para Thorin es legítimamente suya." }
       ],
       worldRules: [
-        { id: "w-d6", name: "El oro de los dragones envenenana el corazón de quien lo posee", content: "Enfermedad del dragón: la riqueza acumulada pudre la voluntad. Thorin la sufre. Es una regla del mundo tolkieniano que resuena en toda la legendarium." }
+        { id: "w-d6", name: "El oro de los dragones envenenana el corazón de quien lo posee", content: "Enfermedad del dragón: la riqueza acumulada pudre la voluntad." }
       ],
       connections: [],
       mangaPanels: []
@@ -228,26 +228,20 @@ export const DEMO_DATA = {
       book: "La Comunidad del Anillo",
       chapter: "Libro I",
       mood: "Concentrado 🧠",
-      reingreso: "La apertura de ESDLA tiene un ritmo completamente diferente a El Hobbit. Tolkien tarda en poner el mundo en movimiento pero el peso de lo que viene se siente desde la fiesta de Bilbo. Frodo como heredero forzado de una responsabilidad que no pidió. Tom Bombadil sigue siendo un misterio: ¿fuera del juego del Anillo por elección, por naturaleza, o porque es algo anterior?",
+      reingreso: "La apertura de ESDLA tiene un ritmo completamente diferente a El Hobbit. Tolkien tarda en poner el mundo en movimiento pero el peso de lo que viene se siente desde la fiesta de Bilbo. Frodo como heredero forzado de una responsabilidad que no pidió.",
       quotes: [
         "No todo el que vaga está perdido.",
-        "El Anillo no puede permanecer oculto para siempre. Tiene voluntad propia."
+        "El Anillo no puede permanecer oculto para siempre."
       ],
       characters: [
-        { id: "c-d12", name: "Frodo Bolsón", tags: ["hobbit", "portador", "carga"], content: "Heredero del Anillo por accidente de parentesco. Más reflexivo que Bilbo, más consciente del peligro. La diferencia entre elegir aventurarse y verse arrastrado a ella." },
-        { id: "c-d13", name: "Aragorn / Trancos", tags: ["dúnedain", "rey-oculto", "ranger"], content: "Aparece en Bree como mendigo sucio. La brecha entre lo que parece y lo que es define al personaje. La nobleza como algo que no necesita anunciarse." },
-        { id: "c-d14", name: "Tom Bombadil", tags: ["misterio", "primordial", "neutro"], content: "Señor de la tierra entre el Brandivino y el Bosque Viejo. Immune al Anillo. No lo desea ni le pertenece. Tolkien no explica qué es Tom, y eso es parte de su naturaleza." }
+        { id: "c-d12", name: "Frodo Bolsón", tags: ["hobbit", "portador"], content: "Heredero del Anillo por accidente de parentesco. Más reflexivo que Bilbo." },
+        { id: "c-d13", name: "Aragorn / Trancos", tags: ["ranger", "human"], content: "Aparece en Bree como mendigo sucio. La brecha entre lo que parece y lo que es define al personaje." }
       ],
       places: [
-        { id: "p-d9", name: "Bree", tags: ["cruce-de-caminos", "humanos", "hobbits"], content: "Primera ciudad humana que ven los hobbits. Más oscura, más grande, más peligrosa. El Poney Pisador como espacio de transición entre lo conocido y lo desconocido." },
-        { id: "p-d10", name: "Los Vados del Bruinen", tags: ["elfo", "Rivendell", "agua"], content: "La huida de Frodo hacia Rivendell con el Nazgûl en los talones. El río como frontera entre el peligro y la protección élfica." }
+        { id: "p-d9", name: "Bree", tags: ["pueblo", "punto-de-interés"], content: "Primera ciudad humana que ven los hobbits. El Poney Pisador como espacio de transición." }
       ],
-      glossary: [
-        { id: "g-d5", name: "Nazgûl / Jinetes Negros", tags: ["Ring-wraiths", "terror", "reyes-caídos"], content: "Nueve reyes humanos consumidos por el Anillo. Ya no son personas, son voluntad al servicio de Sauron. Su presencia se siente antes de verse." }
-      ],
-      worldRules: [
-        { id: "w-d7", name: "El Anillo corrompe en proporción a la grandeza del portador", content: "Cuanto más poderoso eres, más peligroso es el Anillo para ti. Por eso Gandalf y Galadriel lo rechazan: saben exactamente lo que harían con él." }
-      ],
+      glossary: [],
+      worldRules: [],
       connections: [
         { id: "conn-d1", bookTitles: ["El Hobbit"], description: "Gollum en El Hobbit aparece como una criatura patética pero con humanidad residual. Al llegar a ESDLA ya es rastreador activo de Sauron. La misma criatura, décadas después, completamente consumida. La progresión es aterradora." }
       ],
