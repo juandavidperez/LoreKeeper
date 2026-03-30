@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useRef } from 'react';
-import { Calendar, BookOpen, Library, Sparkles, Search, Bell, BellOff, X, Sun, Moon } from 'lucide-react';
+import { Calendar, BookOpen, Library, Sparkles, Search, Bell, BellOff, X, Sun, Moon, Map } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
@@ -8,7 +8,7 @@ import { AuthBanner } from './AuthBanner';
 import { SyncIndicator } from './SyncIndicator';
 import { GlobalSearch } from './GlobalSearch';
 
-const TAB_IDS = ['plan', 'log', 'encyclopedia', 'oracle'];
+const TAB_IDS = ['plan', 'log', 'encyclopedia', 'oracle', 'map'];
 
 const slideVariants = {
   enter: (d) => ({ opacity: 0, x: d >= 0 ? 60 : -60 }),
@@ -28,6 +28,7 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
     { id: 'log', label: 'Crónicas', icon: BookOpen },
     { id: 'encyclopedia', label: 'Archivo', icon: Library },
     { id: 'oracle', label: 'Oráculo', icon: Sparkles },
+    { id: 'map', label: 'Mapa', icon: Map },
   ];
 
   // --- Swipe navigation ---
@@ -110,6 +111,7 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
     { key: '2', mod: true, action: () => navigateWithDirection('log') },
     { key: '3', mod: true, action: () => navigateWithDirection('encyclopedia') },
     { key: '4', mod: true, action: () => navigateWithDirection('oracle') },
+    { key: '5', mod: true, action: () => navigateWithDirection('map') },
   ], [navigateWithDirection]);
   useKeyboardShortcuts(shortcuts);
 

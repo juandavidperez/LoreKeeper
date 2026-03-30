@@ -14,6 +14,7 @@ const ReadingPlan = lazy(() => import('./views/ReadingPlan').then(m => ({ defaul
 const ReadingLog = lazy(() => import('./views/ReadingLog').then(m => ({ default: m.ReadingLog })))
 const Encyclopedia = lazy(() => import('./views/Encyclopedia').then(m => ({ default: m.Encyclopedia })))
 const OracleView = lazy(() => import('./views/OracleView').then(m => ({ default: m.OracleView })))
+const WisdomMap = lazy(() => import('./views/WisdomMap').then(m => ({ default: m.WisdomMap })))
 
 function ViewFallback() {
   return (
@@ -26,7 +27,7 @@ function ViewFallback() {
 function AppContent() {
   const [activeTab, setActiveTabRaw] = useState(() => {
     const hash = window.location.hash.slice(1)
-    return ['plan', 'log', 'encyclopedia', 'oracle'].includes(hash) ? hash : 'log'
+    return ['plan', 'log', 'encyclopedia', 'oracle', 'map'].includes(hash) ? hash : 'log'
   })
 
   const setActiveTab = useCallback((tab) => {
@@ -52,7 +53,7 @@ function AppContent() {
   const handleSetActiveTab = useCallback((tab) => {
     if (tab !== 'encyclopedia') setEntityFocus(null)
     if (tab !== 'log') setLogDraft(null)
-    if (tab !== 'oracle') setOracleFocus(null)
+    if (tab !== 'oracle' && tab !== 'map') setOracleFocus(null)
     setActiveTab(tab)
   }, [setActiveTab])
 
@@ -60,7 +61,7 @@ function AppContent() {
   useEffect(() => {
     const handlePopState = () => {
       const hash = window.location.hash.slice(1)
-      if (['plan', 'log', 'encyclopedia', 'oracle'].includes(hash)) {
+      if (['plan', 'log', 'encyclopedia', 'oracle', 'map'].includes(hash)) {
         setActiveTabRaw(hash)
       }
     }
@@ -165,6 +166,7 @@ function AppContent() {
             />
           )}
           {activeTab === 'oracle' && <OracleView initialFocus={oracleFocus} onClearFocus={() => setOracleFocus(null)} />}
+          {activeTab === 'map' && <WisdomMap />}
         </Suspense>
         <ReloadPrompt />
       </MainLayout>
