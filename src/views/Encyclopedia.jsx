@@ -1,9 +1,12 @@
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { Search, ChevronRight, BookOpen, Clock, Filter, Scroll, Sparkles } from 'lucide-react';
+import React, { useState, useMemo, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
+import { Search, ChevronRight, BookOpen, Clock, Filter, Scroll, Sparkles, Map } from 'lucide-react';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
+
+const WisdomMap = lazy(() => import('./WisdomMap').then(m => ({ default: m.WisdomMap })));
 
 export function Encyclopedia({ entityFocus, onClearFocus, onConsultOracle }) {
   const { archive, books } = useLorekeeperState();
+  const [view, setView] = useState('archive'); // 'archive' | 'map'
   const [categoryFilter, setCategoryFilter] = useState('todos'); // 'todos', 'personajes', 'lugares', 'reglas', 'glosario'
   const [searchTerm, setSearchTermRaw] = useState('');
   const [bookFilter, setBookFilterRaw] = useState('todos');
@@ -62,12 +65,46 @@ export function Encyclopedia({ entityFocus, onClearFocus, onConsultOracle }) {
   const visibleData = filteredData.slice(0, visibleCount);
   const hasMore = visibleCount < filteredData.length;
 
+  // When an entity focus arrives, switch to archive view
+  useEffect(() => {
+    if (entityFocus) setView('archive');
+  }, [entityFocus]);
+
   return (
     <div className="flex flex-col gap-6 animate-fade-in pb-20">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-4xl font-serif text-primary-text tracking-tight">El Archivo</h2>
-        <p className="text-xs text-stone-500 font-serif italic tracking-wide">Consulta los misterios registrados</p>
+      <div className="flex items-end justify-between">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-4xl font-serif text-primary-text tracking-tight">El Archivo</h2>
+          <p className="text-xs text-stone-500 font-serif italic tracking-wide">Consulta los misterios registrados</p>
+        </div>
+        <div className="flex gap-1 bg-item-bg rounded-sm p-1 mb-1">
+          <button
+            onClick={() => setView('archive')}
+            aria-label="Vista de lista"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest font-serif transition-all ${view === 'archive' ? 'bg-accent text-white shadow-sm' : 'text-stone-500 hover:text-accent'}`}
+          >
+            <Scroll size={12} />
+            Lista
+          </button>
+          <button
+            onClick={() => setView('map')}
+            aria-label="Vista de mapa"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest font-serif transition-all ${view === 'map' ? 'bg-accent text-white shadow-sm' : 'text-stone-500 hover:text-accent'}`}
+          >
+            <Map size={12} />
+            Mapa
+          </button>
+        </div>
       </div>
+
+      {view === 'map' && (
+        <Suspense fallback={<div className="flex items-center justify-center py-20"><span className="text-stone-400 font-serif italic text-sm">Invocando el mapa…</span></div>}>
+          <WisdomMap />
+        </Suspense>
+      )}
+
+      {view === 'map' && null /* skip archive content below */}
+      {view !== 'map' && <>
 
       {/* SEARCH — sticky */}
       <div className="sticky top-16 z-40 backdrop-blur-md py-3 -mt-3 border-b border-accent/20" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-app) 95%, transparent)' }}>
@@ -148,6 +185,7 @@ export function Encyclopedia({ entityFocus, onClearFocus, onConsultOracle }) {
           </>
         )}
       </div>
+      </>}
     </div>
   );
 }
