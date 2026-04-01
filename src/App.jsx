@@ -8,6 +8,7 @@ import { LorekeeperProvider, useLorekeeperState } from './hooks/useLorekeeperSta
 import { NotificationProvider, useNotification } from './hooks/useNotification'
 import { AuthProvider } from './hooks/useAuth'
 import { SyncProvider } from './hooks/useSync'
+import { ThemeProvider } from './context/ThemeContext'
 import { MigrationGuard } from './components/MigrationGuard'
 import { SyncTracker } from './components/SyncTracker'
 
@@ -178,13 +179,15 @@ function AppContent() {
 
 function App() {
   return (
-    <NotificationProvider>
-      <AuthProvider>
-        <LorekeeperProvider>
-          <AppContent />
-        </LorekeeperProvider>
-      </AuthProvider>
-    </NotificationProvider>
+    <ThemeProvider>
+      <NotificationProvider>
+        <AuthProvider>
+          <LorekeeperProvider>
+            <AppContent />
+          </LorekeeperProvider>
+        </AuthProvider>
+      </NotificationProvider>
+    </ThemeProvider>
   )
 }
 
