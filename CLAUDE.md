@@ -22,14 +22,15 @@ Lorekeeper is a reading companion PWA for tracking reading progress, logging ent
 **State management**: React Context via `useLorekeeperState` hook (in `src/hooks/`). All app state (books, phases, schedule, entries, completedWeeks) is persisted to localStorage through `useLocalStorage` hook. localStorage keys are prefixed with `lore-` or descriptive names like `reading-entries`, `completed-weeks`, `oracle-replies`, `lore-theme`, `lore-entry-draft`.
 
 **Component structure**:
-- `src/views/` — Page-level components: `ReadingPlan`, `ReadingLog`, `Encyclopedia`, `EntryForm`
+- `src/views/` — Page-level components: `ReadingPlan`, `ReadingLog`, `Encyclopedia`, `EntryForm`, `OracleView`, `WisdomMap`
 - `src/components/` — Shared UI (`MainLayout` with tab navigation, theme toggle, `ErrorBoundary`, `ReloadPrompt` for PWA updates)
 - `src/hooks/` — `useLorekeeperState` (context + state logic + export/import with schema validation), `useLocalStorage` (persistence with shape validation and quota error handling), `useNotification` (toast system), `useSpeechRecognition` (voice input with error handling), `useKeyboardShortcuts` (generic keyboard shortcut hook)
 - `src/utils/ai.js` — Gemini API integration with retry/backoff, metadata extraction and "Oracle" responses, with fallback mocks
 - `src/utils/imageStore.js` — IndexedDB wrapper for manga panel image storage (saves large images outside localStorage)
+- `src/utils/mapImages.js` — Map asset preloader and archetype/landmark-type detection. Assets live in `public/assets/map/characters/` and `public/assets/map/landmarks/`. Archetypes: monster, antihero, master, scholar, hero, warrior, creature, person. Detection: tag-based first, name-based fallback using reference examples.
 - `src/data/mockData.js` — Initial data constants (books, phases, schedule, moods, section types)
 
-**Navigation**: Tab-based (Plan / Log / Archive), managed by `activeTab` state in `App`.
+**Navigation**: Tab-based (Plan / Crónicas / Archivo / Oráculo / Mapa), managed by `activeTab` state in `App`. All views are lazy-loaded via `React.lazy`/`Suspense`.
 
 ## Key Patterns
 
@@ -49,7 +50,7 @@ Lorekeeper is a reading companion PWA for tracking reading progress, logging ent
 - `React.memo` on `LogCard` and `EntityCard` to avoid unnecessary re-renders
 - Export/Import: JSON backup available from Plan Maestro header (Download/Upload icons). Import includes schema validation and confirmation dialog
 - Unique entry IDs via `uid()` function (timestamp + counter + random) instead of `Date.now()`
-- Keyboard shortcuts: Cmd+K (focus search), Cmd+1/2/3 (tab switching)
+- Keyboard shortcuts: Cmd+K (focus search), Cmd+1–5 (tab switching: Plan/Crónicas/Archivo/Oráculo/Mapa)
 
 ## Data Validation
 
@@ -101,18 +102,22 @@ Lorekeeper is a reading companion PWA for tracking reading progress, logging ent
 
 ### Features
 - **Auth/multi-user** — Everything is local, single user. No authentication system
-- **Push notifications** — PWA has offline support but no reading reminders
+- **Reading reminders** — PWA push notifications for reading reminders are implemented (Bell icon in header, time picker, `lore-reminder` localStorage key). Still missing: offline indicator when Gemini/sync fails silently due to no network.
 - **Advanced stats/visualizations** — Has streaks and weekly progress, but no reading time charts, habit graphs, or richer visualizations
-- **Social/sharing** — No way to share entries, quotes, or progress
+- **Social/sharing** — `ShareQuote` component exists for sharing quotes. No way to share full entries or progress.
 - **Oracle history** — Oracle generates responses but there's no navigable conversation history with the AI
 - **i18n** — All UI is hardcoded in Spanish. No internationalization system
-- **Onboarding/tutorial** — No guide for new users explaining features
+- **Onboarding/tutorial** — `OnboardingOverlay` component exists with basic onboarding. Could be expanded.
+- **Wisdom Map (WisdomMap)** — SVG map of characters and places from entries. Working: deterministic layout with collision resolution, archetype detection by tag+name, pan/zoom (mouse+touch), book filter, tooltip on tap. Pending: d3-force physics layout, connection lines between co-occurring entities, landmark region clustering.
 
 ### Technical Improvements
-- **Lazy loading routes** — All views load at once (no `React.lazy`/`Suspense`)
 - **Manifest screenshots** — `screenshots` field in PWA manifest is empty (improves Android install experience)
 - **Data retention policy** — localStorage can fill up with no automatic cleanup
 - **Better API error UX** — When Gemini API retries are exhausted, user only sees a generic error
+- **Offline indicator** — App works offline (SW + localStorage) but no visual indicator when network is unavailable
+- **Haptic feedback** — No `navigator.vibrate()` on key actions (save, seal week, etc.)
+- **Landscape mode** — Bottom nav + header consume too much vertical space in landscape on mobile
+- **WisdomMap character images** — Characters currently use original parchment-background PNGs. Should be replaced with transparent-background versions processed via remove.bg or similar. New archetypes needing images: `primal_antihero.png`, `primal_master.png`, `primal_creature.png`.
 
 ## Design Context
 

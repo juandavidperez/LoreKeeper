@@ -1,9 +1,10 @@
-import { useMemo, useState, useCallback, useRef } from 'react';
-import { Calendar, BookOpen, Library, Sparkles, Search, Bell, BellOff, X, Sun, Moon, Map } from 'lucide-react';
+import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
+import { Calendar, BookOpen, Library, Sparkles, Search, Bell, BellOff, X, Sun, Moon, Map, WifiOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useTheme } from '../context/ThemeContext';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { AuthBanner } from './AuthBanner';
 import { SyncIndicator } from './SyncIndicator';
 import { GlobalSearch } from './GlobalSearch';
@@ -18,6 +19,18 @@ const slideVariants = {
 
 export function MainLayout({ activeTab, setActiveTab, children }) {
   const { theme, toggleTheme } = useTheme();
+  const { isOnline } = useNetworkStatus();
+
+  // Compact layout for mobile landscape (header+nav eat too much vertical space)
+  const [isCompactLandscape, setIsCompactLandscape] = useState(() =>
+    window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(orientation: landscape) and (max-height: 500px)');
+    const handler = (e) => setIsCompactLandscape(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
   const [reminder, setReminder] = useLocalStorage('lore-reminder', '0');
   const [reminderTime, setReminderTime] = useLocalStorage('lore-reminder-time', '21:00');
   const [showSearch, setShowSearch] = useState(false);
@@ -115,14 +128,20 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
   ], [navigateWithDirection]);
   useKeyboardShortcuts(shortcuts);
 
+  const chromeH = isCompactLandscape ? '2.5rem' : '4rem';
+  const headerHeight = `calc(${chromeH} + env(safe-area-inset-top))`;
+  const navHeight = `calc(${chromeH} + env(safe-area-inset-bottom))`;
+  const offlineBannerH = isOnline ? '0rem' : '1.75rem';
+  const mainPaddingTop = `calc(${chromeH} + 2rem + ${offlineBannerH} + env(safe-area-inset-top))`;
+
   return (
-    <div className="min-h-dvh pb-32 bg-app-bg text-primary-text font-sans overflow-x-hidden relative">
+    <div className={`min-h-dvh bg-app-bg text-primary-text font-sans overflow-x-hidden relative ${isCompactLandscape ? 'pb-16' : 'pb-32'}`}>
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:bg-accent focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-bold">
         Saltar al contenido
       </a>
       <header
-        className="fixed top-0 left-0 right-0 flex items-center justify-between z-[60] px-6 border-b overflow-hidden bg-header-bg border-primary/30"
-        style={{ paddingTop: 'env(safe-area-inset-top)', height: 'calc(4rem + env(safe-area-inset-top))' }}
+        className="fixed top-0 left-0 right-0 flex items-center justify-between z-[60] px-4 border-b overflow-hidden bg-header-bg border-primary/30"
+        style={{ paddingTop: 'env(safe-area-inset-top)', height: headerHeight }}
       >
         <div className="flex items-center gap-1">
           <AuthBanner />
@@ -177,11 +196,31 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
         </div>
       </header>
 
+      {/* OFFLINE BANNER */}
+      <AnimatePresence>
+        {!isOnline && (
+          <motion.div
+            key="offline-banner"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            role="status"
+            aria-live="polite"
+            className="fixed left-0 right-0 z-[59] flex items-center justify-center gap-2 px-4 py-1.5 bg-zinc-800 text-zinc-300 max-w-5xl mx-auto"
+            style={{ top: headerHeight }}
+          >
+            <WifiOff size={11} aria-hidden="true" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.18em] font-serif">El Éter guarda silencio · sin conexión</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <main
         id="main-content"
         tabIndex={-1}
         className="safe-x max-w-7xl mx-auto min-h-[calc(100dvh-80px)] outline-none"
-        style={{ paddingTop: 'calc(6rem + env(safe-area-inset-top))' }}
+        style={{ paddingTop: mainPaddingTop }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -203,12 +242,13 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
       <nav
         role="tablist"
         aria-label="Navegación principal"
-        className="fixed bottom-0 left-0 right-0 backdrop-blur-lg flex justify-around items-center z-[100] px-4 border-t bg-header-bg/95 border-primary/30 max-w-5xl mx-auto rounded-t-2xl sm:mb-4 sm:border sm:shadow-lg lg:max-w-2xl"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)', height: 'calc(4rem + env(safe-area-inset-bottom))' }}
+        className="fixed bottom-0 left-0 right-0 backdrop-blur-lg flex justify-evenly items-center z-[100] px-2 border-t bg-header-bg/95 border-primary/30 max-w-5xl mx-auto rounded-t-2xl sm:mb-4 sm:border sm:shadow-lg lg:max-w-2xl"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)', height: navHeight }}
       >
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
+          const iconSize = isCompactLandscape ? 18 : isActive ? 22 : 20;
           return (
             <button
               key={tab.id}
@@ -216,18 +256,30 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
               aria-selected={isActive}
               aria-label={tab.label}
               onClick={() => navigateWithDirection(tab.id)}
-              className={`relative flex flex-col items-center gap-1.5 p-2 min-w-[70px] transition-all duration-300 ease-in-out active:scale-95 ${
-                isActive ? 'text-accent scale-110' : 'text-stone-500 hover:text-accent'
+              className={`relative flex flex-col items-center justify-center p-2 transition-all duration-300 ease-in-out active:scale-95 ${
+                isActive ? 'text-accent gap-1' : 'text-stone-500 hover:text-accent gap-0'
               }`}
+              style={{ minWidth: isCompactLandscape ? '48px' : isActive ? '80px' : '52px' }}
             >
-              <Icon size={isActive ? 24 : 20} strokeWidth={isActive ? 2.5 : 2} aria-hidden="true" />
-              <span className={`text-[10px] sm:text-xs font-serif font-bold uppercase tracking-widest transition-opacity ${isActive ? 'opacity-100' : 'opacity-60'}`}>
-                {tab.label}
-              </span>
+              <Icon size={iconSize} strokeWidth={isActive ? 2.5 : 1.75} aria-hidden="true" />
+              <AnimatePresence mode="wait">
+                {isActive && !isCompactLandscape && (
+                  <motion.span
+                    key="label"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-[10px] font-serif font-bold uppercase tracking-widest overflow-hidden whitespace-nowrap"
+                  >
+                    {tab.label}
+                  </motion.span>
+                )}
+              </AnimatePresence>
               {isActive && (
                 <motion.div
                   layoutId="activeTabIndicator"
-                  className="absolute -bottom-0 w-8 h-0.5 bg-accent rounded-full"
+                  className="absolute -bottom-0 w-6 h-0.5 bg-accent rounded-full"
                 />
               )}
             </button>

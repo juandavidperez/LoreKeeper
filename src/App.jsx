@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react'
 import { MainLayout } from './components/MainLayout'
 import { ReloadPrompt } from './components/ReloadPrompt'
 import { OnboardingOverlay } from './components/OnboardingOverlay'
+import { InstallBanner } from './components/InstallBanner'
 
 import { LorekeeperProvider, useLorekeeperState } from './hooks/useLorekeeperState'
 import { NotificationProvider, useNotification } from './hooks/useNotification'
@@ -147,6 +148,7 @@ function AppContent() {
       <MigrationGuard />
       <SyncTracker />
       {showOnboarding && <OnboardingOverlay onComplete={completeOnboarding} />}
+      <InstallBanner />
       <MainLayout activeTab={activeTab} setActiveTab={handleSetActiveTab}>
         <Suspense fallback={<ViewFallback />}>
           {activeTab === 'plan' && <ReadingPlan onLogWeek={handleLogFromPlan} />}

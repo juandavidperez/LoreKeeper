@@ -30,6 +30,8 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
   const [showDateRange, setShowDateRange] = useState(false);
   const [expandedEntries, setExpandedEntries] = useState(new Set());
   const hasInitializedExpansion = useRef(false);
+  const savedScrollY = useRef(0);
+  const isAddingRef = useRef(false);
   const PAGE_SIZE = 20;
 
   const setSearchTerm = useCallback((v) => { setSearchTermRaw(v); setVisibleCount(PAGE_SIZE); }, []);
@@ -96,6 +98,36 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
     );
   };
 
+  const restoreScroll = () => {
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: savedScrollY.current, behavior: 'instant' });
+    });
+  };
+
+  // Sync ref so popstate handler always sees the latest value
+  useEffect(() => { isAddingRef.current = isAdding; }, [isAdding]);
+
+  // Push a history entry when form opens so Android back closes it instead of leaving the tab
+  useEffect(() => {
+    if (isAdding) {
+      history.pushState({ lk: 'form' }, '', location.href);
+    }
+  }, [isAdding]);
+
+  // Handle Android back gesture while form is open
+  useEffect(() => {
+    const handler = () => {
+      if (isAddingRef.current) {
+        setIsAdding(false);
+        setEditingId(null);
+        if (onClearPrefilled) onClearPrefilled();
+        restoreScroll();
+      }
+    };
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, [onClearPrefilled]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const commitSave = (newEntry) => {
     if (editingId) {
       setEntries(entries.map(e => e.id === editingId ? newEntry : e));
@@ -106,6 +138,7 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
     setEditingId(null);
     setPendingSave(null);
     if (onClearPrefilled) onClearPrefilled();
+    restoreScroll();
   };
 
   const saveEntry = (newEntry) => {
@@ -130,6 +163,7 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
   };
 
   const startEdit = (entry) => {
+    savedScrollY.current = window.scrollY;
     setEditingId(entry.id);
     setIsAdding(true);
   };
@@ -166,11 +200,12 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
       <EntryForm 
         books={books} 
         onSave={saveEntry} 
-        onCancel={() => { 
-          setIsAdding(false); 
-          setEditingId(null); 
+        onCancel={() => {
+          setIsAdding(false);
+          setEditingId(null);
           if (onClearPrefilled) onClearPrefilled();
-        }} 
+          restoreScroll();
+        }}
         initialData={initialData} 
       />
     );
@@ -240,7 +275,7 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
       {/* WAX SEAL FAB */}
       {!bulkMode && (
         <button
-          onClick={() => setIsAdding(true)}
+          onClick={() => { savedScrollY.current = window.scrollY; setIsAdding(true); }}
           aria-label="Nueva crónica"
           className="fixed bottom-24 right-6 z-[110] bg-accent text-white w-16 h-16 rounded-full shadow-md transition-all active:scale-90 flex flex-col items-center justify-center border-2 border-accent-secondary"
         >

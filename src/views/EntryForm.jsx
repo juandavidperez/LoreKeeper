@@ -6,6 +6,64 @@ import { externalizePanels } from '../utils/imageStore';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useNotification } from '../hooks/useNotification';
 import { useTheme } from '../context/ThemeContext';
+import { useLorekeeperState } from '../hooks/useLorekeeperState';
+
+function NameAutocomplete({ value, onChange, placeholder, suggestions = [], inputClassName }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  const matches = value.length > 0
+    ? suggestions.filter(s => s.name.toLowerCase().includes(value.toLowerCase()) && s.name.toLowerCase() !== value.toLowerCase()).slice(0, 5)
+    : [];
+
+  const pick = (name) => {
+    onChange(name);
+    setOpen(false);
+  };
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input
+        value={value}
+        onChange={e => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder={placeholder}
+        className={inputClassName}
+      />
+      {open && matches.length > 0 && (
+        <ul className="absolute left-0 right-0 top-full mt-1 bg-header-bg border border-accent/25 rounded-sm shadow-2xl z-50 overflow-hidden">
+          {matches.map(s => (
+            <li key={s.name}>
+              <button
+                type="button"
+                onMouseDown={() => pick(s.name)}
+                onTouchEnd={(e) => { e.preventDefault(); pick(s.name); }}
+                className="w-full text-left px-4 py-3 text-sm font-serif text-primary-text hover:bg-accent/10 active:bg-accent/20 flex items-center justify-between gap-3"
+              >
+                <span>{s.name}</span>
+                {s.mentions?.length > 1 && (
+                  <span className="text-[10px] text-stone-400 flex-shrink-0">{s.mentions.length} entradas</span>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 let nextItemId = 0;
 function uid() { return `item-${Date.now()}-${nextItemId++}-${Math.random().toString(36).slice(2, 7)}`; }
@@ -18,6 +76,7 @@ function ensureIds(items) {
 export function EntryForm({ books, onSave, onCancel, initialData = null }) {
   const notify = useNotification();
   const { theme } = useTheme();
+  const { archive } = useLorekeeperState();
   const { recordingField, toggle: toggleRecording, error: speechError, isSupported: speechSupported } = useSpeechRecognition();
 
   const DRAFT_KEY = 'lore-entry-draft';
@@ -125,6 +184,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
       return;
     }
 
+    navigator.vibrate?.(20);
     if (isNewEntry) window.localStorage.removeItem(DRAFT_KEY);
     // Move inline manga images to IndexedDB before saving
     if (formData.mangaPanels?.length > 0) {
@@ -143,7 +203,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
     onCancel();
   };
 
-  const [expressMode, setExpressMode] = useState(!initialData);
+  const [step, setStep] = useState('essence'); // 'essence' | 'knowledge'
   const [isExtracting, setIsExtracting] = useState(false);
   const isExtractingLock = useRef(false);
   const [openSections, setOpenSections] = useState({
@@ -168,7 +228,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
         worldRules: [...prev.worldRules, ...ensureIds(data.worldRules || [])]
       }));
       setOpenSections(prev => ({ ...prev, characters: true, places: true, quotes: true, world: true }));
-      if (expressMode) setExpressMode(false);
+      setStep('knowledge');
       notify("Conocimientos destilados con éxito.", "success");
     } catch {
       notify("El Oráculo no pudo destilar los conocimientos. Intenta de nuevo.", "error");
@@ -224,19 +284,30 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
     updateItem('connections', connId, 'bookTitles', newTitles);
   };
 
+  const knowledgeCount =
+    form.characters.length + form.places.length + form.glossary.length +
+    form.worldRules.length + form.quotes.length + form.connections.length;
+
+  const switchStep = (s) => {
+    setStep(s);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="flex flex-col gap-6 animate-fade-in pb-24 h-full">
+      {/* HEADER ROW */}
+      <div className="flex items-center justify-between">
         <h3 className="font-serif text-primary-text text-2xl tracking-tight">
-          {initialData ? 'Editar Crónica' : expressMode ? 'Crónica Rápida' : 'Nueva Crónica'}
+          {initialData ? 'Editar Crónica' : 'Nueva Crónica'}
         </h3>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <button onClick={handleCancel} aria-label="Cancelar" className="p-2 text-stone-400 hover:text-stone-600 flex items-center justify-center">
             <X size={20}/>
           </button>
-          <button 
-            onClick={() => handleSave(form)} 
-            aria-label="Guardar crónica" 
-            className="flex items-center gap-2 px-6 py-2.5 bg-accent text-white rounded-sm hover:bg-accent-secondary active:scale-95 transition-all border border-accent-secondary/30"
+          <button
+            onClick={() => handleSave(form)}
+            aria-label="Guardar crónica"
+            className="flex items-center gap-2 px-5 py-2.5 bg-accent text-white rounded-sm hover:bg-accent-secondary active:scale-95 transition-all border border-accent-secondary/30"
           >
             <Save size={16}/>
             <span className="font-bold text-xs uppercase tracking-[0.2em] font-serif">
@@ -244,6 +315,42 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
             </span>
           </button>
         </div>
+      </div>
+
+      {/* STEP TABS */}
+      <div
+        className="sticky z-40 -mx-4 px-4 py-2 border-b border-accent/20 backdrop-blur-md"
+        style={{ top: 'calc(4rem + env(safe-area-inset-top))', backgroundColor: 'color-mix(in srgb, var(--bg-app) 95%, transparent)' }}
+      >
+        <div className="flex gap-1 bg-item-bg rounded-sm p-1">
+          <button
+            onClick={() => switchStep('essence')}
+            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-[0.18em] font-serif rounded-sm transition-all ${
+              step === 'essence' ? 'bg-accent text-white shadow-sm' : 'text-stone-500 hover:text-accent'
+            }`}
+          >
+            Esencia
+          </button>
+          <button
+            onClick={() => switchStep('knowledge')}
+            className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-[0.18em] font-serif rounded-sm transition-all flex items-center justify-center gap-1.5 ${
+              step === 'knowledge' ? 'bg-accent text-white shadow-sm' : 'text-stone-500 hover:text-accent'
+            }`}
+          >
+            Conocimientos
+            {knowledgeCount > 0 && (
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none ${
+                step === 'knowledge' ? 'bg-white/30 text-white' : 'bg-accent/15 text-accent'
+              }`}>
+                {knowledgeCount}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* ── ESENCIA STEP ── */}
+      {step === 'essence' && <>
 
       {/* CORE INFO */}
       <div className="bg-section-bg p-6 rounded-sm grid grid-cols-1 sm:grid-cols-2 gap-6 shadow-inner">
@@ -329,8 +436,19 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
       </div>
 
 
-      {/* DYNAMIC SECTIONS */}
-      {!expressMode && <div className="flex flex-col gap-3">
+      {/* CTA to knowledge step */}
+      <button
+        onClick={() => switchStep('knowledge')}
+        className="flex items-center justify-center gap-3 py-4 text-sm text-accent hover:text-accent-secondary font-serif italic transition-all bg-header-bg rounded-sm border border-accent/10 shadow-sm"
+      >
+        <Plus size={15} />
+        <span>Añadir personajes, lugares y más</span>
+      </button>
+
+      </>}
+
+      {/* ── CONOCIMIENTOS STEP ── */}
+      {step === 'knowledge' && <div className="flex flex-col gap-3">
         {/* FRASES */}
         <EntitySection
           title="Frase Memorable" icon={<Plus size={14}/>}
@@ -363,7 +481,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           {form.characters.map((c) => (
             <div key={c.id} className="bg-item-bg p-5 rounded-sm border-l-4 border-l-entity-character/40 mb-3 flex flex-col gap-3 relative shadow-sm hover:shadow-md transition-all">
               <button onClick={() => removeItem('characters', c.id)} aria-label="Eliminar" className="absolute top-3 right-3 p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
-              <input value={c.name} onChange={e => updateItem('characters', c.id, 'name', e.target.value)} placeholder="Nombre del ser..." className="bg-transparent border-0 border-b-2 border-primary-text/10 text-lg font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
+              <NameAutocomplete value={c.name} onChange={v => updateItem('characters', c.id, 'name', v)} placeholder="Nombre del ser..." suggestions={archive.personajes || []} inputClassName="w-full bg-transparent border-0 border-b-2 border-primary-text/10 text-lg font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
               <input value={c.tags} onChange={e => updateItem('characters', c.id, 'tags', e.target.value.split(',').map(t => t.trim()).filter(Boolean))} placeholder="Etiquetas (separadas por coma)..." className="bg-transparent border-0 border-b border-primary-text/5 text-xs text-stone-400 outline-none focus:border-accent/20 transition-all font-serif italic" />
               <textarea value={c.content} onChange={e => updateItem('characters', c.id, 'content', e.target.value)} placeholder="Observación..." className="bg-transparent border-0 border-b border-primary-text/5 text-sm text-primary-text/70 outline-none resize-none h-16 font-serif focus:border-accent/20 transition-all" />
             </div>
@@ -379,7 +497,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           {form.places.map((p) => (
             <div key={p.id} className="bg-item-bg p-5 rounded-sm border-l-4 border-l-entity-place/40 mb-3 flex flex-col gap-3 relative shadow-sm hover:shadow-md transition-all">
               <button onClick={() => removeItem('places', p.id)} aria-label="Eliminar" className="absolute top-3 right-3 p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
-              <input value={p.name} onChange={e => updateItem('places', p.id, 'name', e.target.value)} placeholder="Nombre del paraje..." className="bg-transparent border-0 border-b-2 border-primary/20 text-lg font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
+              <NameAutocomplete value={p.name} onChange={v => updateItem('places', p.id, 'name', v)} placeholder="Nombre del paraje..." suggestions={archive.lugares || []} inputClassName="w-full bg-transparent border-0 border-b-2 border-primary/20 text-lg font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
               <textarea value={p.content} onChange={e => updateItem('places', p.id, 'content', e.target.value)} placeholder="Atmósfera o importancia..." className="bg-transparent border-0 border-b border-primary/10 text-sm text-primary-text/70 outline-none resize-none h-12 font-serif focus:border-accent/20 transition-all" />
             </div>
           ))}
@@ -394,7 +512,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           {form.glossary.map((g) => (
             <div key={g.id} className="bg-item-bg p-5 rounded-sm border-l-4 border-l-oracle/40 mb-3 flex flex-col gap-3 relative shadow-sm hover:shadow-md transition-all">
               <button onClick={() => removeItem('glossary', g.id)} aria-label="Eliminar" className="absolute top-3 right-3 p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
-              <input value={g.name} onChange={e => updateItem('glossary', g.id, 'name', e.target.value)} placeholder="Término o pregunta..." className="bg-transparent border-0 border-b-2 border-primary/20 text-lg font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
+              <NameAutocomplete value={g.name} onChange={v => updateItem('glossary', g.id, 'name', v)} placeholder="Término o pregunta..." suggestions={archive.glosario || []} inputClassName="w-full bg-transparent border-0 border-b-2 border-primary/20 text-lg font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
               <textarea value={g.content} onChange={e => updateItem('glossary', g.id, 'content', e.target.value)} placeholder="Significado o duda persistente..." className="bg-transparent border-0 border-b border-primary/10 text-sm text-primary-text/70 outline-none resize-none h-12 font-serif focus:border-accent/20 transition-all" />
             </div>
           ))}
@@ -409,7 +527,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           {form.worldRules.map((w) => (
             <div key={w.id} className="bg-item-bg p-5 rounded-sm border-l-4 border-l-entity-rule/40 mb-3 flex flex-col gap-3 relative shadow-sm hover:shadow-md transition-all">
               <button onClick={() => removeItem('worldRules', w.id)} aria-label="Eliminar" className="absolute top-3 right-3 p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
-              <input value={w.name} onChange={e => updateItem('worldRules', w.id, 'name', e.target.value)} placeholder="Concepto (ej. El Chakra)..." className="bg-transparent border-0 border-b-2 border-primary/20 text-lg font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
+              <NameAutocomplete value={w.name} onChange={v => updateItem('worldRules', w.id, 'name', v)} placeholder="Concepto (ej. El Chakra)..." suggestions={archive.reglas || []} inputClassName="w-full bg-transparent border-0 border-b-2 border-primary/20 text-lg font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
               <textarea value={w.content} onChange={e => updateItem('worldRules', w.id, 'content', e.target.value)} placeholder="Explicación de la regla..." className="bg-transparent border-0 border-b border-primary/10 text-sm text-primary-text/70 outline-none resize-none h-16 font-serif focus:border-accent/20 transition-all" />
             </div>
           ))}
@@ -498,16 +616,6 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
         )}
       </div>}
 
-      {/* EXPRESS MODE EXPAND */}
-      {expressMode && (
-        <button
-          onClick={() => setExpressMode(false)}
-          className="flex items-center justify-center gap-3 py-5 text-sm text-accent hover:text-accent-secondary font-serif italic transition-all bg-header-bg rounded-sm border border-accent/10 shadow-sm mx-1"
-        >
-          <Plus size={16} />
-          <span>Expandir al grimorio completo</span>
-        </button>
-      )}
     </div>
   );
 }

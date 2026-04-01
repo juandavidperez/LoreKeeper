@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Sparkles, Send, User, MessageSquare, Clock, X, ChevronDown, ChevronUp, Loader2, RotateCcw, Mic, MicOff } from 'lucide-react';
+import { Sparkles, Send, User, MessageSquare, Clock, X, ChevronDown, ChevronUp, Loader2, RotateCcw, Mic, MicOff, WifiOff } from 'lucide-react';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useNotification } from '../hooks/useNotification';
 import { callGemini } from '../utils/ai';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 export function OracleView({ initialFocus, onClearFocus }) {
   const { archive } = useLorekeeperState();
@@ -20,7 +21,30 @@ export function OracleView({ initialFocus, onClearFocus }) {
   const [showHistory, setShowHistory] = useState(false);
   const [conversations, setConversations] = useLocalStorage('oracle-history-v4', []);
   const { recordingField, toggle: toggleRecording, error: speechError, isSupported: speechSupported } = useSpeechRecognition();
+  const { isOnline } = useNetworkStatus();
   const isProcessing = useRef(false);
+
+  // Track keyboard height via visualViewport (fixes iOS input covered by keyboard)
+  const [inputBottom, setInputBottom] = useState(80);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const update = () => {
+      const keyboardH = Math.round(window.innerHeight - vv.offsetTop - vv.height);
+      const isLandscape = window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches;
+      const navH = isLandscape ? 40 : 80;
+      setInputBottom(keyboardH > 50 ? keyboardH + 8 : navH);
+    };
+
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
   
   // Handle initial focus from Encyclopedia or Log
   useEffect(() => {
@@ -224,16 +248,22 @@ export function OracleView({ initialFocus, onClearFocus }) {
         )}
       </div>
 
-      {/* Input Area */}
-      <div className="fixed bottom-20 left-4 right-4 z-50 safe-bottom">
+      {/* Input Area — bottom driven by visualViewport to survive iOS keyboard */}
+      <div className="fixed left-4 right-4 z-50" style={{ bottom: `${inputBottom}px` }}>
+        {!isOnline && (
+          <div className="max-w-2xl mx-auto mb-2 flex items-center gap-2 px-4 py-2 bg-zinc-800/90 backdrop-blur-sm rounded-sm">
+            <WifiOff size={11} className="text-zinc-400 flex-shrink-0" aria-hidden="true" />
+            <p className="text-[10px] text-zinc-400 font-serif italic">El Oráculo no puede escuchar sin conexión al Éter</p>
+          </div>
+        )}
         {speechError && (
           <div className="max-w-2xl mx-auto mb-2 px-4 py-2 bg-danger/10 border border-danger/20 rounded-sm">
             <p className="text-[10px] text-danger italic font-serif">{speechError}</p>
           </div>
         )}
-        <form 
+        <form
           onSubmit={handleSend}
-          className="max-w-2xl mx-auto flex items-center gap-2 bg-header-bg/95 border border-accent/30 p-2 rounded-sm shadow-2xl backdrop-blur-md"
+          className={`max-w-2xl mx-auto flex items-center gap-2 bg-header-bg/95 border p-2 rounded-sm shadow-2xl backdrop-blur-md transition-colors ${isOnline ? 'border-accent/30' : 'border-zinc-700/50'}`}
         >
           {speechSupported && (
             <button
@@ -241,10 +271,11 @@ export function OracleView({ initialFocus, onClearFocus }) {
               onClick={() => toggleRecording('oracle', (text) => {
                 setInput(prev => (prev + ' ' + text).trim());
               })}
+              disabled={!isOnline}
               className={`p-3 rounded-sm transition-all flex items-center justify-center ${
-                recordingField === 'oracle' 
-                ? 'bg-red-500 text-white animate-pulse' 
-                : 'text-stone-400 hover:text-accent'
+                recordingField === 'oracle'
+                ? 'bg-red-500 text-white animate-pulse'
+                : 'text-stone-400 hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed'
               }`}
             >
               {recordingField === 'oracle' ? <MicOff size={18} /> : <Mic size={18} />}
@@ -253,15 +284,15 @@ export function OracleView({ initialFocus, onClearFocus }) {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            disabled={isTyping}
+            disabled={isTyping || !isOnline}
             inputMode="text"
             enterKeyHint="send"
-            placeholder={selectedEntity ? `Pregunta al Oráculo sobre ${selectedEntity.name}...` : "Pregunta al Oráculo..."}
-            className="flex-1 bg-transparent px-3 py-2 text-sm outline-none font-serif italic text-primary-text placeholder:text-stone-400"
+            placeholder={!isOnline ? 'Sin conexión al Éter...' : selectedEntity ? `Pregunta al Oráculo sobre ${selectedEntity.name}...` : "Pregunta al Oráculo..."}
+            className="flex-1 bg-transparent px-3 py-2 text-sm outline-none font-serif italic text-primary-text placeholder:text-stone-400 disabled:placeholder:text-stone-500"
           />
-          <button 
+          <button
             type="submit"
-            disabled={!input.trim() || isTyping}
+            disabled={!input.trim() || isTyping || !isOnline}
             className="p-3 bg-accent text-white rounded-sm hover:bg-accent-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
           >
             {isTyping ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}

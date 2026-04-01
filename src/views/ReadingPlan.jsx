@@ -69,6 +69,7 @@ export function ReadingPlan({ onLogWeek }) {
       prev.includes(week) ? prev.filter(w => w !== week) : [...prev, week]
     );
     if (!wasCompleted) {
+      navigator.vibrate?.([10, 60, 25]);
       setJustSealed(week);
       if (sealTimeout.current) clearTimeout(sealTimeout.current);
       sealTimeout.current = setTimeout(() => setJustSealed(null), 1500);
