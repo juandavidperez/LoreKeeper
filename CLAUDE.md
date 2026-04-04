@@ -19,24 +19,25 @@ Lorekeeper is a reading companion PWA for tracking reading progress, logging ent
 
 **Entry point**: `index.html` → `src/main.jsx` → `<App />`
 
-**State management**: React Context via `useLorekeeperState` hook (in `src/hooks/`). All app state (books, phases, schedule, entries, completedWeeks) is persisted to localStorage through `useLocalStorage` hook. localStorage keys are prefixed with `lore-` or descriptive names like `reading-entries`, `completed-weeks`, `oracle-replies`, `lore-theme`, `lore-entry-draft`.
+**State management**: React Context via `useLorekeeperState` hook (in `src/hooks/`). All app state (books, phases, schedule, entries, completedWeeks) is persisted to localStorage through `useLocalStorage` hook. localStorage keys are prefixed with `lore-` or descriptive names like `reading-entries`, `completed-weeks`, `oracle-replies`, `lore-entry-draft`.
 
 **Component structure**:
 - `src/views/` — Page-level components: `ReadingPlan`, `ReadingLog`, `Encyclopedia`, `EntryForm`, `OracleView`, `WisdomMap`
-- `src/components/` — Shared UI (`MainLayout` with tab navigation, theme toggle, `ErrorBoundary`, `ReloadPrompt` for PWA updates)
-- `src/hooks/` — `useLorekeeperState` (context + state logic + export/import with schema validation), `useLocalStorage` (persistence with shape validation and quota error handling), `useNotification` (toast system), `useSpeechRecognition` (voice input with error handling), `useKeyboardShortcuts` (generic keyboard shortcut hook)
+- `src/components/` — Shared UI: `MainLayout` (tab navigation, offline banner, install banner, landscape compact mode), `ErrorBoundary`, `ReloadPrompt` (PWA updates), `InstallBanner` (PWA install prompt), `AuthBanner`, `SyncIndicator`, `GlobalSearch`, `MigrationGuard`, `SyncTracker`, `OnboardingOverlay`, `ShareQuote`, `ConfirmModal`
+- `src/context/` — `ThemeContext.jsx`: `ThemeProvider` + `useTheme()` hook. `ThemeProvider` wraps `App` inside `App.jsx` (not in `main.jsx`). localStorage key: `lorekeeper-theme`
+- `src/hooks/` — `useLorekeeperState` (context + state logic + export/import with schema validation), `useLocalStorage` (persistence with shape validation and quota error handling), `useNotification` (toast system), `useSpeechRecognition` (voice input with error handling), `useKeyboardShortcuts` (generic keyboard shortcut hook), `useNetworkStatus` (online/offline detection), `useInstallPrompt` (PWA install prompt logic), `useAuth`, `useSync`
 - `src/utils/ai.js` — Gemini API integration with retry/backoff, metadata extraction and "Oracle" responses, with fallback mocks
 - `src/utils/imageStore.js` — IndexedDB wrapper for manga panel image storage (saves large images outside localStorage)
 - `src/utils/mapImages.js` — Map asset preloader and archetype/landmark-type detection. Assets live in `public/assets/map/characters/` and `public/assets/map/landmarks/`. Archetypes: monster, antihero, master, scholar, hero, warrior, creature, person. Detection: tag-based first, name-based fallback using reference examples.
 - `src/data/mockData.js` — Initial data constants (books, phases, schedule, moods, section types)
 
-**Navigation**: Tab-based (Plan / Crónicas / Archivo / Oráculo / Mapa), managed by `activeTab` state in `App`. All views are lazy-loaded via `React.lazy`/`Suspense`.
+**Navigation**: Tab-based (Plan / Crónicas / Archivo / Oráculo / Mapa), managed by `activeTab` state in `App`. All views are lazy-loaded via `React.lazy`/`Suspense`. WisdomMap is also embeddable as a toggle view inside Archivo (Encyclopedia) via the map button in its header — both entry points render the same `<WisdomMap />` component.
 
 ## Key Patterns
 
 - Plain JavaScript (no TypeScript) with JSX
 - Hooks in `.js` files use `React.createElement` instead of JSX (to avoid `react-refresh/only-export-components` lint error when exporting both components and hooks from the same file)
-- Dark/light theme via CSS custom properties in `index.css`. Theme toggled via `.light` class on root div. Uses `useLocalStorage('lore-theme')` for persistence. Defaults to system preference via `prefers-color-scheme`
+- Dark/light theme via `ThemeContext` (`src/context/ThemeContext.jsx`). `useTheme()` exposes `{ theme, toggleTheme }`. Persisted under `lorekeeper-theme` in localStorage. Defaults to system preference via `prefers-color-scheme`. `ThemeProvider` lives in `App.jsx`.
 - Dark theme: zinc-950 base, amber-500 accent. Light theme: parchment tones (#f4ead5 base, amber-700 accent)
 - Custom fonts: Playfair Display, Inter, Source Serif 4 (loaded via `<link>` in `index.html`, not CSS `@import`)
 - Mobile-first with safe-area-bottom for iPhone notch
@@ -51,6 +52,11 @@ Lorekeeper is a reading companion PWA for tracking reading progress, logging ent
 - Export/Import: JSON backup available from Plan Maestro header (Download/Upload icons). Import includes schema validation and confirmation dialog
 - Unique entry IDs via `uid()` function (timestamp + counter + random) instead of `Date.now()`
 - Keyboard shortcuts: Cmd+K (focus search), Cmd+1–5 (tab switching: Plan/Crónicas/Archivo/Oráculo/Mapa)
+- Offline banner: `useNetworkStatus` hook monitors `online`/`offline` events. When offline, `MainLayout` shows a fixed banner ("El Éter guarda silencio · sin conexión") below the header using `WifiOff` icon
+- PWA install banner: `useInstallPrompt` hook captures `beforeinstallprompt` event. `InstallBanner` component shows install CTA for Android (native prompt) and iOS (manual instructions). Dismissed state persisted in `lore-install-dismissed`
+- Mobile landscape compact mode: `MainLayout` listens to `(orientation: landscape) and (max-height: 500px)` media query. When matched, header and nav shrink to 2.5rem height
+- Back gesture: swipe left/right on `<main>` navigates between tabs (touch handlers in `MainLayout`)
+- Haptic feedback: `navigator.vibrate?.()` used on mic button in `EntryForm` (20ms) and week sealing in `ReadingPlan` ([10, 60, 25] pattern)
 
 ## Data Validation
 
@@ -81,18 +87,19 @@ Lorekeeper is a reading companion PWA for tracking reading progress, logging ent
 **Framework**: Vitest + jsdom + @testing-library/react
 
 **Test files** (`src/__tests__/`):
-- `setup.js` — Clears localStorage/sessionStorage after each test
+- `setup.js` — Clears localStorage/sessionStorage after each test; stubs `window.matchMedia` (jsdom doesn't implement it)
 - `useLocalStorage.test.js` — 14 tests: read/write, initialValue, updater functions, corrupted JSON, shape validation for books/entries, quota error handling
 - `aggregateEntities.test.js` — 9 tests: empty entries, single/multi entry aggregation, deduplication, tag merging, cross-book aggregation
 - `importData.test.js` — 16 tests: valid data, partial data, invalid JSON, null/array top-level, field type validation, book/entry field validation
 - `callGemini.test.js` — 12 tests: success, 4xx immediate fail, 429/500 retries, network error retries, exponential backoff, mock responses
 - `entryFormValidation.test.js` — 14 tests: valid entry, missing book, empty names, empty quotes, no content, entries with only metadata
-- `smokeTest.test.jsx` — 4 tests: app renders, default tab, navigation tabs, skip-to-content link (mocks framer-motion and virtual:pwa-register/react)
+- `smokeTest.test.jsx` — 4 tests: app renders, default tab, navigation tabs, skip-to-content link (mocks framer-motion, virtual:pwa-register/react, and supabase)
 
 **Notes**:
 - Pure validation logic is extracted/replicated in tests rather than testing full React rendering
 - `vi.useFakeTimers()` for testing exponential backoff; real timers for exhausted-retry tests to avoid unhandled rejections
-- Smoke test uses `filterProps` helper to strip framer-motion props from mocked components
+- Smoke test uses a `Proxy`-based framer-motion mock covering all `motion.*` tags (div, span, etc.), not just `motion.div`
+- Navigation tab test uses `getByRole('tab', { name })` since inactive tabs only expose their label via `aria-label` (text label hidden in new UX)
 
 ## Pending Work
 
@@ -102,7 +109,7 @@ Lorekeeper is a reading companion PWA for tracking reading progress, logging ent
 
 ### Features
 - **Auth/multi-user** — Everything is local, single user. No authentication system
-- **Reading reminders** — PWA push notifications for reading reminders are implemented (Bell icon in header, time picker, `lore-reminder` localStorage key). Still missing: offline indicator when Gemini/sync fails silently due to no network.
+- **Reading reminders** — PWA push notifications for reading reminders are implemented (Bell icon in header, time picker, `lore-reminder` localStorage key).
 - **Advanced stats/visualizations** — Has streaks and weekly progress, but no reading time charts, habit graphs, or richer visualizations
 - **Social/sharing** — `ShareQuote` component exists for sharing quotes. No way to share full entries or progress.
 - **Oracle history** — Oracle generates responses but there's no navigable conversation history with the AI
@@ -114,9 +121,6 @@ Lorekeeper is a reading companion PWA for tracking reading progress, logging ent
 - **Manifest screenshots** — `screenshots` field in PWA manifest is empty (improves Android install experience)
 - **Data retention policy** — localStorage can fill up with no automatic cleanup
 - **Better API error UX** — When Gemini API retries are exhausted, user only sees a generic error
-- **Offline indicator** — App works offline (SW + localStorage) but no visual indicator when network is unavailable
-- **Haptic feedback** — No `navigator.vibrate()` on key actions (save, seal week, etc.)
-- **Landscape mode** — Bottom nav + header consume too much vertical space in landscape on mobile
 - **WisdomMap character images** — Characters currently use original parchment-background PNGs. Should be replaced with transparent-background versions processed via remove.bg or similar. New archetypes needing images: `primal_antihero.png`, `primal_master.png`, `primal_creature.png`.
 
 ## Design Context
