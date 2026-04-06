@@ -346,6 +346,12 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
         </div>
       )}
 
+      {filteredEntries.length > 0 && (searchTerm || bookFilter !== 'todos' || dateFrom || dateTo) && (
+        <p className="text-[10px] text-stone-400 font-serif italic -mt-2">
+          {filteredEntries.length} {filteredEntries.length === 1 ? 'crónica encontrada' : 'crónicas encontradas'}
+        </p>
+      )}
+
       <div className="flex flex-col gap-6">
         {filteredEntries.length === 0 ? (
           <div className="bg-header-bg/60 text-center py-24 rounded-sm border-2 border-dashed border-primary/20 shadow-inner">

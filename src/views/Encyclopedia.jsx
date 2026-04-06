@@ -157,6 +157,11 @@ export function Encyclopedia({ entityFocus, onClearFocus, onConsultOracle }) {
       </div>
 
       {/* ENTITY LIST */}
+      {filteredData.length > 0 && (searchTerm || bookFilter !== 'todos' || categoryFilter !== 'todos') && (
+        <p className="text-[10px] text-stone-400 font-serif italic -mt-2">
+          {filteredData.length} {filteredData.length === 1 ? 'registro encontrado' : 'registros encontrados'}
+        </p>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         {filteredData.length === 0 ? (
           <div className="bg-header-bg flex flex-col items-center gap-3 text-center py-20 border-2 border-dashed border-primary/20 rounded-sm">

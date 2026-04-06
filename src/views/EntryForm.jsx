@@ -7,6 +7,7 @@ import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useNotification } from '../hooks/useNotification';
 import { useTheme } from '../context/ThemeContext';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 function NameAutocomplete({ value, onChange, placeholder, suggestions = [], inputClassName }) {
   const [open, setOpen] = useState(false);
@@ -156,6 +157,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
   }, [isNewEntry, form.reingreso]);
 
   const handleSave = (formData) => {
+    if (isSaving.current) return;
     if (!formData.book) { notify('Selecciona un libro antes de guardar.', 'error'); return; }
     
     // Detailed Validation
@@ -184,6 +186,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
       return;
     }
 
+    isSaving.current = true;
     navigator.vibrate?.(20);
     if (isNewEntry) window.localStorage.removeItem(DRAFT_KEY);
     // Move inline manga images to IndexedDB before saving
@@ -191,11 +194,15 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
       externalizePanels(formData.mangaPanels).then(keys => {
         onSave({ ...formData, mangaPanels: keys });
       }).catch(() => {
+        notify('No se pudieron guardar las imágenes en caché. Se guardaron en línea como respaldo.', 'error');
         onSave(formData); // fallback: keep inline
+      }).finally(() => {
+        isSaving.current = false;
       });
       return;
     }
     onSave(formData);
+    isSaving.current = false;
   };
 
   const handleCancel = () => {
@@ -206,6 +213,8 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
   const [step, setStep] = useState('essence'); // 'essence' | 'knowledge'
   const [isExtracting, setIsExtracting] = useState(false);
   const isExtractingLock = useRef(false);
+  const isSaving = useRef(false);
+  const [panelToRemove, setPanelToRemove] = useState(null);
   const [openSections, setOpenSections] = useState({
     quotes: true, characters: false, places: false,
     glossary: false, world: false, connections: false, panels: false
@@ -295,6 +304,19 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in pb-24 h-full">
+      {panelToRemove !== null && (
+        <ConfirmModal
+          title="Eliminar panel"
+          message="¿Deseas eliminar este panel de impacto? No se puede deshacer."
+          confirmLabel="Eliminar"
+          danger
+          onConfirm={() => {
+            setForm(prev => ({ ...prev, mangaPanels: prev.mangaPanels.filter((_, idx) => idx !== panelToRemove) }));
+            setPanelToRemove(null);
+          }}
+          onCancel={() => setPanelToRemove(null)}
+        />
+      )}
       {/* HEADER ROW */}
       <div className="flex items-center justify-between">
         <h3 className="font-serif text-primary-text text-2xl tracking-tight">
@@ -601,7 +623,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
                   {form.mangaPanels.map((img, i) => (
                     <div key={i} className="relative aspect-video bg-black rounded-sm overflow-hidden border border-stone-200 group/panel shadow-md">
                       <img src={img} loading="lazy" className="w-full h-full object-cover opacity-90 group-hover/panel:opacity-100 transition-opacity" alt={`Panel de manga ${i + 1}`} />
-                      <button onClick={() => setForm({...form, mangaPanels: form.mangaPanels.filter((_, idx) => idx !== i)})} className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded-full p-2 text-white hover:bg-red-600 transition-all group-hover/panel:scale-110 shadow-lg"><X size={14}/></button>
+                      <button onClick={() => setPanelToRemove(i)} className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm rounded-full p-2 text-white hover:bg-red-600 transition-all group-hover/panel:scale-110 shadow-lg"><X size={14}/></button>
                     </div>
                   ))}
                   <label className="aspect-video bg-item-bg border-2 border-dashed border-stone-300 rounded-sm flex flex-col items-center justify-center cursor-pointer hover:border-accent transition-all group/upload shadow-sm">

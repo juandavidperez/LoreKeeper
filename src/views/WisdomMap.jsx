@@ -94,10 +94,12 @@ export function WisdomMap() {
   const touchRef = useRef({ type: 'none', touches: [], prevDist: 0 })
 
   useEffect(() => {
+    let cancelled = false
     loadMapAssets()
-      .then(setAssets)
-      .catch(() => setAssets(null))
-      .finally(() => setLoading(false))
+      .then(result => { if (!cancelled) setAssets(result) })
+      .catch(() => { if (!cancelled) setAssets(null) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [])
 
   // ── Non-passive wheel (required so preventDefault works) ──
@@ -121,8 +123,14 @@ export function WisdomMap() {
   }, [setVp])
 
   // ── Build nodes ──
-  const characters = archive.personajes.filter(e => selectedBook === 'all' || e.book === selectedBook)
-  const places     = archive.lugares.filter(e => selectedBook === 'all' || e.book === selectedBook)
+  const characters = useMemo(
+    () => archive.personajes.filter(e => selectedBook === 'all' || e.book === selectedBook),
+    [archive.personajes, selectedBook]
+  )
+  const places = useMemo(
+    () => archive.lugares.filter(e => selectedBook === 'all' || e.book === selectedBook),
+    [archive.lugares, selectedBook]
+  )
 
   const allNodes = useMemo(() => {
     const charNodes = characters.map(char => ({
@@ -136,10 +144,11 @@ export function WisdomMap() {
       r: LANDMARK_SIZE / 2, ...seedPos(place.name, 13),
     }))
     return [...charNodes, ...lmNodes]
-  }, [characters.length, places.length, selectedBook]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [characters, places])
 
   const resolvedNodes = useMemo(() => {
-    const positions = resolveCollisions(allNodes)
+    const iterations = allNodes.length <= 10 ? 20 : allNodes.length <= 30 ? 40 : 80
+    const positions = resolveCollisions(allNodes, 130, iterations)
     return allNodes.map((n, i) => ({ ...n, x: positions[i].x, y: positions[i].y }))
   }, [allNodes])
 

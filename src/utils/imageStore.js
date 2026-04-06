@@ -4,15 +4,22 @@ const DB_NAME = 'lorekeeper-images';
 const STORE_NAME = 'panels';
 const DB_VERSION = 1;
 
+let dbPromise = null;
+
 function openDB() {
-  return new Promise((resolve, reject) => {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = () => {
       request.result.createObjectStore(STORE_NAME);
     };
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onerror = () => {
+      dbPromise = null; // allow retry on next call
+      reject(request.error);
+    };
   });
+  return dbPromise;
 }
 
 export async function saveImage(key, dataUri) {

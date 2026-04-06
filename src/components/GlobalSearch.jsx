@@ -20,6 +20,17 @@ const TYPE_LABELS = {
   quote: 'Cita',
 };
 
+function Highlight({ text, query }) {
+  if (!query || !text) return text;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+  return parts.map((part, i) =>
+    part.toLowerCase() === query.toLowerCase()
+      ? <mark key={i} className="bg-accent/25 text-accent not-italic rounded-sm px-0.5">{part}</mark>
+      : part
+  );
+}
+
 export function GlobalSearch({ onNavigate, onClose }) {
   const { entries, archive } = useLorekeeperState();
   const [query, setQuery] = useState('');
@@ -151,12 +162,16 @@ export function GlobalSearch({ onNavigate, onClose }) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-sm text-primary-text font-serif truncate">{result.name}</span>
+                          <span className="text-sm text-primary-text font-serif truncate">
+                            <Highlight text={result.name} query={query} />
+                          </span>
                           <span className="text-[10px] text-stone-400 uppercase tracking-widest font-bold shrink-0">
                             {TYPE_LABELS[result.type] || result.type}
                           </span>
                         </div>
-                        <p className="text-xs text-stone-500 truncate font-serif italic">{result.preview}</p>
+                        <p className="text-xs text-stone-500 truncate font-serif italic">
+                          <Highlight text={result.preview} query={query} />
+                        </p>
                       </div>
                       <div className="flex items-center gap-1 shrink-0 mt-0.5">
                         <BookOpen size={10} className="text-stone-300" />
