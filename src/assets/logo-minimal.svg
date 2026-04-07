@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Minimalist LoreKeeper Logo: Stylized L with Book Spine -->
+  <path d="M30 20 V80 H70" stroke="#b45309" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" />
+  <path d="M30 35 H55 C60 35 65 40 65 45 V70 C65 75 60 80 55 80 H30" fill="#b45309" opacity="0.8" />
+  <path d="M42 45 V65" stroke="#f4ead5" stroke-width="3" stroke-linecap="round" />
+</svg>

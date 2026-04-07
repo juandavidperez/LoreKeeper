@@ -8,6 +8,7 @@ import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { AuthBanner } from './AuthBanner';
 import { SyncIndicator } from './SyncIndicator';
 import { GlobalSearch } from './GlobalSearch';
+import { Logo } from './Logo';
 
 const TAB_IDS = ['plan', 'log', 'encyclopedia', 'oracle', 'map'];
 
@@ -147,7 +148,11 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
           <AuthBanner />
           <SyncIndicator />
         </div>
-        <h1 className="text-xl font-serif text-accent tracking-[0.2em] font-bold">LOREKEEPER</h1>
+          <div className="flex-1 flex justify-center sm:justify-start">
+            <Logo className="hidden sm:flex" />
+            <Logo variant="minimal" className="flex sm:hidden" />
+          </div>
+
         <div className="flex items-center gap-1">
           <button
             onClick={toggleTheme}
