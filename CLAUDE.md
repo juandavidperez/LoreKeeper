@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+<!-- Última revisión: 2026-04-08 -->
+
 ## Project Overview
 
 Lorekeeper is a reading companion PWA for tracking reading progress, logging entries with metadata (characters, places, glossary, quotes, world rules, connections), and searching an auto-generated archive. Built with React 19 + Vite 7, styled with Tailwind CSS 4, animated with Framer Motion.
