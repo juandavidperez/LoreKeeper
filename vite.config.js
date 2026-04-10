@@ -33,7 +33,7 @@ export default defineConfig({
           },
           {
             src: 'pwa-512.png',
-            sizes: '512x512',
+            sizes: '1024x1024',
             type: 'image/png',
             purpose: 'any maskable'
           }
@@ -41,21 +41,21 @@ export default defineConfig({
         screenshots: [
           {
             src: 'screenshots/bitacora.png',
-            sizes: '390x844',
+            sizes: '1000x1514',
             type: 'image/png',
             form_factor: 'narrow',
             label: 'Bitácora — Registro de crónicas de lectura'
           },
           {
             src: 'screenshots/archivo.png',
-            sizes: '390x844',
+            sizes: '1000x1514',
             type: 'image/png',
             form_factor: 'narrow',
             label: 'El Archivo — Enciclopedia de personajes y lugares'
           },
           {
             src: 'screenshots/plan.png',
-            sizes: '390x844',
+            sizes: '1000x1514',
             type: 'image/png',
             form_factor: 'narrow',
             label: 'Plan Maestro — Organiza tu lectura por semanas'

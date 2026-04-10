@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-<!-- Última revisión: 2026-04-08 -->
+<!-- Última revisión: 2026-04-09 -->
 
 ## Project Overview
 
@@ -111,19 +111,15 @@ Lorekeeper is a reading companion PWA for tracking reading progress, logging ent
 
 ### Features
 - **Auth/multi-user** — Everything is local, single user. No authentication system
-- **Reading reminders** — PWA push notifications for reading reminders are implemented (Bell icon in header, time picker, `lore-reminder` localStorage key).
 - **Advanced stats/visualizations** — Has streaks and weekly progress, but no reading time charts, habit graphs, or richer visualizations
 - **Social/sharing** — `ShareQuote` component exists for sharing quotes. No way to share full entries or progress.
-- **Oracle history** — Oracle generates responses but there's no navigable conversation history with the AI
 - **i18n** — All UI is hardcoded in Spanish. No internationalization system
 - **Onboarding/tutorial** — `OnboardingOverlay` component exists with basic onboarding. Could be expanded.
-- **Wisdom Map (WisdomMap)** — SVG map of characters and places from entries. Working: deterministic layout with collision resolution, archetype detection by tag+name, pan/zoom (mouse+touch), book filter, tooltip on tap. Pending: d3-force physics layout, connection lines between co-occurring entities, landmark region clustering.
+- **Wisdom Map (WisdomMap)** — SVG map of characters and places from entries. Working: deterministic layout with collision resolution, archetype detection by tag+name, pan/zoom (mouse+touch), book filter, tooltip on tap, co-occurrence connection lines (toggle "hilos"), navigable conversation history. Pending: d3-force physics layout, landmark region clustering.
 
 ### Technical Improvements
-- **Manifest screenshots** — `screenshots` field in PWA manifest is empty (improves Android install experience)
-- **Data retention policy** — localStorage can fill up with no automatic cleanup
-- **Better API error UX** — When Gemini API retries are exhausted, user only sees a generic error
-- **WisdomMap character images** — Characters currently use original parchment-background PNGs. Should be replaced with transparent-background versions processed via remove.bg or similar. New archetypes needing images: `primal_antihero.png`, `primal_master.png`, `primal_creature.png`.
+- **Data retention policy** — Oracle history is capped at 10 conversations. localStorage can still fill up with entries and manga panel references; no automatic cleanup for entry data.
+- **WisdomMap character images** — Characters use parchment-background PNGs. Should be replaced with transparent-background versions processed via remove.bg or similar.
 
 ## Design Context
 

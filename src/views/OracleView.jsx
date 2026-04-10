@@ -109,7 +109,7 @@ export function OracleView({ initialFocus, onClearFocus }) {
       
       setMessages(prev => [...prev, { id: Date.now() + 1, role: 'oracle', text: response }]);
     } catch (err) {
-      notify("El Oráculo se ha sumido en el silencio. Intenta de nuevo.", "error");
+      notify(err?.message || "El Oráculo se ha sumido en el silencio. Intenta de nuevo.", "error");
     } finally {
       setIsTyping(false);
       isProcessing.current = false;
@@ -118,7 +118,7 @@ export function OracleView({ initialFocus, onClearFocus }) {
 
   const startNewConversation = () => {
     if (messages.length > 1) {
-      setConversations([{ id: Date.now(), date: new Date().toISOString(), messages }, ...conversations]);
+      setConversations(prev => [{ id: Date.now(), date: new Date().toISOString(), messages }, ...prev].slice(0, 10));
     }
     setMessages([{ id: Date.now(), role: 'oracle', text: '"El hilo anterior se ha tejido. Empecemos de nuevo, buscador."' }]);
     setSelectedEntity(null);

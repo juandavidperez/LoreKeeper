@@ -72,11 +72,12 @@ function touchCenter(t1, t2) {
 // ─── Component ────────────────────────────────────────────────────────────
 
 export function WisdomMap() {
-  const { archive, books } = useLorekeeperState()
-  const [assets, setAssets]       = useState(null)
-  const [loading, setLoading]     = useState(true)
-  const [selectedBook, setSelectedBook] = useState('all')
-  const [tappedNode, setTappedNode]     = useState(null)   // touch tooltip
+  const { archive, books, entries } = useLorekeeperState()
+  const [assets, setAssets]         = useState(null)
+  const [loading, setLoading]       = useState(true)
+  const [selectedBook, setSelectedBook]   = useState('all')
+  const [tappedNode, setTappedNode]       = useState(null)   // touch tooltip
+  const [showConnections, setShowConnections] = useState(true)
   const svgRef    = useRef(null)
   const vpRef     = useRef({ x: 0, y: 0, scale: 1 })       // source of truth
   const [vp, setVpState] = useState({ x: 0, y: 0, scale: 1 })
@@ -154,6 +155,35 @@ export function WisdomMap() {
 
   const charNodes     = resolvedNodes.filter(n => n.kind === 'character')
   const landmarkNodes = resolvedNodes.filter(n => n.kind === 'landmark')
+
+  // ── Node lookup map for edge rendering ──
+  const nodeMap = useMemo(() => {
+    const map = {}
+    resolvedNodes.forEach(n => { map[n.name] = n })
+    return map
+  }, [resolvedNodes])
+
+  // ── Co-occurrence edges ──
+  const edges = useMemo(() => {
+    const edgeMap = {}
+    entries.forEach(entry => {
+      if (selectedBook !== 'all' && entry.book !== selectedBook) return
+      const names = [
+        ...(entry.characters || []).map(c => c.name),
+        ...(entry.places     || []).map(p => p.name),
+      ]
+      for (let i = 0; i < names.length; i++) {
+        for (let j = i + 1; j < names.length; j++) {
+          const key = [names[i], names[j]].sort().join('|||')
+          edgeMap[key] = (edgeMap[key] || 0) + 1
+        }
+      }
+    })
+    return Object.entries(edgeMap).map(([key, weight]) => {
+      const [a, b] = key.split('|||')
+      return { a, b, weight }
+    })
+  }, [entries, selectedBook])
 
   // ── Mouse pan ──
   const isPanning  = useRef(false)
@@ -235,8 +265,8 @@ export function WisdomMap() {
   return (
     <div className="flex flex-col" style={{ height: 'calc(100dvh - 10rem)' }}>
 
-      {/* ── Book filter ── */}
-      <div className="px-4 pt-1 pb-2 shrink-0">
+      {/* ── Book filter + connections toggle ── */}
+      <div className="px-4 pt-1 pb-2 shrink-0 flex items-center gap-2">
         <select
           value={selectedBook}
           onChange={e => { setSelectedBook(e.target.value); setTappedNode(null) }}
@@ -250,6 +280,18 @@ export function WisdomMap() {
           <option value="all">Todo el archivo</option>
           {books.map(b => <option key={b.id} value={b.title}>{b.title}</option>)}
         </select>
+        <button
+          onClick={() => setShowConnections(v => !v)}
+          aria-label={showConnections ? 'Ocultar conexiones' : 'Mostrar conexiones'}
+          className="text-[10px] font-serif italic rounded-lg border px-2.5 py-1.5 transition-colors"
+          style={{
+            borderColor: showConnections ? 'var(--text-accent)' : 'var(--border-subtle)',
+            color:       showConnections ? 'var(--text-accent)' : 'var(--text-muted)',
+            background:  'var(--bg-card)',
+          }}
+        >
+          hilos
+        </button>
       </div>
 
       {/* ── Map canvas ── */}
@@ -307,6 +349,25 @@ export function WisdomMap() {
           <rect width={MAP_W} height={MAP_H} fill="url(#mapGrid)" />
 
           <g transform={`translate(${vp.x},${vp.y}) scale(${vp.scale})`}>
+
+            {/* Connection lines */}
+            {showConnections && edges.map(({ a, b, weight }) => {
+              const na = nodeMap[a], nb = nodeMap[b]
+              if (!na || !nb) return null
+              const opacity = Math.min(0.55, 0.12 + weight * 0.09)
+              const strokeW = Math.min(2.5, 0.6 + weight * 0.35)
+              return (
+                <line
+                  key={`edge-${a}-${b}`}
+                  x1={na.x} y1={na.y} x2={nb.x} y2={nb.y}
+                  stroke="#9c845a"
+                  strokeWidth={strokeW}
+                  strokeOpacity={opacity}
+                  strokeDasharray="5 7"
+                  strokeLinecap="round"
+                />
+              )
+            })}
 
             {/* Landmarks */}
             {landmarkNodes.map(node => {
