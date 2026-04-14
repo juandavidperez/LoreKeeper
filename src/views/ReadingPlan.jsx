@@ -224,6 +224,15 @@ export function ReadingPlan({ onLogWeek }) {
         />
       )}
 
+      {/* HABIT & ACTIVITY CHARTS */}
+      {!isEditing && entries.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <ActivityGrid entries={entries} />
+          <HabitGraph entries={entries} />
+          <BookStats entries={entries} books={books} />
+        </div>
+      )}
+
       {/* ONBOARDING HINT */}
       {!isEditing && completedWeeks.length === 0 && schedule.length > 0 && (
         <p className="text-[10px] text-stone-500 italic text-center -mt-4 font-serif opacity-70">Toca cualquier semana para sellar tu progreso en el tiempo.</p>
@@ -345,56 +354,251 @@ function PlanHeader({ isEditing, onToggleEdit, onExport, onImport, onLoadDemo, a
 }
 
 function ArchivalStats({ completedTotal, totalWeeks, progress, entries }) {
-  // Real streak calculation
-  const streak = useMemo(() => {
-    if (!entries.length) return 0;
-    const dates = [...new Set(entries.map(e => e.date))].sort().reverse();
+  const { streak, totalReadingMinutes } = useMemo(() => {
     let currentStreak = 0;
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-    
-    if (dates[0] !== today && dates[0] !== yesterdayStr) return 0;
-
-    let checkDate = new Date(dates[0]);
-    for (const d of dates) {
-      if (d === checkDate.toISOString().split('T')[0]) {
-        currentStreak++;
-        checkDate.setDate(checkDate.getDate() - 1);
-      } else {
-        break;
+    if (entries.length) {
+      const dates = [...new Set(entries.map(e => e.date))].sort().reverse();
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      if (dates[0] === today || dates[0] === yesterdayStr) {
+        let checkDate = new Date(dates[0]);
+        for (const d of dates) {
+          if (d === checkDate.toISOString().split('T')[0]) {
+            currentStreak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+          } else break;
+        }
       }
     }
-    return currentStreak;
+    const minutes = entries.reduce((sum, e) => sum + (e.readingTime || 0), 0);
+    return { streak: currentStreak, totalReadingMinutes: minutes };
   }, [entries]);
+
+  const timeLabel = useMemo(() => {
+    if (totalReadingMinutes === 0) return '—';
+    const h = Math.floor(totalReadingMinutes / 60);
+    const m = totalReadingMinutes % 60;
+    return h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}`.trim() : `${m}m`;
+  }, [totalReadingMinutes]);
 
   return (
     <div className="relative group">
-      {/* Decorative inner shadow/glow */}
       <div className="absolute -inset-1 bg-stone-900/5 blur opacity-25 rounded-lg" />
-      
-      <div className="relative grid grid-cols-1 sm:grid-cols-3 bg-header-bg border border-accent/20 rounded-sm divide-y sm:divide-y-0 sm:divide-x divide-accent/20 shadow-sm transform hover:translate-y-[-1px] transition-transform duration-300">
-        <div className="flex flex-col items-center py-5 relative px-4">
+      <div className="relative grid grid-cols-2 sm:grid-cols-4 bg-header-bg border border-accent/20 rounded-sm divide-y-0 divide-x divide-accent/20 shadow-sm transform hover:translate-y-[-1px] transition-transform duration-300">
+        <div className="flex flex-col items-center py-5 px-4 border-b sm:border-b-0 border-accent/20">
           <span className="text-3xl font-serif text-primary-text drop-shadow-sm">{completedTotal}</span>
           <span className="text-[8px] font-bold text-stone-600 uppercase tracking-tighter text-center mt-1">Semanas Selladas</span>
         </div>
-        <div className="flex flex-col items-center py-5 px-4 bg-section-bg">
+        <div className="flex flex-col items-center py-5 px-4 bg-section-bg border-b sm:border-b-0 border-accent/20 border-l border-accent/20">
           <span className="text-3xl font-serif text-accent flex items-center gap-1.5 drop-shadow-sm">
             <span className="text-2xl leading-none">✦</span>{streak}
           </span>
           <span className="text-[8px] font-bold text-stone-600 uppercase tracking-tighter text-center mt-1">Racha Actual</span>
         </div>
-        <div className="flex flex-col items-center py-5 px-4">
-          <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-serif text-primary-text drop-shadow-sm">{progress}%</span>
-          </div>
+        <div className="flex flex-col items-center py-5 px-4 border-l border-accent/20">
+          <span className="text-3xl font-serif text-primary-text drop-shadow-sm">{progress}%</span>
           <span className="text-[8px] font-bold text-stone-600 uppercase tracking-tighter text-center mt-1">
-            {completedTotal} de {totalWeeks} semanas
+            {completedTotal} de {totalWeeks} sem.
           </span>
         </div>
+        <div className="flex flex-col items-center py-5 px-4 border-l border-accent/20">
+          <span className="text-3xl font-serif text-primary-text drop-shadow-sm leading-none">{timeLabel}</span>
+          <span className="text-[8px] font-bold text-stone-600 uppercase tracking-tighter text-center mt-1">Tiempo Total</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HabitGraph({ entries }) {
+  const weeks = useMemo(() => {
+    const today = new Date();
+    const daysSinceMonday = (today.getDay() + 6) % 7;
+    const currentWeekStart = new Date(today);
+    currentWeekStart.setDate(today.getDate() - daysSinceMonday);
+    currentWeekStart.setHours(0, 0, 0, 0);
+
+    return Array.from({ length: 8 }, (_, i) => {
+      const weekOffset = 7 - i; // i=0 → 7 weeks ago, i=7 → current week
+      const weekStart = new Date(currentWeekStart);
+      weekStart.setDate(currentWeekStart.getDate() - weekOffset * 7);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+
+      const count = entries.filter(e => {
+        const d = new Date(e.date + 'T12:00:00');
+        return d >= weekStart && d <= weekEnd;
+      }).length;
+
+      const label = weekStart.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).replace('.', '');
+      return { label, count, isCurrent: weekOffset === 0 };
+    });
+  }, [entries]);
+
+  const maxCount = Math.max(...weeks.map(w => w.count), 1);
+  const totalEntries = weeks.reduce((s, w) => s + w.count, 0);
+
+  return (
+    <div className="bg-header-bg border border-accent/20 rounded-sm px-4 pt-4 pb-3 shadow-sm">
+      <div className="flex items-baseline justify-between mb-3">
+        <p className="text-[9px] font-bold text-stone-500 uppercase tracking-widest">Hábito · Últimas 8 semanas</p>
+        {totalEntries > 0 && (
+          <span className="text-[9px] font-mono text-accent">{totalEntries} crónicas</span>
+        )}
+      </div>
+      <div className="flex items-end gap-1 h-16">
+        {weeks.map((week, i) => (
+          <div key={i} className="flex-1 flex flex-col items-center gap-0.5 h-full justify-end">
+            {week.count > 0 && (
+              <span className={`text-[8px] font-mono leading-none mb-0.5 ${week.isCurrent ? 'text-accent' : 'text-stone-500'}`}>
+                {week.count}
+              </span>
+            )}
+            <div
+              className={`w-full rounded-[2px] transition-all duration-700 ${
+                week.count === 0
+                  ? 'bg-stone-800/50'
+                  : week.isCurrent
+                  ? 'bg-accent shadow-[0_0_8px_rgba(245,158,11,0.3)]'
+                  : 'bg-accent/40'
+              }`}
+              style={{ height: week.count === 0 ? '4px' : `${Math.max((week.count / maxCount) * 100, 18)}%` }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-1 mt-1.5">
+        {weeks.map((week, i) => (
+          <div key={i} className="flex-1 text-center">
+            <span className={`text-[7px] font-mono leading-none block truncate ${week.isCurrent ? 'text-accent' : 'text-stone-600'}`}>
+              {week.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ActivityGrid({ entries }) {
+  const days = useMemo(() => {
+    const entryDates = new Set(entries.map(e => e.date));
+    const today = new Date();
+    return Array.from({ length: 30 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() - (29 - i));
+      const dateStr = d.toISOString().split('T')[0];
+      return { date: dateStr, hasEntry: entryDates.has(dateStr), isToday: i === 29 };
+    });
+  }, [entries]);
+
+  const activeDays = days.filter(d => d.hasEntry).length;
+
+  return (
+    <div className="bg-header-bg border border-accent/20 rounded-sm px-4 pt-4 pb-3 shadow-sm">
+      <div className="flex items-baseline justify-between mb-3">
+        <p className="text-[9px] font-bold text-stone-500 uppercase tracking-widest">Actividad · Últimos 30 días</p>
+        {activeDays > 0 && (
+          <span className="text-[9px] font-mono text-accent">{activeDays} días activos</span>
+        )}
+      </div>
+      <div className="grid gap-[3px]" style={{ gridTemplateColumns: 'repeat(30, 1fr)' }}>
+        {days.map((day, i) => (
+          <div
+            key={i}
+            title={day.date}
+            className={`aspect-square rounded-[1px] ${
+              day.hasEntry
+                ? day.isToday
+                  ? 'bg-accent'
+                  : 'bg-accent/50'
+                : 'bg-stone-800/50'
+            }`}
+          />
+        ))}
+      </div>
+      <div className="flex justify-between mt-1.5">
+        <span className="text-[7px] font-mono text-stone-600">{days[0]?.date?.slice(5).replace('-', '/')}</span>
+        <span className="text-[7px] font-mono text-accent">hoy</span>
+      </div>
+    </div>
+  );
+}
+
+function BookStats({ entries, books }) {
+  const stats = useMemo(() => {
+    return books.map(book => {
+      const bookEntries = entries.filter(e => e.book === book.title);
+      const totalMinutes = bookEntries.reduce((sum, e) => sum + (e.readingTime || 0), 0);
+      const lastEntry = bookEntries.sort((a, b) => b.date.localeCompare(a.date))[0];
+      return {
+        book,
+        count: bookEntries.length,
+        totalMinutes,
+        lastDate: lastEntry?.date ?? null,
+      };
+    }).filter(s => s.count > 0);
+  }, [entries, books]);
+
+  if (stats.length === 0) return null;
+
+  const maxMinutes = Math.max(...stats.map(s => s.totalMinutes), 1);
+  const maxCount   = Math.max(...stats.map(s => s.count), 1);
+
+  const formatTime = (mins) => {
+    if (!mins) return null;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}`.trim() : `${m}m`;
+  };
+
+  // Use minutes if any entry has readingTime, else fall back to entry count
+  const hasTime = stats.some(s => s.totalMinutes > 0);
+
+  return (
+    <div className="bg-header-bg border border-accent/20 rounded-sm px-4 pt-4 pb-5 shadow-sm">
+      <p className="text-[9px] font-bold text-stone-500 uppercase tracking-widest mb-4">
+        Por tomo · {hasTime ? 'Tiempo de lectura' : 'Crónicas registradas'}
+      </p>
+      <div className="flex flex-col gap-3.5">
+        {stats.map(({ book, count, totalMinutes, lastDate }) => {
+          const barRatio = hasTime
+            ? (totalMinutes / maxMinutes)
+            : (count / maxCount);
+          const timeStr = formatTime(totalMinutes);
+
+          return (
+            <div key={book.id} className="flex flex-col gap-1">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-xs font-serif text-primary-text truncate flex items-center gap-1.5">
+                  <span>{book.emoji}</span>
+                  <span className="truncate">{book.title}</span>
+                </span>
+                <span className="text-[9px] font-mono text-stone-400 flex-shrink-0">
+                  {timeStr ?? `${count} crónica${count !== 1 ? 's' : ''}`}
+                  {timeStr && <span className="text-stone-600 ml-1">· {count}</span>}
+                </span>
+              </div>
+              <div className="h-1.5 bg-stone-800/40 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{
+                    width: `${Math.max(barRatio * 100, 4)}%`,
+                    backgroundColor: book.color || 'var(--accent)',
+                    opacity: 0.75,
+                  }}
+                />
+              </div>
+              {lastDate && (
+                <span className="text-[8px] font-mono text-stone-600">última entrada {lastDate}</span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
