@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock supabase before importing migration
+// Mock supabase
 vi.mock('../lib/supabase', () => ({
-  supabase: null, // Will be overridden per-test
+  supabase: null,
 }));
 
-// Mock syncEngine.pushAll
+// Mock syncEngine.backupToSupabase
 vi.mock('../utils/syncEngine', () => ({
-  pushAll: vi.fn(),
+  backupToSupabase: vi.fn().mockResolvedValue({ success: false, error: 'No Supabase' }),
 }));
 
 describe('migration', () => {

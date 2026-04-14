@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-// Extract importData validation logic for unit testing
+// Replicates importData validation + normalization logic from useLorekeeperState
 function validateImportData(jsonString) {
   const data = JSON.parse(jsonString);
 
@@ -28,10 +28,20 @@ function validateImportData(jsonString) {
       if (!entry.book || typeof entry.book !== 'string') {
         throw new Error('Cada entrada debe tener un campo "book" de tipo texto.');
       }
+      if (entry.readingTime !== undefined && (typeof entry.readingTime !== 'number' || !isFinite(entry.readingTime))) {
+        throw new Error(`Entrada "${entry.id}": el campo "readingTime" debe ser un número.`);
+      }
     }
   }
 
   return data;
+}
+
+function normalizeEntries(entries) {
+  return entries.map(e => ({
+    ...e,
+    readingTime: Math.max(0, Math.round(Number(e.readingTime) || 0)),
+  }));
 }
 
 describe('importData validation', () => {
@@ -104,5 +114,76 @@ describe('importData validation', () => {
 
   it('rejects entry with non-string book', () => {
     expect(() => validateImportData(JSON.stringify({ entries: [{ id: 1, book: 123 }] }))).toThrow('campo "book"');
+  });
+
+  // readingTime validation
+  it('accepts entry with valid integer readingTime', () => {
+    const data = { entries: [{ id: '1', book: 'X', readingTime: 30 }] };
+    expect(() => validateImportData(JSON.stringify(data))).not.toThrow();
+  });
+
+  it('accepts entry without readingTime field', () => {
+    const data = { entries: [{ id: '1', book: 'X' }] };
+    expect(() => validateImportData(JSON.stringify(data))).not.toThrow();
+  });
+
+  it('accepts entry with readingTime = 0', () => {
+    const data = { entries: [{ id: '1', book: 'X', readingTime: 0 }] };
+    expect(() => validateImportData(JSON.stringify(data))).not.toThrow();
+  });
+
+  it('rejects entry with readingTime as string', () => {
+    const data = { entries: [{ id: '1', book: 'X', readingTime: '30' }] };
+    expect(() => validateImportData(JSON.stringify(data))).toThrow('"readingTime" debe ser un número');
+  });
+
+  it('rejects entry with readingTime as Infinity', () => {
+    // JSON.stringify drops Infinity to null — simulate the real edge case via object literal
+    const data = { entries: [{ id: '1', book: 'X', readingTime: null }] };
+    // null is not a number → typeof null is 'object', so it should throw
+    expect(() => validateImportData(JSON.stringify(data))).toThrow('"readingTime" debe ser un número');
+  });
+
+  it('rejects entry with readingTime as boolean', () => {
+    const data = { entries: [{ id: '1', book: 'X', readingTime: true }] };
+    expect(() => validateImportData(JSON.stringify(data))).toThrow('"readingTime" debe ser un número');
+  });
+});
+
+describe('readingTime normalization', () => {
+  it('rounds float to nearest integer', () => {
+    const result = normalizeEntries([{ id: '1', book: 'X', readingTime: 30.7 }]);
+    expect(result[0].readingTime).toBe(31);
+  });
+
+  it('clamps negative to 0', () => {
+    const result = normalizeEntries([{ id: '1', book: 'X', readingTime: -10 }]);
+    expect(result[0].readingTime).toBe(0);
+  });
+
+  it('defaults absent readingTime to 0', () => {
+    const result = normalizeEntries([{ id: '1', book: 'X' }]);
+    expect(result[0].readingTime).toBe(0);
+  });
+
+  it('leaves valid integer unchanged', () => {
+    const result = normalizeEntries([{ id: '1', book: 'X', readingTime: 45 }]);
+    expect(result[0].readingTime).toBe(45);
+  });
+
+  it('normalizes multiple entries independently', () => {
+    const result = normalizeEntries([
+      { id: '1', book: 'X', readingTime: 20 },
+      { id: '2', book: 'X', readingTime: -5 },
+      { id: '3', book: 'X' },
+    ]);
+    expect(result.map(e => e.readingTime)).toEqual([20, 0, 0]);
+  });
+
+  it('preserves other entry fields unchanged', () => {
+    const result = normalizeEntries([{ id: '1', book: 'X', date: '2026-01-01', readingTime: 10 }]);
+    expect(result[0].id).toBe('1');
+    expect(result[0].book).toBe('X');
+    expect(result[0].date).toBe('2026-01-01');
   });
 });
