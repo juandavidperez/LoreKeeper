@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { Plus, Search, User, Globe, HelpCircle, Edit3, Trash2, Link as LinkIcon, Image as ImageIcon, CalendarDays, CheckSquare, Square, X, Share2, ChevronDown, Shield, ScrollText, Sparkles } from 'lucide-react';
+import { Plus, Search, User, Globe, HelpCircle, Edit3, Trash2, Link as LinkIcon, Image as ImageIcon, CalendarDays, CheckSquare, Square, X, Share2, ChevronDown, Shield, ScrollText, Sparkles, Clock } from 'lucide-react';
 import { ShareQuote } from '../components/ShareQuote';
 import { EntryForm } from './EntryForm';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
@@ -370,6 +370,7 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
                 entry={entry}
                 onEdit={() => startEdit(entry)}
                 onDelete={(e) => deleteEntry(entry.id, e)}
+                onUpdateTime={(mins) => setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, readingTime: mins } : e))}
                 bulkMode={bulkMode}
                 isSelected={selected.has(entry.id)}
                 onToggleSelect={() => toggleSelect(entry.id)}
@@ -395,8 +396,31 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
   );
 }
 
-const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, bulkMode, isSelected, onToggleSelect, isExpanded, onToggleExpand, onShareQuote, onNavigateToEntity, onConsultOracle }) {
+const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, onUpdateTime, bulkMode, isSelected, onToggleSelect, isExpanded, onToggleExpand, onShareQuote, onNavigateToEntity, onConsultOracle }) {
   const contentRef = useRef(null);
+  const [editingTime, setEditingTime] = useState(false);
+  const [timeInput, setTimeInput] = useState('');
+  const timeInputRef = useRef(null);
+
+  const startTimeEdit = (e) => {
+    e.stopPropagation();
+    setTimeInput(entry.readingTime > 0 ? String(entry.readingTime) : '');
+    setEditingTime(true);
+    setTimeout(() => timeInputRef.current?.focus(), 0);
+  };
+
+  const commitTime = () => {
+    const mins = Math.max(0, parseInt(timeInput, 10) || 0);
+    onUpdateTime(mins);
+    setEditingTime(false);
+  };
+
+  const formatTime = (mins) => {
+    if (!mins) return null;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return h > 0 ? `${h}h${m > 0 ? ` ${m}m` : ''}` : `${m}m`;
+  };
 
   return (
     <div
@@ -429,6 +453,38 @@ const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, bulkMode,
             <span className="hidden sm:inline-block bg-accent/5 text-accent px-2 py-0.5 rounded-sm text-[9px] border border-accent/20 font-bold uppercase tracking-wider">
               {entry.mood}
             </span>
+            {/* Reading time chip — tap to edit */}
+            {editingTime ? (
+              <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                <input
+                  ref={timeInputRef}
+                  type="number"
+                  min="0"
+                  max="600"
+                  value={timeInput}
+                  onChange={e => setTimeInput(e.target.value)}
+                  onBlur={commitTime}
+                  onKeyDown={e => { if (e.key === 'Enter') commitTime(); if (e.key === 'Escape') setEditingTime(false); }}
+                  inputMode="numeric"
+                  placeholder="min"
+                  className="w-14 bg-header-bg border border-accent/40 rounded-sm px-2 py-0.5 text-[10px] text-accent font-mono text-center outline-none focus:border-accent"
+                />
+              </div>
+            ) : (
+              <button
+                onClick={startTimeEdit}
+                aria-label="Editar tiempo de lectura"
+                title="Tiempo de lectura"
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-sm text-[9px] border transition-all ${
+                  entry.readingTime > 0
+                    ? 'bg-accent/5 border-accent/20 text-accent font-bold'
+                    : 'border-stone-200/30 text-stone-500 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-60'
+                }`}
+              >
+                <Clock size={9} />
+                {entry.readingTime > 0 ? formatTime(entry.readingTime) : <span className="font-bold">+</span>}
+              </button>
+            )}
             <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
               <button onClick={onEdit} aria-label="Editar crónica" className="p-2 text-stone-400 hover:text-accent active:text-accent flex items-center justify-center min-w-[40px] min-h-[40px]"><Edit3 size={18}/></button>
               <button onClick={onDelete} aria-label="Eliminar crónica" className="p-2 text-stone-400 hover:text-red-600 active:text-red-700 flex items-center justify-center min-w-[40px] min-h-[40px]"><Trash2 size={18}/></button>
