@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-<!-- Última revisión: 2026-04-09 -->
+<!-- Última revisión: 2026-04-12 -->
 
 ## Project Overview
 
@@ -23,16 +23,24 @@ Lorekeeper is a reading companion PWA for tracking reading progress, logging ent
 
 **State management**: React Context via `useLorekeeperState` hook (in `src/hooks/`). All app state (books, phases, schedule, entries, completedWeeks) is persisted to localStorage through `useLocalStorage` hook. localStorage keys are prefixed with `lore-` or descriptive names like `reading-entries`, `completed-weeks`, `oracle-replies`, `lore-entry-draft`.
 
+**Auth & Sync** (optional — degrades gracefully if Supabase env vars absent):
+- `src/lib/supabase.js` — Creates Supabase client singleton; returns `null` if `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` not set. All auth/sync code checks `!!supabase` before executing.
+- `useAuth` (`src/hooks/useAuth.js`) — Supabase magic-link auth. Detects first login by checking if user has any rows in the `books` table; runs one-time backup via `migrateLocalToSupabase` on first sign-in. Magic-link redirects to `window.location.origin`.
+- `useSync` (`src/hooks/useSync.js`) — Cloud backup context. Exposes `{ status, backup, restore }`. `backup()` does a full upsert of all local state to Supabase; `restore()` pulls all data and overwrites local state + React state. Auto-backup triggers when the tab becomes hidden (`visibilitychange`). 15s timeout on both operations.
+- `src/utils/syncEngine.js` — `TABLE_MAP` (field transformations between localStorage shape and Supabase columns), `backupToSupabase(userId, localData)`, `restoreFromSupabase(userId)`. Local is always source of truth — no merge logic.
+- `src/utils/migration.js` — Reads localStorage directly and calls `backupToSupabase`. Used on first sign-in before React state is available.
+- `AuthBanner` (`src/components/AuthBanner.jsx`) — Collapsible header widget for sign-in/sign-out. Shows email form → sends magic link → shows "link sent" state. Only renders if `isConfigured`.
+- `SyncIndicator` (`src/components/SyncIndicator.jsx`) — Header icon showing backup status (idle/saving/saved/error/offline). Clickable to trigger manual backup. Only renders if authenticated and configured.
+
 **Component structure**:
 - `src/views/` — Page-level components: `ReadingPlan`, `ReadingLog`, `Encyclopedia`, `EntryForm`, `OracleView`, `WisdomMap`
-- `src/components/` — Shared UI: `MainLayout` (tab navigation, offline banner, install banner, landscape compact mode), `ErrorBoundary`, `ReloadPrompt` (PWA updates), `InstallBanner` (PWA install prompt), `AuthBanner`, `SyncIndicator`, `GlobalSearch`, `MigrationGuard`, `SyncTracker`, `OnboardingOverlay`, `ShareQuote`, `ConfirmModal`
+- `src/components/` — Shared UI: `MainLayout` (tab navigation, offline banner, install banner, landscape compact mode), `ErrorBoundary`, `ReloadPrompt` (PWA updates), `InstallBanner` (PWA install prompt), `AuthBanner`, `SyncIndicator`, `GlobalSearch`, `OnboardingOverlay`, `ShareQuote`, `ConfirmModal`
 - `src/context/` — `ThemeContext.jsx`: `ThemeProvider` + `useTheme()` hook. `ThemeProvider` wraps `App` inside `App.jsx` (not in `main.jsx`). localStorage key: `lorekeeper-theme`
-- `src/hooks/` — `useLorekeeperState` (context + state logic + export/import with schema validation), `useLocalStorage` (persistence with shape validation and quota error handling), `useNotification` (toast system), `useSpeechRecognition` (voice input with error handling), `useKeyboardShortcuts` (generic keyboard shortcut hook), `useNetworkStatus` (online/offline detection), `useInstallPrompt` (PWA install prompt logic), `useAuth`, `useSync`
+- `src/hooks/` — `useLorekeeperState` (context + state logic + export/import with schema validation), `useLocalStorage` (persistence with shape validation and quota error handling), `useNotification` (toast system), `useSpeechRecognition` (voice input with error handling), `useKeyboardShortcuts` (generic keyboard shortcut hook), `useNetworkStatus` (online/offline detection), `useInstallPrompt` (PWA install prompt logic), `useReadingReminder` (dormancy warning + timed push notification), `useAuth` (Supabase magic-link auth context + first-login backup), `useSync` (cloud backup context — backup/restore with auto-backup on tab hide)
 - `src/utils/ai.js` — Gemini API integration with retry/backoff, metadata extraction and "Oracle" responses, with fallback mocks
 - `src/utils/imageStore.js` — IndexedDB wrapper for manga panel image storage (saves large images outside localStorage)
 - `src/utils/mapImages.js` — Map asset preloader and archetype/landmark-type detection. Assets live in `public/assets/map/characters/` and `public/assets/map/landmarks/`. Archetypes: monster, antihero, master, scholar, hero, warrior, creature, person. Detection: tag-based first, name-based fallback using reference examples.
 - `src/data/mockData.js` — Initial data constants (books, phases, schedule, moods, section types)
-
 **Navigation**: Tab-based (Plan / Crónicas / Archivo / Oráculo / Mapa), managed by `activeTab` state in `App`. All views are lazy-loaded via `React.lazy`/`Suspense`. WisdomMap is also embeddable as a toggle view inside Archivo (Encyclopedia) via the map button in its header — both entry points render the same `<WisdomMap />` component.
 
 ## Key Patterns
@@ -45,7 +53,7 @@ Lorekeeper is a reading companion PWA for tracking reading progress, logging ent
 - Mobile-first with safe-area-bottom for iPhone notch
 - PWA with vite-plugin-pwa (generateSW mode, `registerType: 'prompt'`). Manifest generated from `vite.config.js`. Offline fallback page at `public/offline.html`. `ReloadPrompt` component handles update notifications
 - Voice input via Web Speech API (Spanish language, `es-ES`)
-- Entry metadata sections: characters, places, glossary, quotes, world rules, connections, manga panels (compressed to WebP, stored in IndexedDB via `imageStore.js`)
+- Entry metadata sections: characters, places, glossary, quotes, world rules, connections, manga panels (compressed to WebP, stored in IndexedDB via `imageStore.js`), `readingTime` (minutes, integer, optional — stored in entry object, defaults to 0)
 - AI features use Gemini API with retry (2 retries, exponential backoff). API key via `VITE_GEMINI_API_KEY` or proxy via `VITE_API_PROXY_URL`. Falls back to mock responses if neither is set. Warns in production if API key is exposed without proxy. See `.env.example`
 - Form auto-save: new entries save drafts to `lore-entry-draft` in localStorage (debounced 500ms), cleared on save/cancel
 - `beforeunload` warning when EntryForm has unsaved changes
@@ -59,6 +67,7 @@ Lorekeeper is a reading companion PWA for tracking reading progress, logging ent
 - Mobile landscape compact mode: `MainLayout` listens to `(orientation: landscape) and (max-height: 500px)` media query. When matched, header and nav shrink to 2.5rem height
 - Back gesture: swipe left/right on `<main>` navigates between tabs (touch handlers in `MainLayout`)
 - Haptic feedback: `navigator.vibrate?.()` used on mic button in `EntryForm` (20ms) and week sealing in `ReadingPlan` ([10, 60, 25] pattern)
+- Reading reminders: `useReadingReminder(entries)` hook called from `AppContent`. On mount, warns if grimoire has been dormant 2+ days. Checks every minute via `setInterval` whether it's past the configured reminder time (`lore-reminder-time` localStorage key, default `21:00`) and fires a push notification via `navigator.serviceWorker.ready` if the user hasn't logged an entry today. Midnight timer resets the fired flag. Enabled via `lore-reminder` localStorage key (`'1'`). Reminder time picker lives in `MainLayout`.
 
 ## Data Validation
 
@@ -75,7 +84,7 @@ Lorekeeper is a reading companion PWA for tracking reading progress, logging ent
 - `aria-label` on icon-only buttons (save, cancel, delete, mic, export, import)
 - `aria-expanded` on collapsible sections (EntitySection toggle buttons)
 - `aria-label` on search inputs
-- `htmlFor`/`id` associations on form labels (Libro, Ubicación, Reingreso)
+- `htmlFor`/`id` associations on form labels (Libro, Ubicación, Reingreso, Tiempo de lectura)
 - Focus moves to `<main>` when switching tabs
 - `<noscript>` fallback in `index.html`
 - Minimum contrast: `--text-muted` is `#a1a1aa` (~6.3:1 ratio on dark bg). Avoid `text-zinc-600`+ for readable text
@@ -92,10 +101,12 @@ Lorekeeper is a reading companion PWA for tracking reading progress, logging ent
 - `setup.js` — Clears localStorage/sessionStorage after each test; stubs `window.matchMedia` (jsdom doesn't implement it)
 - `useLocalStorage.test.js` — 14 tests: read/write, initialValue, updater functions, corrupted JSON, shape validation for books/entries, quota error handling
 - `aggregateEntities.test.js` — 9 tests: empty entries, single/multi entry aggregation, deduplication, tag merging, cross-book aggregation
-- `importData.test.js` — 16 tests: valid data, partial data, invalid JSON, null/array top-level, field type validation, book/entry field validation
+- `importData.test.js` — 28 tests: valid data, partial data, invalid JSON, null/array top-level, field type validation, book/entry field validation, readingTime validation (string/null/boolean rejected), readingTime normalization (float→round, negative→0, absent→0)
 - `callGemini.test.js` — 12 tests: success, 4xx immediate fail, 429/500 retries, network error retries, exponential backoff, mock responses
 - `entryFormValidation.test.js` — 14 tests: valid entry, missing book, empty names, empty quotes, no content, entries with only metadata
-- `smokeTest.test.jsx` — 4 tests: app renders, default tab, navigation tabs, skip-to-content link (mocks framer-motion, virtual:pwa-register/react, and supabase)
+- `smokeTest.test.jsx` — 8 tests: app renders, default tab, navigation tabs, skip-to-content link; + 4 stats tests (ArchivalStats labels, Tiempo Total formatted, — when no readingTime, HabitGraph/ActivityGrid labels). Uses `seedLocalStorage` helper that suppresses OnboardingOverlay.
+- `syncEngine.test.js` — 9 tests: entry field mappings (readingTime↔reading_time, summary, worldRules↔world_rules, JSONB null defaults), phase field mappings (desc↔description)
+- `migration.test.js` — 2 tests: returns error when supabase null or userId null
 
 **Notes**:
 - Pure validation logic is extracted/replicated in tests rather than testing full React rendering
@@ -103,18 +114,37 @@ Lorekeeper is a reading companion PWA for tracking reading progress, logging ent
 - Smoke test uses a `Proxy`-based framer-motion mock covering all `motion.*` tags (div, span, etc.), not just `motion.div`
 - Navigation tab test uses `getByRole('tab', { name })` since inactive tabs only expose their label via `aria-label` (text label hidden in new UX)
 
+## Stats & Visualizations
+
+Stats live in `ReadingPlan` view (Plan tab), rendered below the header when not editing and `schedule.length > 0`.
+
+- **`ArchivalStats`** — 4-stat widget (grid-cols-2 mobile / grid-cols-4 sm): Semanas Selladas, Racha Actual (✦ + streak count), Progreso %, Tiempo Total (sum of `entry.readingTime`). Streak calc: unique sorted dates reversed; starts from today or yesterday. Time shown as `Xh Ym` / `Xm` / `—`.
+- **`ActivityGrid`** — 30-day dot grid (30 divs in a single-row `grid-cols-30`). Amber = day with entry, amber/50 = past active day, stone = no entry. Shown only when `entries.length > 0`.
+- **`HabitGraph`** — 8-week bar chart (CSS height %). Current week in full amber with glow shadow; past weeks in amber/40; zero weeks as 4px stub. Count label above non-zero bars. Shown only when `entries.length > 0`.
+- **`BookStats`** — Per-book breakdown. Shows horizontal bars for each book with at least one entry. If any entry has `readingTime > 0`, bars represent time; otherwise falls back to entry count. Shows last entry date, total entries, and formatted time. Bar color uses `book.color`. Shown only when `entries.length > 0`.
+- **readingTime inline edit (LogCard)** — In `ReadingLog`, each card header shows a `Clock` chip. If `readingTime > 0`, shows formatted time in amber; if 0, shows a `+` icon on hover. Tapping opens an inline number input (focus on mount); blur or Enter commits via `onUpdateTime` callback; Escape cancels. Updates entry in-place via `setEntries` without opening EntryForm.
+
+## Onboarding
+
+`OnboardingOverlay` (`src/components/OnboardingOverlay.jsx`) — 4-step modal shown on first visit (`lore-onboarding-done` localStorage key absent).
+
+- **Step I** "El Grimorio Despierta" — intro with animated feather icon
+- **Step II** "Los Cinco Rituales" — lists all 5 tabs: Plan Maestro, Crónicas, Archivo, Oráculo, Mapa de Sabiduría
+- **Step III** "La Primera Crónica" — actionable: shows a mock entry card, mentions readingTime field
+- **Step IV** "El Oráculo Aguarda" — oracle glow visual + CTA to begin
+
+Uses `AnimatePresence` from Framer Motion for slide transitions (direction-aware). Dots are clickable to jump steps. Bottom sheet on mobile (rounded-t-xl), centered modal on sm+. Uses CSS variables (`bg-header-bg`, `text-muted`, etc.) — no hardcoded colors.
+
 ## Pending Work
 
 ### Infrastructure
-- **Cloud backup** — Not implementable without external infrastructure (OAuth + Google Drive/Dropbox API)
 - **E2E tests** — No end-to-end tests yet (Playwright/Cypress)
+- **Supabase RLS** — No Row Level Security documented or configured. Cloud backup works but all data is user-scoped only by `user_id` column, not enforced at DB level.
 
 ### Features
-- **Auth/multi-user** — Everything is local, single user. No authentication system
-- **Advanced stats/visualizations** — Has streaks and weekly progress, but no reading time charts, habit graphs, or richer visualizations
-- **Social/sharing** — `ShareQuote` component exists for sharing quotes. No way to share full entries or progress.
+- **Restore UI** — `useSync` exposes `restore()` but there is no UI surface (button/menu) to trigger it. Users can't restore a backup without developer intervention.
+- **Social/sharing** — `ShareQuote` shares quote text via `navigator.share` (mobile) or clipboard copy (desktop/fallback). No way to share full entries or progress.
 - **i18n** — All UI is hardcoded in Spanish. No internationalization system
-- **Onboarding/tutorial** — `OnboardingOverlay` component exists with basic onboarding. Could be expanded.
 - **Wisdom Map (WisdomMap)** — SVG map of characters and places from entries. Working: deterministic layout with collision resolution, archetype detection by tag+name, pan/zoom (mouse+touch), book filter, tooltip on tap, co-occurrence connection lines (toggle "hilos"), navigable conversation history. Pending: d3-force physics layout, landmark region clustering.
 
 ### Technical Improvements
