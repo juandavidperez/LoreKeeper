@@ -23,6 +23,15 @@ export function OracleView({ initialFocus, onClearFocus }) {
   const { recordingField, toggle: toggleRecording, error: speechError, isSupported: speechSupported } = useSpeechRecognition();
   const { isOnline } = useNetworkStatus();
   const isProcessing = useRef(false);
+  const scrollRef = useRef(null);
+
+  const allEntities = useMemo(() => {
+    const list = [];
+    ['personajes', 'lugares', 'reglas', 'glosario'].forEach(cat => {
+      (archive[cat] || []).forEach(item => list.push({ ...item, category: cat }));
+    });
+    return list.sort((a, b) => a.name.localeCompare(b.name));
+  }, [archive]);
 
   // Track keyboard height via visualViewport (fixes iOS input covered by keyboard)
   const [inputBottom, setInputBottom] = useState(80);
@@ -45,18 +54,16 @@ export function OracleView({ initialFocus, onClearFocus }) {
       vv.removeEventListener('scroll', update);
     };
   }, []);
-  
+
   // Handle initial focus from Encyclopedia or Log
   useEffect(() => {
     if (initialFocus) {
-      // initialFocus might not have category, let's find it
       const found = allEntities.find(e => e.name === initialFocus.name);
       if (found) {
         setSelectedEntity(found);
-        // Optional: Trigger a special greeting?
       }
     }
-  }, [initialFocus]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialFocus, allEntities]);
 
   // Clear focus on unmount
   useEffect(() => {
@@ -64,8 +71,6 @@ export function OracleView({ initialFocus, onClearFocus }) {
       if (onClearFocus) onClearFocus();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  
-  const scrollRef = useRef(null);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -73,14 +78,6 @@ export function OracleView({ initialFocus, onClearFocus }) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isTyping]);
-
-  const allEntities = useMemo(() => {
-    const list = [];
-    ['personajes', 'lugares', 'reglas', 'glosario'].forEach(cat => {
-      (archive[cat] || []).forEach(item => list.push({ ...item, category: cat }));
-    });
-    return list.sort((a, b) => a.name.localeCompare(b.name));
-  }, [archive]);
 
   const handleSend = async (e) => {
     e?.preventDefault();

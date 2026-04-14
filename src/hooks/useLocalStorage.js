@@ -46,7 +46,12 @@ function validateShape(key, value) {
     return value.every(b => b && typeof b.title === 'string');
   }
   if (key === 'reading-entries' && Array.isArray(value)) {
-    return value.every(e => e && e.id && typeof e.book === 'string');
+    return value.every(e =>
+      e &&
+      e.id &&
+      typeof e.book === 'string' &&
+      (e.readingTime === undefined || (typeof e.readingTime === 'number' && isFinite(e.readingTime) && e.readingTime >= 0))
+    );
   }
   return true;
 }

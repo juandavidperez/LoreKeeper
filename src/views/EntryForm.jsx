@@ -91,6 +91,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
       chapter: '',
       mood: "Concentrado 🧠",
       reingreso: '',
+      readingTime: 0,
       quotes: [],
       characters: [],
       places: [],
@@ -395,6 +396,21 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
             enterKeyHint="next"
             className="bg-transparent border-0 border-b-2 border-stone-300 py-2 px-1 text-lg outline-none focus:border-accent transition-all font-serif text-primary-text placeholder:text-stone-300 italic"
             placeholder="Ej. Cap 12"
+          />
+        </div>
+        <div className="flex flex-col gap-1.5 group sm:col-span-2">
+          <label htmlFor="entry-reading-time" className="text-[10px] uppercase tracking-[0.2em] font-bold text-accent/60 ml-1">Tiempo de lectura (min)</label>
+          <input
+            id="entry-reading-time"
+            type="number"
+            min="0"
+            max="600"
+            value={form.readingTime || ''}
+            onChange={e => setForm({...form, readingTime: Math.max(0, parseInt(e.target.value, 10) || 0)})}
+            inputMode="numeric"
+            enterKeyHint="next"
+            className="bg-transparent border-0 border-b-2 border-stone-300 py-2 px-1 text-lg outline-none focus:border-accent transition-all font-serif text-primary-text placeholder:text-stone-300"
+            placeholder="0"
           />
         </div>
       </div>

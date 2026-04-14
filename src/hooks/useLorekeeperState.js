@@ -116,13 +116,23 @@ export function LorekeeperProvider({ children }) {
         if (!entry.book || typeof entry.book !== 'string') {
           throw new Error('Cada entrada debe tener un campo "book" de tipo texto.');
         }
+        if (entry.readingTime !== undefined && (typeof entry.readingTime !== 'number' || !isFinite(entry.readingTime))) {
+          throw new Error(`Entrada "${entry.id}": el campo "readingTime" debe ser un número.`);
+        }
       }
     }
 
     if (data.books) setBooks(data.books);
     if (data.phases) setPhases(data.phases);
     if (data.schedule) setSchedule(data.schedule);
-    if (data.entries) setEntries(data.entries);
+    if (data.entries) {
+      // Normalize readingTime: coerce to non-negative integer, default 0 if absent
+      const normalized = data.entries.map(e => ({
+        ...e,
+        readingTime: Math.max(0, Math.round(Number(e.readingTime) || 0)),
+      }));
+      setEntries(normalized);
+    }
     if (data.completedWeeks) setCompletedWeeks(data.completedWeeks);
   }, [setBooks, setPhases, setSchedule, setEntries, setCompletedWeeks]);
 
