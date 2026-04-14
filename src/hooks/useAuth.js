@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
 import React from 'react';
 import { supabase } from '../lib/supabase';
+import { useNotification } from './useNotification';
+import { migrateLocalToSupabase } from '../utils/migration';
 
 const AuthContext = createContext(null);
 
@@ -8,6 +10,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(() => !!supabase);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
+  const notify = useNotification();
+  const migrating = useRef(false);
 
   const checkFirstLogin = useCallback(async (userId) => {
     if (!supabase) return;
@@ -44,18 +48,27 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, [checkFirstLogin]);
 
+  // One-time migration on first sign-in (replaces MigrationGuard ghost component)
+  useEffect(() => {
+    if (!isFirstLogin || !user || migrating.current) return;
+
+    migrating.current = true;
+    migrateLocalToSupabase(user.id).then(({ success, error }) => {
+      if (success) {
+        notify('Datos migrados al Éter. Tu archivo ahora vive en la nube.', 'success');
+      } else {
+        notify(`Error al migrar: ${error}`, 'error');
+      }
+      setIsFirstLogin(false);
+      migrating.current = false;
+    });
+  }, [isFirstLogin, user, notify]);
+
   const signIn = useCallback(async (email) => {
     if (!supabase) return { error: { message: 'Supabase no configurado' } };
-    // In Capacitor, redirect back to the native app scheme
-    const isNative = window.Capacitor?.isNativePlatform?.();
-    const redirectTo = isNative
-      ? 'com.lorekeeper.app://login'
-      : window.location.origin;
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: {
-        emailRedirectTo: redirectTo,
-      },
+      options: { emailRedirectTo: window.location.origin },
     });
     return { error };
   }, []);
@@ -67,13 +80,9 @@ export function AuthProvider({ children }) {
     setIsFirstLogin(false);
   }, []);
 
-  const clearFirstLogin = useCallback(() => setIsFirstLogin(false), []);
-
   const value = {
     user,
     loading,
-    isFirstLogin,
-    clearFirstLogin,
     signIn,
     signOut,
     isConfigured: !!supabase,
