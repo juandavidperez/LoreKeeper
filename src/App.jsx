@@ -1,16 +1,15 @@
-import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react'
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react'
 import { MainLayout } from './components/MainLayout'
 import { ReloadPrompt } from './components/ReloadPrompt'
 import { OnboardingOverlay } from './components/OnboardingOverlay'
 import { InstallBanner } from './components/InstallBanner'
 
 import { LorekeeperProvider, useLorekeeperState } from './hooks/useLorekeeperState'
-import { NotificationProvider, useNotification } from './hooks/useNotification'
+import { NotificationProvider } from './hooks/useNotification'
+import { useReadingReminder } from './hooks/useReadingReminder'
 import { AuthProvider } from './hooks/useAuth'
 import { SyncProvider } from './hooks/useSync'
 import { ThemeProvider } from './context/ThemeContext'
-import { MigrationGuard } from './components/MigrationGuard'
-import { SyncTracker } from './components/SyncTracker'
 
 const ReadingPlan = lazy(() => import('./views/ReadingPlan').then(m => ({ default: m.ReadingPlan })))
 const ReadingLog = lazy(() => import('./views/ReadingLog').then(m => ({ default: m.ReadingLog })))
@@ -42,8 +41,8 @@ function AppContent() {
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return !window.localStorage.getItem('lore-onboarding-done')
   })
-  const { stateSetters, entries } = useLorekeeperState()
-  const notify = useNotification()
+  const { entries } = useLorekeeperState()
+  useReadingReminder(entries)
 
   // Navigate to encyclopedia and focus on a specific entity
   const navigateToEntity = useCallback((entityName) => {
@@ -86,68 +85,8 @@ function AppContent() {
     setShowOnboarding(false)
   }, [])
 
-  // Reading reminder: on-open warning + timed push notifications
-  const reminderFired = useRef(false)
-  useEffect(() => {
-    const enabled = window.localStorage.getItem('lore-reminder') === '1'
-    if (!enabled) return
-
-    // On-open: warn if grimoire has been dormant 2+ days
-    if (entries.length > 0) {
-      const lastDate = entries.reduce((max, e) => e.date > max ? e.date : max, '')
-      if (lastDate) {
-        const daysSince = Math.floor((Date.now() - new Date(lastDate).getTime()) / 86400000)
-        if (daysSince >= 2) {
-          notify(`El grimorio te extra\u00f1a... Han pasado ${daysSince} d\u00edas sin una cr\u00f3nica.`, 'info')
-        }
-      }
-    }
-
-    // Timed notification: check every minute if it's past the set reminder time
-    const check = () => {
-      if (reminderFired.current) return
-      if (!('Notification' in window) || Notification.permission !== 'granted') return
-      const time = window.localStorage.getItem('lore-reminder-time') || '21:00'
-      const now = new Date()
-      const [h, m] = time.split(':').map(Number)
-      const today = now.toISOString().split('T')[0]
-
-      try {
-        const stored = JSON.parse(window.localStorage.getItem('reading-entries') || '[]')
-        if (stored.some(e => e.date === today)) { reminderFired.current = true; return }
-      } catch { return }
-
-      if (now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m)) {
-        reminderFired.current = true
-        const opts = {
-          body: '\u00bfLe\u00edste hoy, archivero? El grimorio aguarda tu cr\u00f3nica.',
-          icon: '/pwa-192.png',
-          badge: '/pwa-192.png',
-          tag: 'reading-reminder',
-        }
-        navigator.serviceWorker?.ready
-          .then(reg => reg.showNotification('Lorekeeper', opts))
-          .catch(() => {})
-      }
-    }
-
-    check()
-    const interval = setInterval(check, 60_000)
-
-    // Reset fired flag at midnight
-    const now = new Date()
-    const tomorrow = new Date(now)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    tomorrow.setHours(0, 0, 0, 0)
-    const midnightTimer = setTimeout(() => { reminderFired.current = false }, tomorrow - now)
-
-    return () => { clearInterval(interval); clearTimeout(midnightTimer) }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
   return (
-    <SyncProvider stateSetters={stateSetters}>
-      <MigrationGuard />
-      <SyncTracker />
+    <SyncProvider>
       {showOnboarding && <OnboardingOverlay onComplete={completeOnboarding} />}
       <InstallBanner />
       <MainLayout activeTab={activeTab} setActiveTab={handleSetActiveTab}>
