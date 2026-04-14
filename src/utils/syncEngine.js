@@ -1,9 +1,8 @@
 import { supabase } from '../lib/supabase';
-import * as syncQueue from './syncQueue';
 
 /**
  * Maps localStorage keys to Supabase table names and their
- * local → remote field transformations.
+ * local ↔ remote field transformations.
  */
 const TABLE_MAP = {
   'lore-books': {
@@ -72,8 +71,10 @@ const TABLE_MAP = {
       date: item.date || null,
       book: item.book,
       chapter: item.chapter || null,
+      summary: item.summary || null,
       mood: item.mood || null,
       reingreso: item.reingreso || null,
+      reading_time: item.readingTime || 0,
       quotes: item.quotes || [],
       characters: item.characters || [],
       places: item.places || [],
@@ -87,8 +88,10 @@ const TABLE_MAP = {
       date: row.date,
       book: row.book,
       chapter: row.chapter,
+      summary: row.summary,
       mood: row.mood,
       reingreso: row.reingreso,
+      readingTime: row.reading_time || 0,
       quotes: row.quotes || [],
       characters: row.characters || [],
       places: row.places || [],
@@ -100,49 +103,10 @@ const TABLE_MAP = {
   },
   'completed-weeks': {
     table: 'completed_weeks',
-    toRow: (week, userId) => ({
-      week,
-      user_id: userId,
-    }),
+    toRow: (week, userId) => ({ week, user_id: userId }),
     toLocal: (row) => row.week,
   },
 };
-
-/**
- * Process the sync queue: push pending local changes to Supabase.
- * Removes each operation from the queue on success.
- */
-export async function pushQueue(userId) {
-  if (!supabase || !userId) return { pushed: 0, errors: [] };
-
-  const ops = await syncQueue.getAll();
-  let pushed = 0;
-  const errors = [];
-
-  for (const op of ops) {
-    try {
-      if (op.action === 'upsert') {
-        const { error } = await supabase
-          .from(op.table)
-          .upsert(op.payload, { onConflict: getConflictKey(op.table) });
-        if (error) throw error;
-      } else if (op.action === 'delete') {
-        let query = supabase.from(op.table).delete();
-        for (const [key, val] of Object.entries(op.payload)) {
-          query = query.eq(key, val);
-        }
-        const { error } = await query;
-        if (error) throw error;
-      }
-      await syncQueue.remove(op.id);
-      pushed++;
-    } catch (err) {
-      errors.push({ op, error: err.message || err });
-    }
-  }
-
-  return { pushed, errors };
-}
 
 function getConflictKey(table) {
   const keys = {
@@ -151,113 +115,26 @@ function getConflictKey(table) {
     schedule: 'user_id,week',
     entries: 'user_id,id',
     completed_weeks: 'user_id,week',
-    oracle_replies: 'user_id,entity_name',
   };
   return keys[table] || 'id';
 }
 
 /**
- * Pull remote data and merge into localStorage using LWW (last-write-wins).
- * Returns the merged data keyed by localStorage key.
+ * Backup all local data to Supabase. Full upsert — no merging, local is source of truth.
+ * @param {string} userId
+ * @param {Object} localData - { 'lore-books': [...], 'reading-entries': [...], ... }
  */
-export async function pullRemote(userId, lastSyncedAt) {
-  if (!supabase || !userId) return null;
+export async function backupToSupabase(userId, localData) {
+  if (!supabase || !userId) return { success: false, error: 'No Supabase' };
 
-  const results = {};
-
-  for (const [localKey, config] of Object.entries(TABLE_MAP)) {
-    let query = supabase
+  const promises = Object.entries(TABLE_MAP).map(([key, config]) => {
+    const items = localData[key];
+    if (!items || items.length === 0) return Promise.resolve({ error: null });
+    const rows = items.map(item => config.toRow(item, userId));
+    return supabase
       .from(config.table)
-      .select('*')
-      .eq('user_id', userId);
-
-    // Only pull changes since last sync if available
-    if (lastSyncedAt) {
-      query = query.gte('updated_at', lastSyncedAt);
-    }
-
-    const { data, error } = await query;
-    if (error) {
-      console.error(`Pull error for ${config.table}:`, error);
-      continue;
-    }
-
-    if (data && data.length > 0) {
-      results[localKey] = {
-        rows: data,
-        toLocal: config.toLocal,
-      };
-    }
-  }
-
-  return results;
-}
-
-/**
- * Merge remote rows into local data.
- * For array-based state (books, entries, etc.): LWW by updated_at.
- * For completed-weeks: union of sets.
- */
-export function mergeData(localKey, localData, remoteRows, toLocal) {
-  if (localKey === 'completed-weeks') {
-    // Union of local and remote weeks
-    const remoteWeeks = remoteRows.map(toLocal);
-    return [...new Set([...localData, ...remoteWeeks])].sort((a, b) => a - b);
-  }
-
-  // For array-based data: merge by id/primary key
-  const idField = localKey === 'lore-schedule' ? 'week' : 'id';
-  const localMap = new Map(localData.map(item => [
-    typeof item === 'object' ? item[idField] : item,
-    item,
-  ]));
-
-  for (const row of remoteRows) {
-    const localItem = toLocal(row);
-    const key = typeof localItem === 'object' ? localItem[idField] : localItem;
-    const existing = localMap.get(key);
-
-    if (!existing) {
-      // New from remote
-      localMap.set(key, localItem);
-    } else {
-      // LWW: remote updated_at vs local (local has no timestamp, so remote wins
-      // if we pulled it — it means it was changed on another device)
-      localMap.set(key, localItem);
-    }
-  }
-
-  return Array.from(localMap.values());
-}
-
-/**
- * Full push of all localStorage data to Supabase (used for first-time migration).
- */
-export async function pushAll(userId, data) {
-  if (!supabase || !userId) return;
-
-  const promises = [];
-
-  for (const [localKey, config] of Object.entries(TABLE_MAP)) {
-    const items = data[localKey];
-    if (!items || (Array.isArray(items) && items.length === 0)) continue;
-
-    if (localKey === 'completed-weeks') {
-      const rows = items.map(week => config.toRow(week, userId));
-      if (rows.length > 0) {
-        promises.push(
-          supabase.from(config.table).upsert(rows, { onConflict: getConflictKey(config.table) })
-        );
-      }
-    } else {
-      const rows = items.map(item => config.toRow(item, userId));
-      if (rows.length > 0) {
-        promises.push(
-          supabase.from(config.table).upsert(rows, { onConflict: getConflictKey(config.table) })
-        );
-      }
-    }
-  }
+      .upsert(rows, { onConflict: getConflictKey(config.table) });
+  });
 
   const results = await Promise.allSettled(promises);
   const errors = results
@@ -265,62 +142,35 @@ export async function pushAll(userId, data) {
     .map(r => r.reason || r.value?.error);
 
   if (errors.length > 0) {
-    console.error('Push all errors:', errors);
+    console.error('Backup errors:', errors);
+    return { success: false, errors };
   }
 
-  return { errors };
+  return { success: true };
 }
 
 /**
- * Enqueue a state change for background sync.
+ * Restore all data from Supabase. Returns data in local shape, keyed by localStorage key.
+ * @param {string} userId
  */
-export async function enqueueChange(localKey, action, items, userId) {
-  if (!supabase || !userId) return;
-
-  const config = TABLE_MAP[localKey];
-  if (!config) return;
-
-  if (action === 'upsert') {
-    const rows = Array.isArray(items)
-      ? items.map(item =>
-          localKey === 'completed-weeks'
-            ? config.toRow(item, userId)
-            : config.toRow(item, userId)
-        )
-      : [config.toRow(items, userId)];
-
-    for (const row of rows) {
-      await syncQueue.enqueue(config.table, 'upsert', row);
-    }
-  } else if (action === 'delete') {
-    const payload = typeof items === 'object' ? items : { user_id: userId, ...items };
-    await syncQueue.enqueue(config.table, 'delete', payload);
-  }
-}
-
-/** Update sync log timestamp */
-export async function updateSyncLog(userId, deviceId) {
-  if (!supabase || !userId) return;
-  const tables = Object.values(TABLE_MAP).map(c => c.table);
-  for (const table of tables) {
-    await supabase.from('sync_log').upsert({
-      user_id: userId,
-      device_id: deviceId,
-      table_name: table,
-      last_synced_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,device_id,table_name' });
-  }
-}
-
-/** Get last sync timestamp for this device */
-export async function getLastSyncTime(userId, deviceId) {
+export async function restoreFromSupabase(userId) {
   if (!supabase || !userId) return null;
-  const { data } = await supabase
-    .from('sync_log')
-    .select('last_synced_at')
-    .eq('user_id', userId)
-    .eq('device_id', deviceId)
-    .order('last_synced_at', { ascending: true })
-    .limit(1);
-  return data?.[0]?.last_synced_at || null;
+
+  const result = {};
+
+  for (const [localKey, config] of Object.entries(TABLE_MAP)) {
+    const { data, error } = await supabase
+      .from(config.table)
+      .select('*')
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error(`Restore error for ${config.table}:`, error);
+      continue;
+    }
+
+    result[localKey] = (data || []).map(config.toLocal);
+  }
+
+  return result;
 }

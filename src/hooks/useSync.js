@@ -2,140 +2,99 @@ import { useState, useEffect, useCallback, useRef, createContext, useContext } f
 import React from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
-import {
-  pushQueue,
-  pullRemote,
-  mergeData,
-  enqueueChange,
-  updateSyncLog,
-  getLastSyncTime,
-} from '../utils/syncEngine';
-import { count as queueCount } from '../utils/syncQueue';
+import { useLorekeeperState } from './useLorekeeperState';
+import { backupToSupabase, restoreFromSupabase } from '../utils/syncEngine';
 
 const SyncContext = createContext(null);
+const BACKUP_TIMEOUT_MS = 15_000;
 
-// Unique device ID persisted in localStorage
-function getDeviceId() {
-  let id = localStorage.getItem('lore-device-id');
-  if (!id) {
-    id = `dev-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    localStorage.setItem('lore-device-id', id);
-  }
-  return id;
+function withTimeout(promise, ms) {
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Backup timeout')), ms)
+  );
+  return Promise.race([promise, timeout]);
 }
 
-export function SyncProvider({ children, stateSetters }) {
+export function SyncProvider({ children }) {
   const { user, isConfigured } = useAuth();
-  const [status, setStatus] = useState('idle'); // idle | syncing | synced | error | offline
-  const [pendingCount, setPendingCount] = useState(0);
-  const syncInProgress = useRef(false);
-  const deviceId = useRef(getDeviceId());
+  const { books, phases, schedule, entries, completedWeeks, stateSetters } = useLorekeeperState();
+  const [status, setStatus] = useState('idle'); // idle | saving | saved | error | offline
+  const inProgress = useRef(false);
 
   const canSync = isConfigured && !!user && !!supabase;
 
-  // Update pending count periodically
-  useEffect(() => {
-    if (!canSync) return;
-    const update = async () => {
-      const c = await queueCount();
-      setPendingCount(c);
-    };
-    update();
-    const interval = setInterval(update, 10000);
-    return () => clearInterval(interval);
-  }, [canSync]);
-
-  const sync = useCallback(async () => {
-    if (!canSync || syncInProgress.current) return;
-    syncInProgress.current = true;
-    setStatus('syncing');
-
+  const backup = useCallback(async () => {
+    if (!canSync || inProgress.current) return;
+    inProgress.current = true;
+    setStatus('saving');
     try {
-      // 1. Push pending local changes
-      const { errors: pushErrors } = await pushQueue(user.id);
-      if (pushErrors.length > 0) {
-        console.warn('Sync push errors:', pushErrors);
-      }
-
-      // 2. Pull remote changes
-      const lastSync = await getLastSyncTime(user.id, deviceId.current);
-      const remoteData = await pullRemote(user.id, lastSync);
-
-      // 3. Merge into localStorage
-      if (remoteData && stateSetters) {
-        for (const [localKey, { rows, toLocal }] of Object.entries(remoteData)) {
-          const currentLocal = JSON.parse(localStorage.getItem(localKey) || '[]');
-          const merged = mergeData(localKey, currentLocal, rows, toLocal);
-          // Update localStorage and React state
-          localStorage.setItem(localKey, JSON.stringify(merged));
-          if (stateSetters[localKey]) {
-            stateSetters[localKey](merged);
-          }
-        }
-      }
-
-      // 4. Update sync log
-      await updateSyncLog(user.id, deviceId.current);
-
-      const c = await queueCount();
-      setPendingCount(c);
-      setStatus('synced');
+      await withTimeout(
+        backupToSupabase(user.id, {
+          'lore-books': books,
+          'lore-phases': phases,
+          'lore-schedule': schedule,
+          'reading-entries': entries,
+          'completed-weeks': completedWeeks,
+        }),
+        BACKUP_TIMEOUT_MS
+      );
+      setStatus('saved');
     } catch (err) {
-      console.error('Sync error:', err);
+      console.error('Backup error:', err);
       setStatus('error');
     } finally {
-      syncInProgress.current = false;
+      inProgress.current = false;
+    }
+  }, [canSync, user, books, phases, schedule, entries, completedWeeks]);
+
+  const restore = useCallback(async () => {
+    if (!canSync || inProgress.current) return;
+    inProgress.current = true;
+    setStatus('saving');
+    try {
+      const data = await withTimeout(restoreFromSupabase(user.id), BACKUP_TIMEOUT_MS);
+      if (data && stateSetters) {
+        for (const [key, items] of Object.entries(data)) {
+          localStorage.setItem(key, JSON.stringify(items));
+          if (stateSetters[key]) stateSetters[key](items);
+        }
+      }
+      setStatus('saved');
+    } catch (err) {
+      console.error('Restore error:', err);
+      setStatus('error');
+    } finally {
+      inProgress.current = false;
     }
   }, [canSync, user, stateSetters]);
 
-  // Enqueue a change for background sync
-  const trackChange = useCallback(async (localKey, action, items) => {
-    if (!canSync) return;
-    await enqueueChange(localKey, action, items, user.id);
-    const c = await queueCount();
-    setPendingCount(c);
-  }, [canSync, user]);
+  // Auto-backup when tab becomes hidden (user closes or switches app)
+  const backupRef = useRef(backup);
+  useEffect(() => { backupRef.current = backup; }, [backup]);
 
-  // Auto-sync on mount, on coming back online, and on visibility change
   useEffect(() => {
     if (!canSync) return;
-
-    // Initial sync
-    sync();
-
-    // Sync when coming back online
-    const handleOnline = () => {
-      setStatus('idle');
-      sync();
-    };
-    const handleOffline = () => setStatus('offline');
-
-    // Sync when tab becomes visible again
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') sync();
+      if (document.visibilityState === 'hidden') backupRef.current();
     };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [canSync]);
 
+  // Offline detection
+  useEffect(() => {
+    if (!navigator.onLine) setStatus('offline');
+    const handleOnline = () => setStatus('idle');
+    const handleOffline = () => setStatus('offline');
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    document.addEventListener('visibilitychange', handleVisibility);
-
-    // Periodic sync every 5 minutes
-    const interval = setInterval(sync, 5 * 60 * 1000);
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      document.removeEventListener('visibilitychange', handleVisibility);
-      clearInterval(interval);
     };
-  }, [canSync, sync]);
-
-  // Set offline status
-  useEffect(() => {
-    if (!navigator.onLine) setStatus('offline');
   }, []);
 
-  const value = { status, pendingCount, sync, trackChange, canSync };
+  const value = { status, backup, restore };
 
   return React.createElement(SyncContext.Provider, { value }, children);
 }
