@@ -98,6 +98,7 @@ const LANDMARK_TYPES = [
   { keywords: ['bosque', 'selva', 'arboleda', 'floresta', 'forest', 'jungle'], type: 'forest' },
   { keywords: ['montaña', 'cumbre', 'pico', 'cordillera', 'mountain', 'peak'], type: 'mountain' },
   { keywords: ['ruinas', 'antiguo', 'abandonado', 'templo', 'ruins', 'temple'], type: 'ruins' },
+  { keywords: ['lago', 'ribera', 'orilla', 'lake', 'lakeside'], type: 'town' },
   { keywords: ['ciudad', 'metrópolis', 'capital', 'city'], type: 'city' },
   { keywords: ['escuela', 'academia', 'instituto', 'gimnasio', 'school', 'academy'], type: 'school' },
   { keywords: ['konoha', 'shinobi', 'ninja', 'aldea ninja'], type: 'shinobi' },
