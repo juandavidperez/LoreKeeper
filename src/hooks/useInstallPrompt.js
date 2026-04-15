@@ -2,21 +2,22 @@ import { useState, useEffect } from 'react';
 
 export function useInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           (navigator.standalone === true);
+  });
+  const [isIOS] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    return isIos && !standalone;
+  });
   const [dismissed, setDismissed] = useState(
-    () => localStorage.getItem('lore-install-dismissed') === '1'
+    () => typeof localStorage !== 'undefined' && localStorage.getItem('lore-install-dismissed') === '1'
   );
 
   useEffect(() => {
-    const standalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      navigator.standalone === true;
-    setIsInstalled(standalone);
-
-    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-    setIsIOS(ios && !standalone);
-
     const handler = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
