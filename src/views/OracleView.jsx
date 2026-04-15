@@ -167,9 +167,13 @@ export function OracleView({ initialFocus, onClearFocus }) {
 
       {/* Historial Colapsable */}
       <div className="grimoire-card bg-header-bg border-primary rounded-sm overflow-hidden transition-all shadow-sm">
-        <button 
+        <div 
           onClick={() => setShowHistory(!showHistory)}
-          className="w-full flex justify-between items-center p-3 hover:bg-item-bg/50 transition-colors"
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShowHistory(!showHistory); } }}
+          tabIndex={0}
+          role="button"
+          aria-expanded={showHistory}
+          className="w-full flex justify-between items-center p-3 hover:bg-item-bg/50 transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-accent/50"
         >
           <div className="flex items-center gap-3">
             <Clock size={14} className="text-accent" />
@@ -184,7 +188,7 @@ export function OracleView({ initialFocus, onClearFocus }) {
             </button>
             {showHistory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </div>
-        </button>
+        </div>
         {showHistory && (
           <div className="p-3 pt-0 max-h-48 overflow-y-auto border-t border-primary/20 flex flex-col gap-2 mt-2">
             {conversations.length === 0 ? (
@@ -212,7 +216,7 @@ export function OracleView({ initialFocus, onClearFocus }) {
         ref={scrollRef}
         className="flex-1 overflow-y-auto pr-2 space-y-6 scroll-smooth scrollbar-thin scrollbar-thumb-accent/20 pb-32"
       >
-        {messages.map((msg, i) => (
+        {messages.map((msg) => (
           <div 
             key={msg.id} 
             className={`flex flex-col gap-2 ${msg.role === 'oracle' ? 'items-start' : 'items-end'}`}

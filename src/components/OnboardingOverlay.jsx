@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import { Calendar, BookOpen, Library, Sparkles, Map, Clock, ChevronRight, Feather } from 'lucide-react';
 
 const STEPS = [

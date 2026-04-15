@@ -8,6 +8,17 @@ const quoteText = (quote, book, chapter) =>
 export function ShareQuote({ quote, book, chapter, onClose }) {
   const notify = useNotification();
 
+  const copyToClipboard = useCallback(async (text) => {
+    const t = text ?? quoteText(quote, book, chapter);
+    try {
+      await navigator.clipboard.writeText(t);
+      notify('Cita copiada al portapapeles.', 'success');
+      onClose();
+    } catch {
+      notify('No se pudo copiar la cita.', 'error');
+    }
+  }, [quote, book, chapter, notify, onClose]);
+
   const share = useCallback(async () => {
     const text = quoteText(quote, book, chapter);
     if (navigator.share) {
@@ -20,18 +31,7 @@ export function ShareQuote({ quote, book, chapter, onClose }) {
     } else {
       copyToClipboard(text);
     }
-  }, [quote, book, chapter, onClose]);
-
-  const copyToClipboard = useCallback(async (text) => {
-    const t = text ?? quoteText(quote, book, chapter);
-    try {
-      await navigator.clipboard.writeText(t);
-      notify('Cita copiada al portapapeles.', 'success');
-      onClose();
-    } catch {
-      notify('No se pudo copiar la cita.', 'error');
-    }
-  }, [quote, book, chapter, notify, onClose]);
+  }, [quote, book, chapter, onClose, copyToClipboard]);
 
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center px-4" onClick={onClose}>
