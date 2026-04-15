@@ -1,10 +1,8 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Trash2, Book, Layers, Layout, Download, Upload, ChevronDown, ChevronRight } from 'lucide-react';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
 import { useNotification } from '../hooks/useNotification';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { DEMO_DATA } from '../data/mockData';
-
 export function ReadingPlan({ onLogWeek }) {
   const {
     phases, setPhases,
@@ -21,18 +19,19 @@ export function ReadingPlan({ onLogWeek }) {
   const [confirmModal, setConfirmModal] = useState(null);
   const [expandedPhases, setExpandedPhases] = useState(new Set());
 
-  const handleLoadDemo = () => {
-    try {
-      importData(JSON.stringify(DEMO_DATA));
-      notify('¡Datos de prueba cargados!', 'success');
-    } catch (err) {
-      notify(err.message || 'Error al cargar la demo.', 'error');
-    }
-  };
+  const handleLoadDemo = import.meta.env.DEV ? () => {
+    import('../data/mockData').then(({ DEMO_DATA }) => {
+      try {
+        importData(JSON.stringify(DEMO_DATA));
+        notify('¡Datos de prueba cargados!', 'success');
+      } catch (err) {
+        notify(err.message || 'Error al cargar la demo.', 'error');
+      }
+    });
+  } : undefined;
 
   const [justSealed, setJustSealed] = useState(null);
   const sealTimeout = useRef(null);
-  const initialExpansionDone = useRef(false);
 
   // Identify the "Next Up" week (needed for initial expansion)
   const nextUpWeek = useMemo(() => {
@@ -43,16 +42,19 @@ export function ReadingPlan({ onLogWeek }) {
     return sortedPending.length > 0 ? sortedPending[0].week : null;
   }, [schedule, completedWeeks, isEditing]);
 
-  // Initial expansion of the active phase
-  useEffect(() => {
-    if (nextUpWeek && !initialExpansionDone.current) {
+  // Initial expansion of the active phase (Adjusting state when a prop changes)
+  const [initialPhaseExpansionDone, setInitialPhaseExpansionDone] = useState(false);
+  const [prevNextUpWeek, setPrevNextUpWeek] = useState(null);
+  if (nextUpWeek !== prevNextUpWeek) {
+    setPrevNextUpWeek(nextUpWeek);
+    if (nextUpWeek && !initialPhaseExpansionDone) {
       const activePhase = phases.find(p => nextUpWeek >= p.weeks[0] && nextUpWeek <= p.weeks[1]);
       if (activePhase) {
         setExpandedPhases(new Set([activePhase.id]));
-        initialExpansionDone.current = true;
+        setInitialPhaseExpansionDone(true);
       }
     }
-  }, [nextUpWeek, phases]);
+  }
 
   const togglePhase = (phaseId) => {
     setExpandedPhases(prev => {
@@ -332,9 +334,9 @@ function PlanHeader({ isEditing, onToggleEdit, onExport, onImport, onLoadDemo, a
 
         <div className="flex justify-between items-center">
           <div className="flex gap-4">
-            {!isEditing && (
-              <button 
-                onClick={onLoadDemo} 
+            {!isEditing && import.meta.env.DEV && (
+              <button
+                onClick={onLoadDemo}
                 className="text-[9px] uppercase tracking-[0.2em] font-bold text-stone-300 hover:text-stone-500 transition-colors"
               >
                 Restaurar Registro Demo
@@ -659,7 +661,7 @@ function PhaseManager({ phases, onUpdate, onDelete, onAdd }) {
   );
 }
 
-function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, justSealed, expandedPhases, onTogglePhase, nextUpWeek, onToggleWeek, onUpdateWeek, onDeleteWeek, onAddWeek, onLogWeek }) {
+function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, expandedPhases, onTogglePhase, nextUpWeek, onToggleWeek, onUpdateWeek, onDeleteWeek, onAddWeek, onLogWeek }) {
   return (
     <div className="flex flex-col gap-10">
       {phases.map((phase) => {
