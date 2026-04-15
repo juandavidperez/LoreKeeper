@@ -11,7 +11,7 @@ let _nextId = 0;
 function uid() { return `entry-${Date.now()}-${_nextId++}-${Math.random().toString(36).slice(2, 7)}`; }
 
 export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData, onClearPrefilled }) {
-  const { entries, setEntries, books, archive } = useLorekeeperState();
+  const { entries, setEntries, books } = useLorekeeperState();
   const notify = useNotification();
 
   const [editingId, setEditingId] = useState(null);
@@ -29,7 +29,6 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
   const [shareQuote, setShareQuote] = useState(null);
   const [showDateRange, setShowDateRange] = useState(false);
   const [expandedEntries, setExpandedEntries] = useState(new Set());
-  const hasInitializedExpansion = useRef(false);
   const savedScrollY = useRef(0);
   const isAddingRef = useRef(false);
   const PAGE_SIZE = 20;
@@ -61,22 +60,22 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
     return result;
   }, [entries, searchTerm, bookFilter, dateFrom, dateTo]);
 
-  // Handle prefilled data from ReadingPlan
-  useEffect(() => {
+  // Handle prefilled data from ReadingPlan (Adjusting state when a prop changes)
+  const [prevPrefilledData, setPrevPrefilledData] = useState(null);
+  if (prefilledData !== prevPrefilledData) {
+    setPrevPrefilledData(prefilledData);
     if (prefilledData) {
       setIsAdding(true);
       setEditingId(null);
-      // We keep the prefilledData as it's passed below to EntryForm
     }
-  }, [prefilledData]);
+  }
 
   // Initial expansion: open the first entry only once on load
-  useEffect(() => {
-    if (filteredEntries.length > 0 && !hasInitializedExpansion.current) {
-      setExpandedEntries(new Set([filteredEntries[0].id]));
-      hasInitializedExpansion.current = true;
-    }
-  }, [filteredEntries]);
+  const [initialExpansionDone, setInitialExpansionDone] = useState(false);
+  if (filteredEntries.length > 0 && !initialExpansionDone) {
+    setExpandedEntries(new Set([filteredEntries[0].id]));
+    setInitialExpansionDone(true);
+  }
 
   const toggleEntry = useCallback((id) => {
     setExpandedEntries(prev => {
@@ -126,7 +125,7 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
     };
     window.addEventListener('popstate', handler);
     return () => window.removeEventListener('popstate', handler);
-  }, [onClearPrefilled]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [onClearPrefilled]);
 
   const commitSave = (newEntry) => {
     if (editingId) {

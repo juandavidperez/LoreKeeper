@@ -82,14 +82,14 @@ export function WisdomMap() {
   const vpRef     = useRef({ x: 0, y: 0, scale: 1 })       // source of truth
   const [vp, setVpState] = useState({ x: 0, y: 0, scale: 1 })
 
-  // Keep ref + state in sync
+  // Keep ref + state in sync (useEffect avoids accessing ref in state updater)
+  useEffect(() => {
+    vpRef.current = vp;
+  }, [vp]);
+
   const setVp = useCallback((updater) => {
-    setVpState(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater
-      vpRef.current = next
-      return next
-    })
-  }, [])
+    setVpState(v => typeof updater === 'function' ? updater(v) : updater);
+  }, []);
 
   // Touch state
   const touchRef = useRef({ type: 'none', touches: [], prevDist: 0 })

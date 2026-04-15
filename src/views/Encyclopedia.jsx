@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useCallback, lazy, Suspense } from 'react';
 import { Search, ChevronRight, BookOpen, Clock, Filter, Scroll, Sparkles, Map } from 'lucide-react';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
 
@@ -12,7 +12,6 @@ export function Encyclopedia({ entityFocus, onClearFocus, onConsultOracle }) {
   const [bookFilter, setBookFilterRaw] = useState('todos');
   const [visibleCount, setVisibleCount] = useState(20);
   const PAGE_SIZE = 20;
-  const entityFocusApplied = useRef(false);
 
   const setSearchTerm = useCallback((v) => { setSearchTermRaw(v); setVisibleCount(PAGE_SIZE); }, []);
   const setBookFilter = useCallback((v) => { setBookFilterRaw(v); setVisibleCount(PAGE_SIZE); }, []);
@@ -43,12 +42,14 @@ export function Encyclopedia({ entityFocus, onClearFocus, onConsultOracle }) {
     return raw.sort((a, b) => a.name.localeCompare(b.name));
   }, [archive, categoryFilter, searchTerm, bookFilter]);
 
-  // Apply entity focus from navigation
-  useEffect(() => {
-    if (entityFocus && !entityFocusApplied.current) {
-      entityFocusApplied.current = true;
+  // Apply entity focus from navigation (Adjusting state when a prop changes)
+  const [prevEntityFocus, setPrevEntityFocus] = useState(null);
+  if (entityFocus !== prevEntityFocus) {
+    setPrevEntityFocus(entityFocus);
+    if (entityFocus) {
       setSearchTermRaw(entityFocus);
       setBookFilterRaw('todos');
+      setView('archive');
       
       for (const cat of ['personajes', 'lugares', 'reglas', 'glosario']) {
         if (archive[cat]?.some(e => e.name.toLowerCase().includes(entityFocus.toLowerCase()))) {
@@ -59,16 +60,10 @@ export function Encyclopedia({ entityFocus, onClearFocus, onConsultOracle }) {
       setVisibleCount(PAGE_SIZE);
       if (onClearFocus) onClearFocus();
     }
-    if (!entityFocus) entityFocusApplied.current = false;
-  }, [entityFocus, archive, onClearFocus]);
+  }
 
   const visibleData = filteredData.slice(0, visibleCount);
   const hasMore = visibleCount < filteredData.length;
-
-  // When an entity focus arrives, switch to archive view
-  useEffect(() => {
-    if (entityFocus) setView('archive');
-  }, [entityFocus]);
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in pb-20">
