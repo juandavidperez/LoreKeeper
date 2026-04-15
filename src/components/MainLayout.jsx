@@ -3,7 +3,7 @@ import { Calendar, BookOpen, Library, Sparkles, Search, Bell, BellOff, X, Sun, M
 import { motion, AnimatePresence } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../hooks/useTheme';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { AuthBanner } from './AuthBanner';
 import { SyncIndicator } from './SyncIndicator';

@@ -9,7 +9,7 @@ import { NotificationProvider } from './hooks/useNotification'
 import { useReadingReminder } from './hooks/useReadingReminder'
 import { AuthProvider } from './hooks/useAuth'
 import { SyncProvider } from './hooks/useSync'
-import { ThemeProvider } from './context/ThemeContext'
+import { ThemeProvider } from './context/ThemeProvider'
 
 const ReadingPlan = lazy(() => import('./views/ReadingPlan').then(m => ({ default: m.ReadingPlan })))
 const ReadingLog = lazy(() => import('./views/ReadingLog').then(m => ({ default: m.ReadingLog })))
@@ -48,7 +48,7 @@ function AppContent() {
   const navigateToEntity = useCallback((entityName) => {
     setEntityFocus(entityName)
     setActiveTab('encyclopedia')
-  }, [])
+  }, [setActiveTab])
 
   // Clear entity focus when leaving encyclopedia
   const handleSetActiveTab = useCallback((tab) => {
@@ -73,12 +73,12 @@ function AppContent() {
   const navigateToOracle = useCallback((entity) => {
     setOracleFocus(entity)
     setActiveTab('oracle')
-  }, [])
+  }, [setActiveTab])
 
   const handleLogFromPlan = useCallback((data) => {
     setLogDraft(data)
     setActiveTab('log')
-  }, [])
+  }, [setActiveTab])
 
   const completeOnboarding = useCallback(() => {
     window.localStorage.setItem('lore-onboarding-done', '1')

@@ -5,7 +5,7 @@ import { MOODS } from '../data/mockData';
 import { externalizePanels } from '../utils/imageStore';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useNotification } from '../hooks/useNotification';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../hooks/useTheme';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
 import { ConfirmModal } from '../components/ConfirmModal';
 
