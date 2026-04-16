@@ -519,8 +519,10 @@ export function WisdomMap() {
             : []
           return (
             <div
+              role="region"
+              aria-label="Detalle del nodo"
               className="absolute bottom-14 left-3 right-3 sm:bottom-auto sm:top-3 sm:left-auto sm:right-3 sm:w-64 rounded-xl shadow-xl border overflow-hidden"
-              style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+              style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)', zIndex: 10 }}
             >
               {/* Header */}
               <div className="flex items-start justify-between gap-2 p-3 pb-2">
@@ -543,6 +545,7 @@ export function WisdomMap() {
                     {node.kind === 'character' ? 'Personaje' : 'Lugar'}
                   </span>
                   <button
+                    autoFocus
                     onClick={() => setFocusedNode(null)}
                     className="text-[10px] leading-none p-1 rounded"
                     style={{ color: 'var(--text-muted)' }}
@@ -607,7 +610,7 @@ export function WisdomMap() {
         })()}
 
         {/* ── Zoom controls ── */}
-        {!isEmpty && <div className="absolute bottom-3 right-3 flex flex-col gap-1.5">
+        {!isEmpty && <div className="absolute bottom-3 right-3 flex flex-col gap-1.5" style={{ zIndex: 20 }}>
           {[
             { label: '+', action: () => setVp(v => ({ ...v, scale: Math.min(4, v.scale * 1.25) })), aria: 'Acercar' },
             { label: '−', action: () => setVp(v => ({ ...v, scale: Math.max(0.25, v.scale * 0.8) })), aria: 'Alejar' },
