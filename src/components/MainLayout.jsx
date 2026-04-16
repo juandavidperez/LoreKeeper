@@ -42,7 +42,7 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
     { id: 'log', label: 'Crónicas', icon: BookOpen },
     { id: 'encyclopedia', label: 'Archivo', icon: Library },
     { id: 'oracle', label: 'Oráculo', icon: Sparkles },
-    { id: 'map', label: 'Mapa', icon: Map },
+    ...(import.meta.env.DEV ? [{ id: 'map', label: 'Mapa', icon: Map }] : []),
   ];
 
   // --- Swipe navigation ---
