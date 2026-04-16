@@ -49,6 +49,7 @@ export function WisdomMap() {
   const [vp, setVpState] = useState({ x: 0, y: 0, scale: 1 })
   const [simPositions, setSimPositions] = useState({})
   const simRef = useRef(null)
+  const simRunningRef = useRef(false)
   const nodeElemsRef = useRef(new Map())  // nodeName → <g> DOM element
   const edgeElemsRef = useRef(new Map())  // 'a|||b' sorted key → <line> DOM element
 
@@ -142,6 +143,8 @@ export function WisdomMap() {
   // ── d3-force simulation ──
   useEffect(() => {
     if (simRef.current) simRef.current.stop()
+    nodeElemsRef.current.clear()
+    edgeElemsRef.current.clear()
     if (allNodes.length === 0) return
 
     const nodes = allNodes.map(n => ({
@@ -160,6 +163,8 @@ export function WisdomMap() {
     const initialPos = {}
     nodes.forEach(n => { initialPos[n.id] = { x: n.x, y: n.y } })
     setSimPositions(initialPos)
+
+    simRunningRef.current = true
 
     const sim = forceSimulation(nodes)
       .force('charge', forceManyBody().strength(-800))
@@ -197,6 +202,7 @@ export function WisdomMap() {
         })
       })
       .on('end', () => {
+        simRunningRef.current = false
         // Persist final positions to state (for re-mount)
         const pos = {}
         nodes.forEach(n => { pos[n.id] = { x: n.x, y: n.y } })
@@ -204,7 +210,10 @@ export function WisdomMap() {
       })
 
     simRef.current = sim
-    return () => sim.stop()
+    return () => {
+      simRunningRef.current = false
+      sim.stop()
+    }
   }, [allNodes, edges])
 
   const resolvedNodes = useMemo(() => {
@@ -401,8 +410,14 @@ export function WisdomMap() {
               return (
                 <line
                   key={`edge-${a}-${b}`}
-                  ref={el => { if (el) edgeElemsRef.current.set(edgeKey, el) }}
-                  x1={na.x} y1={na.y} x2={nb.x} y2={nb.y}
+                  ref={el => {
+                    if (el) edgeElemsRef.current.set(edgeKey, el)
+                    else edgeElemsRef.current.delete(edgeKey)
+                  }}
+                  x1={simRunningRef.current ? undefined : na.x}
+                  y1={simRunningRef.current ? undefined : na.y}
+                  x2={simRunningRef.current ? undefined : nb.x}
+                  y2={simRunningRef.current ? undefined : nb.y}
                   stroke="#9c845a"
                   strokeWidth={strokeW}
                   strokeOpacity={opacity}
@@ -419,8 +434,11 @@ export function WisdomMap() {
               return (
                 <g
                   key={`lm-${node.name}`}
-                  ref={el => { if (el) nodeElemsRef.current.set(node.name, el) }}
-                  transform={`translate(${node.x},${node.y})`}
+                  ref={el => {
+                    if (el) nodeElemsRef.current.set(node.name, el)
+                    else nodeElemsRef.current.delete(node.name)
+                  }}
+                  transform={simRunningRef.current ? undefined : `translate(${node.x},${node.y})`}
                   style={{ cursor: 'pointer' }}
                   onClick={e => { e.stopPropagation(); setTappedNode(node) }}
                   onMouseDown={e => e.stopPropagation()}
@@ -441,8 +459,11 @@ export function WisdomMap() {
               return (
                 <g
                   key={`ch-${node.name}`}
-                  ref={el => { if (el) nodeElemsRef.current.set(node.name, el) }}
-                  transform={`translate(${node.x},${node.y})`}
+                  ref={el => {
+                    if (el) nodeElemsRef.current.set(node.name, el)
+                    else nodeElemsRef.current.delete(node.name)
+                  }}
+                  transform={simRunningRef.current ? undefined : `translate(${node.x},${node.y})`}
                   style={{ cursor: 'pointer' }}
                   onClick={e => { e.stopPropagation(); setTappedNode(node) }}
                   onMouseDown={e => e.stopPropagation()}
