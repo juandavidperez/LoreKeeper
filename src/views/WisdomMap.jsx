@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { forceSimulation, forceManyBody, forceCenter, forceCollide, forceLink } from 'd3-force'
 import { useLorekeeperState } from '../hooks/useLorekeeperState'
 import { loadMapAssets, getCharacterArchetype, getLandmarkType } from '../utils/mapImages'
 
@@ -37,29 +38,6 @@ function seedPos(name, salt, pad = 130) {
   }
 }
 
-function resolveCollisions(nodes, pad = 130, iterations = 80) {
-  if (nodes.length === 0) return []
-  const pos = nodes.map(n => ({ x: n.x, y: n.y, r: n.r }))
-  for (let iter = 0; iter < iterations; iter++) {
-    for (let i = 0; i < pos.length; i++) {
-      for (let j = i + 1; j < pos.length; j++) {
-        const dx = pos[j].x - pos[i].x
-        const dy = pos[j].y - pos[i].y
-        const dist = Math.sqrt(dx * dx + dy * dy) || 0.01
-        const minDist = pos[i].r + pos[j].r + 24
-        if (dist < minDist) {
-          const overlap = (minDist - dist) / 2
-          const nx = dx / dist, ny = dy / dist
-          pos[i].x -= nx * overlap; pos[i].y -= ny * overlap
-          pos[j].x += nx * overlap; pos[j].y += ny * overlap
-        }
-      }
-      pos[i].x = Math.max(pad, Math.min(MAP_W - pad, pos[i].x))
-      pos[i].y = Math.max(pad, Math.min(MAP_H - pad, pos[i].y))
-    }
-  }
-  return pos
-}
 
 function touchDist(t1, t2) {
   return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY)
@@ -81,6 +59,8 @@ export function WisdomMap() {
   const svgRef    = useRef(null)
   const vpRef     = useRef({ x: 0, y: 0, scale: 1 })       // source of truth
   const [vp, setVpState] = useState({ x: 0, y: 0, scale: 1 })
+  const [simPositions, setSimPositions] = useState({})
+  const simRef = useRef(null)
 
   // Keep ref + state in sync (useEffect avoids accessing ref in state updater)
   useEffect(() => {
@@ -147,11 +127,45 @@ export function WisdomMap() {
     return [...charNodes, ...lmNodes]
   }, [characters, places])
 
+  // ── d3-force simulation ──
+  useEffect(() => {
+    if (simRef.current) simRef.current.stop()
+    if (allNodes.length === 0) { setSimPositions({}); return }
+
+    const nodes = allNodes.map(n => ({ id: n.name, r: n.r, x: n.x, y: n.y }))
+    const idxMap = Object.fromEntries(nodes.map((n, i) => [n.id, i]))
+    const links = edges
+      .map(e => ({ source: idxMap[e.a], target: idxMap[e.b], weight: e.weight }))
+      .filter(l => l.source !== undefined && l.target !== undefined)
+
+    const sim = forceSimulation(nodes)
+      .force('charge', forceManyBody().strength(-220))
+      .force('center', forceCenter(MAP_W / 2, MAP_H / 2).strength(0.04))
+      .force('collide', forceCollide(n => n.r + 22).iterations(2))
+      .force('link', forceLink(links).strength(l => Math.min(0.3, 0.06 * l.weight)))
+      .alphaDecay(0.025)
+      .on('tick', () => {
+        const pos = {}
+        nodes.forEach(n => {
+          pos[n.id] = {
+            x: Math.max(80, Math.min(MAP_W - 80, n.x)),
+            y: Math.max(80, Math.min(MAP_H - 80, n.y)),
+          }
+        })
+        setSimPositions({ ...pos })
+      })
+
+    simRef.current = sim
+    return () => sim.stop()
+  }, [allNodes, edges])
+
   const resolvedNodes = useMemo(() => {
-    const iterations = allNodes.length <= 10 ? 20 : allNodes.length <= 30 ? 40 : 80
-    const positions = resolveCollisions(allNodes, 130, iterations)
-    return allNodes.map((n, i) => ({ ...n, x: positions[i].x, y: positions[i].y }))
-  }, [allNodes])
+    return allNodes.map(n => ({
+      ...n,
+      x: simPositions[n.name] !== undefined ? simPositions[n.name].x : n.x,
+      y: simPositions[n.name] !== undefined ? simPositions[n.name].y : n.y,
+    }))
+  }, [allNodes, simPositions])
 
   const charNodes     = resolvedNodes.filter(n => n.kind === 'character')
   const landmarkNodes = resolvedNodes.filter(n => n.kind === 'landmark')
