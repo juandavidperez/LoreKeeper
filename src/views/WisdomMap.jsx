@@ -467,7 +467,7 @@ export function WisdomMap() {
                   onClick={e => { e.stopPropagation(); setFocusedNode(node.name === focusedNode ? null : node.name) }}
                   onMouseDown={e => e.stopPropagation()}
                 >
-                  <g transform={isFocused ? 'scale(1.2)' : undefined} style={{ transition: 'transform 0.2s' }}>
+                  <g style={{ transform: isFocused ? 'scale(1.2)' : 'scale(1)', transformOrigin: 'center', transition: 'transform 0.2s' }}>
                     <image href={src} x={-half} y={-half} width={LANDMARK_SIZE} height={LANDMARK_SIZE} style={{ pointerEvents: 'none' }} />
                     <text y={half + 16} textAnchor="middle" fontSize="11" fontFamily="'Playfair Display', serif" fontStyle="italic" fill="#7a6545">
                       {node.name.length > 15 ? node.name.slice(0, 14) + '…' : node.name}
@@ -499,7 +499,7 @@ export function WisdomMap() {
                 >
                   <circle r={half + 16} fill={aura} opacity={isFocused ? 0.45 : 0.14} style={{ transition: 'opacity 0.25s' }} />
                   <circle r={half + 9}  fill={aura} opacity={isFocused ? 0.28 : 0.10} style={{ transition: 'opacity 0.25s' }} />
-                  <g transform={isFocused ? 'scale(1.2)' : undefined} style={{ transition: 'transform 0.2s' }}>
+                  <g style={{ transform: isFocused ? 'scale(1.2)' : 'scale(1)', transformOrigin: 'center', transition: 'transform 0.2s' }}>
                     <image href={src} x={-half} y={-half} width={CHAR_SIZE} height={CHAR_SIZE} filter="url(#sticker)" style={{ pointerEvents: 'none' }} />
                     <text y={half + 16} textAnchor="middle" fontSize="10" fontFamily="'Playfair Display', serif" fill="#7a6545">
                       {node.name.length > 15 ? node.name.slice(0, 14) + '…' : node.name}
