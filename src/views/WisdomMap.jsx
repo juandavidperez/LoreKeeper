@@ -42,7 +42,6 @@ export function WisdomMap() {
   const [assets, setAssets]         = useState(null)
   const [loading, setLoading]       = useState(true)
   const [selectedBook, setSelectedBook]   = useState('all')
-  const [tappedNode, setTappedNode]       = useState(null)   // touch tooltip
   const [showConnections, setShowConnections] = useState(true)
   const [focusedNode, setFocusedNode] = useState(null)
   const svgRef    = useRef(null)
@@ -337,7 +336,7 @@ export function WisdomMap() {
       <div className="px-4 pt-1 pb-2 shrink-0 flex items-center gap-2">
         <select
           value={selectedBook}
-          onChange={e => { setSelectedBook(e.target.value); setTappedNode(null) }}
+          onChange={e => { setSelectedBook(e.target.value); setFocusedNode(null) }}
           className="text-xs font-serif rounded-lg border px-3 py-1.5 outline-none transition-colors"
           style={{
             borderColor: selectedBook !== 'all' ? 'var(--text-accent)' : 'var(--border-subtle)',
@@ -388,7 +387,7 @@ export function WisdomMap() {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          onClick={() => { setTappedNode(null); setFocusedNode(null) }}
+          onClick={() => setFocusedNode(null)}
           style={{
             cursor: 'grab',
             display: isEmpty ? 'none' : 'block',
@@ -511,46 +510,101 @@ export function WisdomMap() {
           </g>
         </svg>
 
-        {/* ── Tooltip (tap/click on node) ── */}
-        {tappedNode && (
-          <div
-            className="absolute bottom-12 left-3 right-3 sm:bottom-auto sm:top-3 sm:left-auto sm:right-3 sm:w-52 rounded-xl p-3 shadow-xl border"
-            style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-xs font-serif font-bold" style={{ color: 'var(--text-primary)' }}>
-                {tappedNode.name}
-              </p>
-              <button
-                onClick={() => setTappedNode(null)}
-                className="shrink-0 text-[10px] leading-none p-1 rounded"
-                style={{ color: 'var(--text-muted)' }}
-                aria-label="Cerrar"
-              >✕</button>
-            </div>
-            {tappedNode.book && (
-              <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{tappedNode.book}</p>
-            )}
-            {tappedNode.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1.5">
-                {tappedNode.tags.slice(0, 4).map(tag => (
+        {/* ── Focus Panel ── */}
+        {focusedNode && (() => {
+          const node = nodeMap[focusedNode]
+          if (!node) return null
+          const connections = focusedNeighbors
+            ? Array.from(focusedNeighbors.entries()).sort((a, b) => b[1] - a[1])
+            : []
+          return (
+            <div
+              className="absolute bottom-14 left-3 right-3 sm:bottom-auto sm:top-3 sm:left-auto sm:right-3 sm:w-64 rounded-xl shadow-xl border overflow-hidden"
+              style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)' }}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between gap-2 p-3 pb-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-serif font-bold leading-tight truncate" style={{ color: 'var(--text-primary)' }}>
+                    {node.name}
+                  </p>
+                  {node.book && (
+                    <p className="text-[10px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{node.book}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
                   <span
-                    key={tag}
-                    className="text-[10px] rounded-full px-1.5 py-0.5"
-                    style={{ background: 'color-mix(in srgb, var(--text-accent) 12%, transparent)', color: 'var(--text-accent)' }}
+                    className="text-[10px] rounded-full px-2 py-0.5 font-serif italic"
+                    style={{
+                      background: 'color-mix(in srgb, var(--text-accent) 10%, transparent)',
+                      color: 'var(--text-accent)',
+                    }}
                   >
-                    {tag}
+                    {node.kind === 'character' ? 'Personaje' : 'Lugar'}
                   </span>
-                ))}
+                  <button
+                    onClick={() => setFocusedNode(null)}
+                    className="text-[10px] leading-none p-1 rounded"
+                    style={{ color: 'var(--text-muted)' }}
+                    aria-label="Cerrar panel de enfoque"
+                  >✕</button>
+                </div>
               </div>
-            )}
-            {tappedNode.mentions?.length > 0 && (
-              <p className="text-[10px] mt-1.5 italic" style={{ color: 'var(--text-muted)' }}>
-                {tappedNode.mentions.length} {tappedNode.mentions.length === 1 ? 'mención' : 'menciones'}
-              </p>
-            )}
-          </div>
-        )}
+
+              {/* Tags */}
+              {node.tags?.length > 0 && (
+                <div className="flex flex-wrap gap-1 px-3 pb-2">
+                  {node.tags.slice(0, 6).map(tag => (
+                    <span
+                      key={tag}
+                      className="text-[10px] rounded-full px-1.5 py-0.5"
+                      style={{
+                        background: 'color-mix(in srgb, var(--text-accent) 12%, transparent)',
+                        color: 'var(--text-accent)',
+                      }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Mentions */}
+              {node.mentions?.length > 0 && (
+                <p className="text-[10px] px-3 pb-2 italic" style={{ color: 'var(--text-muted)' }}>
+                  {node.mentions.length} {node.mentions.length === 1 ? 'mención' : 'menciones'}
+                </p>
+              )}
+
+              {/* Connected entities */}
+              {connections.length > 0 && (
+                <div className="border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                  <p
+                    className="text-[10px] font-serif uppercase tracking-wider px-3 pt-2 pb-1"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    Conexiones
+                  </p>
+                  <div className="flex flex-col pb-1 max-h-40 overflow-y-auto">
+                    {connections.map(([name, weight]) => (
+                      <button
+                        key={name}
+                        onClick={() => setFocusedNode(name)}
+                        className="flex items-center justify-between text-[10px] px-3 py-1.5 text-left transition-colors"
+                        style={{ color: 'var(--text-primary)' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--text-accent) 6%, transparent)'}
+                        onMouseLeave={e => e.currentTarget.style.background = ''}
+                      >
+                        <span className="font-serif truncate">{name}</span>
+                        <span className="shrink-0 ml-2 tabular-nums" style={{ color: 'var(--text-muted)' }}>×{weight}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {/* ── Zoom controls ── */}
         {!isEmpty && <div className="absolute bottom-3 right-3 flex flex-col gap-1.5">
