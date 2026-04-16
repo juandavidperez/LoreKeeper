@@ -29,7 +29,7 @@ function ViewFallback() {
 function AppContent() {
   const [activeTab, setActiveTabRaw] = useState(() => {
     const hash = window.location.hash.slice(1)
-    return ['plan', 'log', 'encyclopedia', 'oracle', 'map'].includes(hash) ? hash : 'log'
+    return ['plan', 'log', 'encyclopedia', 'oracle'].includes(hash) ? hash : 'log'
   })
 
   const setActiveTab = useCallback((tab) => {
@@ -67,7 +67,7 @@ function AppContent() {
   useEffect(() => {
     const handlePopState = () => {
       const hash = window.location.hash.slice(1)
-      if (['plan', 'log', 'encyclopedia', 'oracle', 'map'].includes(hash)) {
+      if (['plan', 'log', 'encyclopedia', 'oracle'].includes(hash)) {
         setActiveTabRaw(hash)
       }
     }
@@ -113,7 +113,6 @@ function AppContent() {
             />
           )}
           {activeTab === 'oracle' && <OracleView initialFocus={oracleFocus} onClearFocus={() => setOracleFocus(null)} />}
-          {activeTab === 'map' && import.meta.env.DEV && <WisdomMap />}
         </Suspense>
         <ReloadPrompt />
       </MainLayout>

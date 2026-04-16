@@ -10,7 +10,7 @@ import { SyncIndicator } from './SyncIndicator';
 import { GlobalSearch } from './GlobalSearch';
 import { Logo } from './Logo';
 
-const TAB_IDS = ['plan', 'log', 'encyclopedia', 'oracle', 'map'];
+const TAB_IDS = ['plan', 'log', 'encyclopedia', 'oracle'];
 
 const slideVariants = {
   enter: (d) => ({ opacity: 0, x: d >= 0 ? 60 : -60 }),
@@ -42,7 +42,6 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
     { id: 'log', label: 'Crónicas', icon: BookOpen },
     { id: 'encyclopedia', label: 'Archivo', icon: Library },
     { id: 'oracle', label: 'Oráculo', icon: Sparkles },
-    ...(import.meta.env.DEV ? [{ id: 'map', label: 'Mapa', icon: Map }] : []),
   ];
 
   // --- Swipe navigation ---
@@ -125,7 +124,6 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
     { key: '2', mod: true, action: () => navigateWithDirection('log') },
     { key: '3', mod: true, action: () => navigateWithDirection('encyclopedia') },
     { key: '4', mod: true, action: () => navigateWithDirection('oracle') },
-    { key: '5', mod: true, action: () => navigateWithDirection('map') },
   ], [navigateWithDirection]);
   useKeyboardShortcuts(shortcuts);
 

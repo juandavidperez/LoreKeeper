@@ -25,18 +25,6 @@ const AURA_COLORS = {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-function seedPos(name, salt, pad = 130) {
-  let h1 = salt, h2 = salt * 17
-  for (let i = 0; i < name.length; i++) {
-    const c = name.charCodeAt(i)
-    h1 = Math.imul(31, h1) + c | 0
-    h2 = Math.imul(37, h2) + c | 0
-  }
-  return {
-    x: pad + (Math.abs(h1) % (MAP_W - 2 * pad)),
-    y: pad + (Math.abs(h2) % (MAP_H - 2 * pad)),
-  }
-}
 
 
 function touchDist(t1, t2) {
@@ -61,6 +49,52 @@ export function WisdomMap() {
   const [vp, setVpState] = useState({ x: 0, y: 0, scale: 1 })
   const [simPositions, setSimPositions] = useState({})
   const simRef = useRef(null)
+
+  // ── Co-occurrence edges ──
+  const edges = useMemo(() => {
+    const edgeMap = {}
+    entries.forEach(entry => {
+      if (selectedBook !== 'all' && entry.book !== selectedBook) return
+      const names = [
+        ...(entry.characters || []).map(c => c.name),
+        ...(entry.places     || []).map(p => p.name),
+      ]
+      for (let i = 0; i < names.length; i++) {
+        for (let j = i + 1; j < names.length; j++) {
+          const key = [names[i], names[j]].sort().join('|||')
+          edgeMap[key] = (edgeMap[key] || 0) + 1
+        }
+      }
+    })
+    return Object.entries(edgeMap).map(([key, weight]) => {
+      const [a, b] = key.split('|||')
+      return { a, b, weight }
+    })
+  }, [entries, selectedBook])
+
+  // ── Build nodes ──
+  const characters = useMemo(
+    () => archive.personajes.filter(e => selectedBook === 'all' || e.book === selectedBook),
+    [archive.personajes, selectedBook]
+  )
+  const places = useMemo(
+    () => archive.lugares.filter(e => selectedBook === 'all' || e.book === selectedBook),
+    [archive.lugares, selectedBook]
+  )
+
+  const allNodes = useMemo(() => {
+    const charNodes = characters.map(char => ({
+      ...char, kind: 'character',
+      archetype: getCharacterArchetype(char.tags, char.name),
+      r: CHAR_SIZE / 2 + 8,
+    }))
+    const lmNodes = places.map(place => ({
+      ...place, kind: 'landmark',
+      landmarkType: getLandmarkType(place.name, place.tags),
+      r: LANDMARK_SIZE / 2,
+    }))
+    return [...charNodes, ...lmNodes]
+  }, [characters, places])
 
   // Keep ref + state in sync (useEffect avoids accessing ref in state updater)
   useEffect(() => {
@@ -103,54 +137,46 @@ export function WisdomMap() {
     return () => el.removeEventListener('wheel', handler)
   }, [setVp])
 
-  // ── Build nodes ──
-  const characters = useMemo(
-    () => archive.personajes.filter(e => selectedBook === 'all' || e.book === selectedBook),
-    [archive.personajes, selectedBook]
-  )
-  const places = useMemo(
-    () => archive.lugares.filter(e => selectedBook === 'all' || e.book === selectedBook),
-    [archive.lugares, selectedBook]
-  )
-
-  const allNodes = useMemo(() => {
-    const charNodes = characters.map(char => ({
-      ...char, kind: 'character',
-      archetype: getCharacterArchetype(char.tags, char.name),
-      r: CHAR_SIZE / 2 + 8, ...seedPos(char.name, 7),
-    }))
-    const lmNodes = places.map(place => ({
-      ...place, kind: 'landmark',
-      landmarkType: getLandmarkType(place.name, place.tags),
-      r: LANDMARK_SIZE / 2, ...seedPos(place.name, 13),
-    }))
-    return [...charNodes, ...lmNodes]
-  }, [characters, places])
-
   // ── d3-force simulation ──
   useEffect(() => {
     if (simRef.current) simRef.current.stop()
-    if (allNodes.length === 0) { setSimPositions({}); return }
+    if (allNodes.length === 0) return;
 
-    const nodes = allNodes.map(n => ({ id: n.name, r: n.r, x: n.x, y: n.y }))
+    // Initialize simulation nodes with center + small random spread for better entrance
+    const nodes = allNodes.map(n => ({ 
+      id: n.name, 
+      r: n.r, 
+      x: MAP_W / 2 + (Math.random() - 0.5) * 200, 
+      y: MAP_H / 2 + (Math.random() - 0.5) * 200 
+    }))
+    
     const idxMap = Object.fromEntries(nodes.map((n, i) => [n.id, i]))
     const links = edges
-      .map(e => ({ source: idxMap[e.a], target: idxMap[e.b], weight: e.weight }))
-      .filter(l => l.source !== undefined && l.target !== undefined)
+      .map(e => ({ source: e.a, target: e.b, weight: e.weight }))
+      .filter(l => idxMap[l.source] !== undefined && idxMap[l.target] !== undefined)
 
     const sim = forceSimulation(nodes)
-      .force('charge', forceManyBody().strength(-220))
-      .force('center', forceCenter(MAP_W / 2, MAP_H / 2).strength(0.04))
-      .force('collide', forceCollide(n => n.r + 22).iterations(2))
-      .force('link', forceLink(links).strength(l => Math.min(0.3, 0.06 * l.weight)))
-      .alphaDecay(0.025)
+      .force('charge', forceManyBody().strength(-800)) // Stronger repulsion for spread
+      .force('center', forceCenter(MAP_W / 2, MAP_H / 2).strength(0.06))
+      .force('collide', forceCollide(n => n.r + 30).iterations(3))
+      .force('link', forceLink(links).id(d => d.id).strength(l => Math.min(0.2, 0.05 * l.weight)).distance(160))
+      .force('boundX', (alpha) => {
+        nodes.forEach(n => {
+          if (n.x < 100) n.vx += (100 - n.x) * alpha * 0.1
+          if (n.x > MAP_W - 100) n.vx += (MAP_W - 100 - n.x) * alpha * 0.1
+        })
+      })
+      .force('boundY', (alpha) => {
+        nodes.forEach(n => {
+          if (n.y < 100) n.vy += (100 - n.y) * alpha * 0.1
+          if (n.y > MAP_H - 100) n.vy += (MAP_H - 100 - n.y) * alpha * 0.1
+        })
+      })
+      .alphaDecay(0.04)
       .on('tick', () => {
         const pos = {}
         nodes.forEach(n => {
-          pos[n.id] = {
-            x: Math.max(80, Math.min(MAP_W - 80, n.x)),
-            y: Math.max(80, Math.min(MAP_H - 80, n.y)),
-          }
+          pos[n.id] = { x: n.x, y: n.y }
         })
         setSimPositions({ ...pos })
       })
@@ -177,27 +203,6 @@ export function WisdomMap() {
     return map
   }, [resolvedNodes])
 
-  // ── Co-occurrence edges ──
-  const edges = useMemo(() => {
-    const edgeMap = {}
-    entries.forEach(entry => {
-      if (selectedBook !== 'all' && entry.book !== selectedBook) return
-      const names = [
-        ...(entry.characters || []).map(c => c.name),
-        ...(entry.places     || []).map(p => p.name),
-      ]
-      for (let i = 0; i < names.length; i++) {
-        for (let j = i + 1; j < names.length; j++) {
-          const key = [names[i], names[j]].sort().join('|||')
-          edgeMap[key] = (edgeMap[key] || 0) + 1
-        }
-      }
-    })
-    return Object.entries(edgeMap).map(([key, weight]) => {
-      const [a, b] = key.split('|||')
-      return { a, b, weight }
-    })
-  }, [entries, selectedBook])
 
   // ── Mouse pan ──
   const isPanning  = useRef(false)
