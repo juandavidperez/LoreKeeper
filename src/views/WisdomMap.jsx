@@ -49,6 +49,8 @@ export function WisdomMap() {
   const [vp, setVpState] = useState({ x: 0, y: 0, scale: 1 })
   const [simPositions, setSimPositions] = useState({})
   const simRef = useRef(null)
+  const nodeElemsRef = useRef(new Map())  // nodeName → <g> DOM element
+  const edgeElemsRef = useRef(new Map())  // 'a|||b' sorted key → <line> DOM element
 
   // ── Co-occurrence edges ──
   const edges = useMemo(() => {
@@ -140,23 +142,27 @@ export function WisdomMap() {
   // ── d3-force simulation ──
   useEffect(() => {
     if (simRef.current) simRef.current.stop()
-    if (allNodes.length === 0) return;
+    if (allNodes.length === 0) return
 
-    // Initialize simulation nodes with center + small random spread for better entrance
-    const nodes = allNodes.map(n => ({ 
-      id: n.name, 
-      r: n.r, 
-      x: MAP_W / 2 + (Math.random() - 0.5) * 200, 
-      y: MAP_H / 2 + (Math.random() - 0.5) * 200 
+    const nodes = allNodes.map(n => ({
+      id: n.name,
+      r: n.r,
+      x: MAP_W / 2 + (Math.random() - 0.5) * 200,
+      y: MAP_H / 2 + (Math.random() - 0.5) * 200,
     }))
-    
+
     const idxMap = Object.fromEntries(nodes.map((n, i) => [n.id, i]))
     const links = edges
       .map(e => ({ source: e.a, target: e.b, weight: e.weight }))
       .filter(l => idxMap[l.source] !== undefined && idxMap[l.target] !== undefined)
 
+    // Set initial positions so first render shows nodes (not stacked at 0,0)
+    const initialPos = {}
+    nodes.forEach(n => { initialPos[n.id] = { x: n.x, y: n.y } })
+    setSimPositions(initialPos)
+
     const sim = forceSimulation(nodes)
-      .force('charge', forceManyBody().strength(-800)) // Stronger repulsion for spread
+      .force('charge', forceManyBody().strength(-800))
       .force('center', forceCenter(MAP_W / 2, MAP_H / 2).strength(0.06))
       .force('collide', forceCollide(n => n.r + 30).iterations(3))
       .force('link', forceLink(links).id(d => d.id).strength(l => Math.min(0.2, 0.05 * l.weight)).distance(160))
@@ -174,11 +180,27 @@ export function WisdomMap() {
       })
       .alphaDecay(0.04)
       .on('tick', () => {
-        const pos = {}
+        // Direct DOM mutation — no React state update
         nodes.forEach(n => {
-          pos[n.id] = { x: n.x, y: n.y }
+          const el = nodeElemsRef.current.get(n.id)
+          if (el) el.setAttribute('transform', `translate(${n.x},${n.y})`)
         })
-        setSimPositions({ ...pos })
+        links.forEach(l => {
+          const key = [l.source.id, l.target.id].sort().join('|||')
+          const el = edgeElemsRef.current.get(key)
+          if (el) {
+            el.setAttribute('x1', l.source.x)
+            el.setAttribute('y1', l.source.y)
+            el.setAttribute('x2', l.target.x)
+            el.setAttribute('y2', l.target.y)
+          }
+        })
+      })
+      .on('end', () => {
+        // Persist final positions to state (for re-mount)
+        const pos = {}
+        nodes.forEach(n => { pos[n.id] = { x: n.x, y: n.y } })
+        setSimPositions(pos)
       })
 
     simRef.current = sim
@@ -373,11 +395,13 @@ export function WisdomMap() {
             {showConnections && edges.map(({ a, b, weight }) => {
               const na = nodeMap[a], nb = nodeMap[b]
               if (!na || !nb) return null
+              const edgeKey = [a, b].sort().join('|||')
               const opacity = Math.min(0.55, 0.12 + weight * 0.09)
               const strokeW = Math.min(2.5, 0.6 + weight * 0.35)
               return (
                 <line
                   key={`edge-${a}-${b}`}
+                  ref={el => { if (el) edgeElemsRef.current.set(edgeKey, el) }}
                   x1={na.x} y1={na.y} x2={nb.x} y2={nb.y}
                   stroke="#9c845a"
                   strokeWidth={strokeW}
@@ -395,6 +419,7 @@ export function WisdomMap() {
               return (
                 <g
                   key={`lm-${node.name}`}
+                  ref={el => { if (el) nodeElemsRef.current.set(node.name, el) }}
                   transform={`translate(${node.x},${node.y})`}
                   style={{ cursor: 'pointer' }}
                   onClick={e => { e.stopPropagation(); setTappedNode(node) }}
@@ -416,6 +441,7 @@ export function WisdomMap() {
               return (
                 <g
                   key={`ch-${node.name}`}
+                  ref={el => { if (el) nodeElemsRef.current.set(node.name, el) }}
                   transform={`translate(${node.x},${node.y})`}
                   style={{ cursor: 'pointer' }}
                   onClick={e => { e.stopPropagation(); setTappedNode(node) }}
