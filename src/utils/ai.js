@@ -53,23 +53,18 @@ export const callGemini = async (prompt, systemInstruction = "", schema = null) 
   }
 
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
-  const proxyUrl = import.meta.env.VITE_API_PROXY_URL;
 
-  if (!apiKey && !proxyUrl) {
+  // No key and no server proxy available — use mocks
+  if (!apiKey && import.meta.env.DEV) {
     return mockAIResponse(prompt);
   }
 
   IS_AI_GLOBAL_BUSY = true;
   try {
     const model = import.meta.env.VITE_GEMINI_MODEL || DEFAULT_MODEL;
-    // In production, require proxy to avoid exposing the API key in the browser
-    if (!proxyUrl && import.meta.env.PROD) {
-      console.warn('Gemini API key is exposed client-side. Set VITE_API_PROXY_URL for production.');
-    }
-
-    const url = proxyUrl || `${GEMINI_API_BASE}/models/${model}:generateContent?key=${apiKey}`;
 
     const payload = {
+      model,
       contents: [
         { role: 'user', parts: [{ text: `[SISTEMA: ${systemInstruction || 'Eres el Oráculo del Archivo.'}]` }] },
         { role: 'model', parts: [{ text: 'Entendido. Las sombras se aclaran ante mi vista. Procede.' }] },
@@ -81,10 +76,22 @@ export const callGemini = async (prompt, systemInstruction = "", schema = null) 
       } : undefined
     };
 
+    // Dev with VITE_GEMINI_API_KEY → call Google directly (no Vercel runtime needed)
+    // Production / vercel dev → proxy via /api/gemini (key stays server-side)
+    let url, body;
+    if (apiKey) {
+      url = `${GEMINI_API_BASE}/models/${model}:generateContent?key=${apiKey}`;
+      const { model: _m, ...directPayload } = payload;
+      body = JSON.stringify(directPayload);
+    } else {
+      url = '/api/gemini';
+      body = JSON.stringify(payload);
+    }
+
     const response = await fetchWithRetry(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body
     });
 
     const data = await response.json();
