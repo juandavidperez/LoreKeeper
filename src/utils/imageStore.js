@@ -129,6 +129,37 @@ export async function getStorageUrl(path) {
   return data.signedUrl;
 }
 
+/**
+ * Delete IndexedDB panel keys not referenced by any entry.
+ * Call on app mount to reclaim space over time.
+ * @param {Array} entries - current reading entries
+ * @returns {number} count of deleted orphans
+ */
+export async function pruneOrphanedPanels(entries) {
+  const validKeys = new Set();
+  for (const entry of entries) {
+    for (const panel of entry.mangaPanels || []) {
+      if (!panel.startsWith('data:') && !panel.startsWith('supabase:')) {
+        validKeys.add(panel);
+      }
+    }
+  }
+
+  const db = await openDB();
+  const allKeys = await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).getAllKeys();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+
+  const orphans = allKeys.filter(k => !validKeys.has(k));
+  if (orphans.length > 0) {
+    await deleteImages(orphans);
+  }
+  return orphans.length;
+}
+
 function dataUriToBlob(dataUri) {
   const [header, base64] = dataUri.split(',');
   const mime = header.match(/:(.*?);/)[1];

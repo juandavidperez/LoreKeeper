@@ -7,6 +7,7 @@ import { InstallBanner } from './components/InstallBanner'
 import { LorekeeperProvider, useLorekeeperState } from './hooks/useLorekeeperState'
 import { NotificationProvider } from './hooks/useNotification'
 import { useReadingReminder } from './hooks/useReadingReminder'
+import { pruneOrphanedPanels } from './utils/imageStore'
 import { AuthProvider } from './hooks/useAuth'
 import { SyncProvider } from './hooks/useSync'
 import { ThemeProvider } from './context/ThemeProvider'
@@ -43,6 +44,10 @@ function AppContent() {
   })
   const { entries } = useLorekeeperState()
   useReadingReminder(entries)
+
+  useEffect(() => {
+    pruneOrphanedPanels(entries).catch(() => {})
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Navigate to encyclopedia and focus on a specific entity
   const navigateToEntity = useCallback((entityName) => {
@@ -108,7 +113,7 @@ function AppContent() {
             />
           )}
           {activeTab === 'oracle' && <OracleView initialFocus={oracleFocus} onClearFocus={() => setOracleFocus(null)} />}
-          {activeTab === 'map' && <WisdomMap />}
+          {activeTab === 'map' && import.meta.env.DEV && <WisdomMap />}
         </Suspense>
         <ReloadPrompt />
       </MainLayout>
