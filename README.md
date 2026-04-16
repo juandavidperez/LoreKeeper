@@ -1,104 +1,72 @@
-# Lorekeeper: The Golden Archive
+# LoreKeeper · El Grimorio del Archivero
 
-![Lorekeeper Hero](public/assets/hero.png)
+[![Vite](https://img.shields.io/badge/vite-7.0-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![React](https://img.shields.io/badge/react-19.0-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/tailwind-4.0-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Supabase](https://img.shields.io/badge/supabase-cloud-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com/)
+[![Gemini AI](https://img.shields.io/badge/Gemini_AI-Oracle-4285F4?logo=google-gemini&logoColor=white)](https://deepmind.google/technologies/gemini/)
 
-**Lorekeeper** es un archivo digital premium diseñado para guardianes del conocimiento literario. Más que una simple aplicación de seguimiento, es un **grimorio vivo** que permite capturar, reflexionar y organizar el universo de tus lecturas con una estética solemne y un motor técnico de alto rendimiento.
-
-## 📜 Filosofía de Diseño: "Solemne, Vivo, Íntimo"
-
-Lorekeeper no es una herramienta de productividad genérica; es un espacio para el ritual de la lectura.
-
-- **El Ámbar es Sagrado**: El color `#f59e0b` se reserva exclusivamente para estados activos, acciones primarias y momentos de logro (como sellar una semana).
-- **El Pergamino lidera**: El modo claro (*parchment*) es la referencia estética primordial, inspirada en manuscritos medievales.
-- **Voz del Archivero**: La interfaz se comunica con solemnidad. No usamos "borrar", usamos **"Desvanecer"**. No es "guardar", es **"Forjar"**.
+**LoreKeeper** es una Progressive Web App (PWA) diseñada para lectores que desean trascender la simple lectura. Inspirada en la estética de los grimorios clásicos, permite llevar un registro profundo de crónicas, visualizar redes de personajes mediante un mapa de sabiduría con física dinámica y consultar a un Oráculo potenciado por IA.
 
 ---
 
-## ✨ Características Principales
+### ✦ Vistas de la Aplicación
 
-### ⚔️ Bitácora de Crónicas (Reading Log)
-- **Registro Enriquecido**: Captura estados de ánimo, progreso y metadatos detallados.
-- **Multimedia**: Soporte para paneles de manga (WebP) almacenados localmente en IndexedDB.
-- **Voz**: Entrada de dictado en español (`Web Speech API`) integrada en el formulario.
-
-### ⏳ El Plan Maestro (Reading Plan)
-- **Fases y Cronogramas**: Organización semanal con visualización de *streaks* y estadísticas.
-- **Sellar Semanas**: Un ritual visual para marcar el progreso cumplido.
-- **Backups**: Sistema de Exportación/Importación JSON con validación de esquema.
-
-### 📚 El Archivo (Encyclopedia)
-- **Auto-generación**: Repositorio automático de personajes, lugares, glosario y reglas del mundo basado en tus crónicas.
-- **Línea Temporal**: Rastreo de menciones por entidad a través de todos los libros.
-
-### 🔮 El Oráculo (AI Oracle)
-- **IA Poética**: Integración con la API de Gemini para generar revelaciones y extraer metadatos automáticamente.
-- **Resiliencia**: Sistema de *retry* con *exponential backoff* para manejar límites de API.
+| Característica | Escritorio | Celular |
+| :--- | :---: | :---: |
+| **Plan Maestro** <br> Gestión Ritual de Lectura | ![Desktop Plan](./public/screenshots/plan_desktop.png) | ![Mobile Plan](./public/screenshots/plan_mobile.png) |
+| **Crónicas** <br> Registro profundo (Modo Oscuro) | ![Desktop Log](./public/screenshots/log_desktop.png) | ![Mobile Log](./public/screenshots/log_mobile.png) |
+| **Wisdom Map** <br> Redes con Física d3-force | ![Desktop Map](./public/screenshots/map_desktop.png) | ![Mobile Map](./public/screenshots/map_mobile.png) |
 
 ---
 
-## 🛠️ Stack Tecnológico 2.0
+## ⚔️ Características Principales
 
-Lorekeeper utiliza las últimas tecnologías de la web moderna para garantizar una experiencia fluida y offline:
+### 🕸️ Wisdom Map (Mapa de Sabiduría)
+Motor de visualización basado en **d3-force** que genera una red de conexiones entre personajes y lugares automáticamente a partir de tus crónicas. La física dinámica permite explorar la complejidad de la historia de forma interactiva.
 
-- **Core**: React 19 + Vite 7 (JavaScript puro).
-- **Estilos**: Tailwind CSS 4 con sistema de variables personalizadas para temas dark/parchment.
-- **Animaciones**: Framer Motion 12 para transiciones solemnes.
-- **Persistencia & Sync**:
-  - `localStorage`: Estado global de la app con validación de forma.
-  - `IndexedDB`: Almacenamiento de imágenes de alto peso.
-  - `Supabase`: Motor de sincronización en la nube (opcional).
-- **Mobile**: Capacitor 8 para soporte nativo en Android.
-- **PWA**: `vite-plugin-pwa` con estrategias de caché personalizadas (Workbox).
+### 📜 Plan Maestro (Rituales)
+Sistema de gestión de lectura inspirado en "rituales" semanales. Organiza tus libros actuales y próximos, marcando el ritmo de tu progreso en el grimorio.
 
----
+### ✍️ Crónicas de Lectura
+Editor enriquecido para registrar momentos clave. Incluye captura de imágenes para fragmentos físicos y detección automática de entidades (personajes/lugares) que alimentan el Archivo Global.
 
-## 🚀 Instalación y Configuración
-
-### 1. Requisitos Previos
-```bash
-npm install
-```
-
-### 2. Configuración de Entorno
-Copia el archivo `.env.example` a `.env` y configura tus llaves:
-- `VITE_GEMINI_API_KEY`: Para habilitar El Oráculo y extracción de metadata.
-- `VITE_SUPABASE_URL` & `VITE_SUPABASE_ANON_KEY`: Para la sincronización en la nube.
-
-### 3. Desarrollo Local
-```bash
-npm run dev        # Web (Vite)
-npx cap open android # Android (Android Studio)
-```
-
-### 4. Tests y Calidad
-```bash
-npm run test       # Vitest (14 suites, +70 tests)
-npm run lint       # ESLint
-```
+### 🔮 El Oráculo de Lore
+Integración con la API de **Google Gemini**. El Oráculo conoce tu archivo personal y puede responder preguntas sobre la trama, sugerir conexiones entre personajes o predecir giros basados en tu progreso actual.
 
 ---
 
-## 🏗️ Arquitectura y Flujos
+## 🛠️ Stack Tecnológico
 
-### Sincronización Local-First
-Lorekeeper prioriza la velocidad local. Los cambios se guardan instantáneamente en `localStorage` y se encolan para su sincronización con Supabase (`src/utils/syncEngine.js`). Si el usuario está offline, el `SyncQueue` reintentará la operación automáticamente al recuperar la conexión.
+- **Frontend**: React 19 (Hooks avanzados, Suspense, Lazy Loading).
+- **Estilo**: Tailwind CSS 4 con sistema de diseño "Grimorio Dorado" (soporte Dark/Light mode real).
+- **Animaciones**: Framer Motion para transiciones de página suaves y micro-interacciones.
+- **Gráficos**: d3-force para el motor de física del mapa de sabiduría.
+- **Backend & Sync**: Supabase para autenticación y respaldo en la nube de crónicas e imágenes.
+- **IA**: Modelos Gemini de Google para el motor de sabiduría.
+- **PWA**: Instalable, con soporte offline y notificaciones de recordatorio de lectura.
 
-### Gestión de Imágenes
-Para evitar saturar el `localStorage`, las imágenes (paneles de manga) se comprimen en el cliente a formato WebP y se guardan en IndexedDB a través de `src/utils/imageStore.js`.
+---
+
+## 🏛️ Filosofía de Diseño: "El Grimorio"
+
+LoreKeeper no es una herramienta de productividad; es un artefacto. La interfaz busca evocar la sensación de un libro antiguo y valioso:
+- **Tipografía**: Dualidad entre serifas clásicas para contenido y sans-serif modernas para UI.
+- **Paleta**: Tonos pergamino, acentos dorados y sombras profundas.
+- **Interactividad**: Cada acción tiene peso, desde el efecto de "forjar" una entrada hasta la vibración de los hilos en el mapa.
 
 ---
 
-## 📁 Estructura del Proyecto
+## 🚀 Instalación y Desarrollo
 
-```
-src/
-├── components/     # UI shared (MainLayout, SyncIndicator, AuthBanner)
-├── context/        # Providers (ThemeContext, LorekeeperContext)
-├── hooks/          # Logica (useSync, useAuth, useLorekeeperState)
-├── utils/          # Motores (syncEngine, ai, imageStore)
-├── views/          # Paginas (ReadingPlan, Encyclopedia, EntryForm)
-└── __tests__/      # Cobertura de tests unitarios y de integración
-```
+1. Clona el repositorio: `git clone https://github.com/juandavidperez/LoreKeeper.git`
+2. Instala dependencias: `npm install`
+3. Configura las variables de entorno (`.env.local`):
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_GEMINI_API_KEY`
+4. Inicia el servidor de desarrollo: `npm run dev`
 
 ---
-*Preserva el conocimiento. Protege la historia. Forja tu leyenda.*
+
+*Desarrollado con pasión por la lectura y el código limpio. 2026.*
