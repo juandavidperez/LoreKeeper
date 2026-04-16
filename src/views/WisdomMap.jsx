@@ -44,6 +44,7 @@ export function WisdomMap() {
   const [selectedBook, setSelectedBook]   = useState('all')
   const [tappedNode, setTappedNode]       = useState(null)   // touch tooltip
   const [showConnections, setShowConnections] = useState(true)
+  const [focusedNode, setFocusedNode] = useState(null)
   const svgRef    = useRef(null)
   const vpRef     = useRef({ x: 0, y: 0, scale: 1 })       // source of truth
   const [vp, setVpState] = useState({ x: 0, y: 0, scale: 1 })
@@ -140,6 +141,12 @@ export function WisdomMap() {
     return () => el.removeEventListener('wheel', handler)
   }, [setVp])
 
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === 'Escape') setFocusedNode(null) }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [])
+
   // ── d3-force simulation ──
   useEffect(() => {
     if (simRef.current) simRef.current.stop()
@@ -233,6 +240,17 @@ export function WisdomMap() {
     resolvedNodes.forEach(n => { map[n.name] = n })
     return map
   }, [resolvedNodes])
+
+  // Maps directly connected neighbor names → co-occurrence weight
+  const focusedNeighbors = useMemo(() => {
+    if (!focusedNode) return null
+    const neighbors = new Map()
+    edges.forEach(({ a, b, weight }) => {
+      if (a === focusedNode) neighbors.set(b, weight)
+      else if (b === focusedNode) neighbors.set(a, weight)
+    })
+    return neighbors
+  }, [focusedNode, edges])
 
 
   // ── Mouse pan ──
@@ -370,7 +388,7 @@ export function WisdomMap() {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          onClick={() => setTappedNode(null)}
+          onClick={() => { setTappedNode(null); setFocusedNode(null) }}
           style={{
             cursor: 'grab',
             display: isEmpty ? 'none' : 'block',
@@ -405,7 +423,9 @@ export function WisdomMap() {
               const na = nodeMap[a], nb = nodeMap[b]
               if (!na || !nb) return null
               const edgeKey = [a, b].sort().join('|||')
-              const opacity = Math.min(0.55, 0.12 + weight * 0.09)
+              const isConnected = focusedNode && (a === focusedNode || b === focusedNode)
+              const dimmed = focusedNode && !isConnected
+              const opacity = dimmed ? 0.04 : Math.min(0.55, 0.12 + weight * 0.09)
               const strokeW = Math.min(2.5, 0.6 + weight * 0.35)
               return (
                 <line
@@ -423,6 +443,7 @@ export function WisdomMap() {
                   strokeOpacity={opacity}
                   strokeDasharray="5 7"
                   strokeLinecap="round"
+                  style={{ transition: 'stroke-opacity 0.25s' }}
                 />
               )
             })}
@@ -431,6 +452,9 @@ export function WisdomMap() {
             {landmarkNodes.map(node => {
               const src  = assets.landmarks[node.landmarkType] ?? assets.landmarks.village
               const half = LANDMARK_SIZE / 2
+              const isFocused  = focusedNode === node.name
+              const isNeighbor = focusedNeighbors?.has(node.name)
+              const dimmed     = focusedNode && !isFocused && !isNeighbor
               return (
                 <g
                   key={`lm-${node.name}`}
@@ -439,14 +463,16 @@ export function WisdomMap() {
                     else nodeElemsRef.current.delete(node.name)
                   }}
                   transform={simRunningRef.current ? undefined : `translate(${node.x},${node.y})`}
-                  style={{ cursor: 'pointer' }}
-                  onClick={e => { e.stopPropagation(); setTappedNode(node) }}
+                  style={{ cursor: 'pointer', opacity: dimmed ? 0.12 : 1, transition: 'opacity 0.25s' }}
+                  onClick={e => { e.stopPropagation(); setFocusedNode(node.name === focusedNode ? null : node.name) }}
                   onMouseDown={e => e.stopPropagation()}
                 >
-                  <image href={src} x={-half} y={-half} width={LANDMARK_SIZE} height={LANDMARK_SIZE} style={{ pointerEvents: 'none' }} />
-                  <text y={half + 16} textAnchor="middle" fontSize="11" fontFamily="'Playfair Display', serif" fontStyle="italic" fill="#7a6545">
-                    {node.name.length > 15 ? node.name.slice(0, 14) + '…' : node.name}
-                  </text>
+                  <g transform={isFocused ? 'scale(1.2)' : undefined} style={{ transition: 'transform 0.2s' }}>
+                    <image href={src} x={-half} y={-half} width={LANDMARK_SIZE} height={LANDMARK_SIZE} style={{ pointerEvents: 'none' }} />
+                    <text y={half + 16} textAnchor="middle" fontSize="11" fontFamily="'Playfair Display', serif" fontStyle="italic" fill="#7a6545">
+                      {node.name.length > 15 ? node.name.slice(0, 14) + '…' : node.name}
+                    </text>
+                  </g>
                 </g>
               )
             })}
@@ -456,6 +482,9 @@ export function WisdomMap() {
               const src  = assets.characters[node.archetype] ?? assets.characters.person
               const aura = AURA_COLORS[node.archetype] ?? AURA_COLORS.person
               const half = CHAR_SIZE / 2
+              const isFocused  = focusedNode === node.name
+              const isNeighbor = focusedNeighbors?.has(node.name)
+              const dimmed     = focusedNode && !isFocused && !isNeighbor
               return (
                 <g
                   key={`ch-${node.name}`}
@@ -464,16 +493,18 @@ export function WisdomMap() {
                     else nodeElemsRef.current.delete(node.name)
                   }}
                   transform={simRunningRef.current ? undefined : `translate(${node.x},${node.y})`}
-                  style={{ cursor: 'pointer' }}
-                  onClick={e => { e.stopPropagation(); setTappedNode(node) }}
+                  style={{ cursor: 'pointer', opacity: dimmed ? 0.12 : 1, transition: 'opacity 0.25s' }}
+                  onClick={e => { e.stopPropagation(); setFocusedNode(node.name === focusedNode ? null : node.name) }}
                   onMouseDown={e => e.stopPropagation()}
                 >
-                  <circle r={half + 16} fill={aura} opacity={0.14} />
-                  <circle r={half + 9}  fill={aura} opacity={0.10} />
-                  <image href={src} x={-half} y={-half} width={CHAR_SIZE} height={CHAR_SIZE} filter="url(#sticker)" style={{ pointerEvents: 'none' }} />
-                  <text y={half + 16} textAnchor="middle" fontSize="10" fontFamily="'Playfair Display', serif" fill="#7a6545">
-                    {node.name.length > 15 ? node.name.slice(0, 14) + '…' : node.name}
-                  </text>
+                  <circle r={half + 16} fill={aura} opacity={isFocused ? 0.45 : 0.14} style={{ transition: 'opacity 0.25s' }} />
+                  <circle r={half + 9}  fill={aura} opacity={isFocused ? 0.28 : 0.10} style={{ transition: 'opacity 0.25s' }} />
+                  <g transform={isFocused ? 'scale(1.2)' : undefined} style={{ transition: 'transform 0.2s' }}>
+                    <image href={src} x={-half} y={-half} width={CHAR_SIZE} height={CHAR_SIZE} filter="url(#sticker)" style={{ pointerEvents: 'none' }} />
+                    <text y={half + 16} textAnchor="middle" fontSize="10" fontFamily="'Playfair Display', serif" fill="#7a6545">
+                      {node.name.length > 15 ? node.name.slice(0, 14) + '…' : node.name}
+                    </text>
+                  </g>
                 </g>
               )
             })}
