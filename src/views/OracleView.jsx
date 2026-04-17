@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Sparkles, Send, User, MessageSquare, Clock, X, ChevronDown, ChevronUp, Loader2, RotateCcw, Mic, MicOff, WifiOff } from 'lucide-react';
+import { Sparkles, Send, User, MessageSquare, Clock, X, ChevronDown, ChevronUp, Loader2, RotateCcw, Mic, MicOff, WifiOff, Eye } from 'lucide-react';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useNotification } from '../hooks/useNotification';
 import { callGemini } from '../utils/ai';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { getAnalysisPrompt } from '../utils/archiveAnalysis';
 
 export function OracleView({ initialFocus, onClearFocus }) {
   const { archive } = useLorekeeperState();
@@ -113,6 +114,31 @@ export function OracleView({ initialFocus, onClearFocus }) {
     }
   };
 
+  const handleConsultArchive = async () => {
+    if (isTyping || isProcessing.current) return;
+    isProcessing.current = true;
+    setIsTyping(true);
+    
+    // Auto-scroll to show the Oracle starting to "see"
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+
+    try {
+      const analysisContext = getAnalysisPrompt(archive);
+      const prompt = `${analysisContext}\n\nActúa como el Oráculo del Archivo. Usando estos hilos sueltos detectados, susurra una visión poética y mística sobre lo que el buscador aún no ha descubierto o ha dejado en el olvido. No seas demasiado directo, usa metáforas.`;
+      
+      const response = await callGemini(prompt, "Eres el Oráculo del Gran Archivo. Tu misión es revelar los vacíos en la historia con un lenguaje místico y evocador.");
+      
+      setMessages(prev => [...prev, { id: Date.now(), role: 'oracle', text: response }]);
+    } catch (err) {
+      notify("Las brumas del archivo son demasiado densas ahora. Intenta de nuevo.", "error");
+    } finally {
+      setIsTyping(false);
+      isProcessing.current = false;
+    }
+  };
+
   const startNewConversation = () => {
     if (messages.length > 1) {
       setConversations(prev => [{ id: Date.now(), date: new Date().toISOString(), messages }, ...prev].slice(0, 10));
@@ -163,6 +189,24 @@ export function OracleView({ initialFocus, onClearFocus }) {
           </button>
         ))}
         </div>
+      </div>
+
+      {/* Visiones del Archivo (On-demand analysis) */}
+      <div className="grimoire-card bg-accent/5 border-accent/30 rounded-sm p-5 shadow-inner flex flex-col sm:flex-row items-center gap-4 animate-fade-in group hover:bg-accent/10 transition-all">
+        <div className="bg-accent/20 p-4 rounded-full text-accent group-hover:scale-110 transition-transform shadow-lg">
+          <Eye size={24} />
+        </div>
+        <div className="flex-1 text-center sm:text-left">
+          <h3 className="font-serif text-lg text-primary-text">Visiones del Archivo</h3>
+          <p className="text-[10px] text-stone-500 font-serif italic uppercase tracking-wider">¿Qué hilos del destino han quedado sin tejer?</p>
+        </div>
+        <button
+          onClick={handleConsultArchive}
+          disabled={isTyping}
+          className="w-full sm:w-auto px-6 py-3 bg-accent text-white rounded-sm font-serif font-bold uppercase tracking-widest text-[10px] shadow-md hover:bg-accent-secondary active:scale-[0.98] transition-all disabled:opacity-50"
+        >
+          {isTyping ? 'Invocando...' : 'Consultar el Archivo'}
+        </button>
       </div>
 
       {/* Historial Colapsable */}
