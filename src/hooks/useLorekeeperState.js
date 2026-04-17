@@ -14,7 +14,14 @@ function aggregateEntities(entries, field, type) {
   entries.forEach(entry => {
     entry[field]?.forEach(item => {
       if (!data[item.name]) {
-        data[item.name] = { name: item.name, type, book: entry.book, tags: item.tags || [], mentions: [] };
+        data[item.name] = { 
+          name: item.name, 
+          type, 
+          book: entry.book, 
+          tags: item.tags || [], 
+          mentions: [],
+          overrides: null // Will be filled later
+        };
       }
       const mentionKey = `${entry.date}|${entry.book}|${item.content}`;
       const isDuplicate = data[item.name].mentions.some(
@@ -35,6 +42,7 @@ export function LorekeeperProvider({ children }) {
   const [schedule, setSchedule] = useLocalStorage('lore-schedule', INITIAL_SCHEDULE);
   const [entries, setEntries] = useLocalStorage('reading-entries', INITIAL_ENTRIES);
   const [completedWeeks, setCompletedWeeks] = useLocalStorage('completed-weeks', []);
+  const [loreOverrides, setLoreOverrides] = useLocalStorage('lore-overrides', {}); // name -> { description, image, color, etc }
 
   // Expose setters so SyncProvider can update state after pull
   const stateSetters = useMemo(() => ({
@@ -43,17 +51,36 @@ export function LorekeeperProvider({ children }) {
     'lore-schedule': setSchedule,
     'reading-entries': setEntries,
     'completed-weeks': setCompletedWeeks,
-  }), [setBooks, setPhases, setSchedule, setEntries, setCompletedWeeks]);
+    'lore-overrides': setLoreOverrides,
+  }), [setBooks, setPhases, setSchedule, setEntries, setCompletedWeeks, setLoreOverrides]);
 
-  const archive = useMemo(() => ({
-    personajes: aggregateEntities(entries, 'characters', 'personaje'),
-    lugares: aggregateEntities(entries, 'places', 'lugar'),
-    glosario: aggregateEntities(entries, 'glossary', 'glosario'),
-    reglas: aggregateEntities(entries, 'worldRules', 'regla')
-  }), [entries]);
+  const archive = useMemo(() => {
+    const raw = {
+      personajes: aggregateEntities(entries, 'characters', 'personaje'),
+      lugares: aggregateEntities(entries, 'places', 'lugar'),
+      glosario: aggregateEntities(entries, 'glossary', 'glosario'),
+      reglas: aggregateEntities(entries, 'worldRules', 'regla')
+    };
+
+    // Apply Overrides
+    Object.keys(raw).forEach(cat => {
+      raw[cat] = raw[cat].map(entity => {
+        const ov = loreOverrides[entity.name];
+        if (!ov) return entity;
+        return {
+          ...entity,
+          description: ov.description || '',
+          customTags: ov.tags || [],
+          isCustom: true
+        };
+      });
+    });
+
+    return raw;
+  }, [entries, loreOverrides]);
 
   const exportData = useCallback(async () => {
-    const data = { books, phases, schedule, entries, completedWeeks, exportedAt: new Date().toISOString() };
+    const data = { books, phases, schedule, entries, completedWeeks, loreOverrides, exportedAt: new Date().toISOString() };
     const fileName = `lorekeeper-backup-${new Date().toISOString().split('T')[0]}.json`;
     const jsonString = JSON.stringify(data, null, 2);
 
@@ -99,6 +126,7 @@ export function LorekeeperProvider({ children }) {
     if (data.schedule !== undefined && !Array.isArray(data.schedule)) throw new Error('Campo "schedule" debe ser un array.');
     if (data.entries !== undefined && !Array.isArray(data.entries)) throw new Error('Campo "entries" debe ser un array.');
     if (data.completedWeeks !== undefined && !Array.isArray(data.completedWeeks)) throw new Error('Campo "completedWeeks" debe ser un array.');
+    if (data.loreOverrides !== undefined && (typeof data.loreOverrides !== 'object' || data.loreOverrides === null)) throw new Error('Campo "loreOverrides" debe ser un objeto.');
 
     // Validate each book has required fields
     if (data.books) {
@@ -134,7 +162,8 @@ export function LorekeeperProvider({ children }) {
       setEntries(normalized);
     }
     if (data.completedWeeks) setCompletedWeeks(data.completedWeeks);
-  }, [setBooks, setPhases, setSchedule, setEntries, setCompletedWeeks]);
+    if (data.loreOverrides) setLoreOverrides(data.loreOverrides);
+  }, [setBooks, setPhases, setSchedule, setEntries, setCompletedWeeks, setLoreOverrides]);
 
   const value = {
     books, setBooks,
@@ -142,6 +171,7 @@ export function LorekeeperProvider({ children }) {
     schedule, setSchedule,
     entries, setEntries,
     completedWeeks, setCompletedWeeks,
+    loreOverrides, setLoreOverrides,
     archive,
     exportData, importData,
     stateSetters,

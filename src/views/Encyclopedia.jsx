@@ -191,7 +191,21 @@ export function Encyclopedia({ entityFocus, onClearFocus, onConsultOracle }) {
 }
 
 const EntityCard = React.memo(function EntityCard({ item, onConsultOracle }) {
+  const { setLoreOverrides } = useLorekeeperState();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [descDraft, setDescDraft] = useState(item.description || '');
+
+  const handleSaveLore = () => {
+    setLoreOverrides(prev => ({
+      ...prev,
+      [item.name]: {
+        ...(prev[item.name] || {}),
+        description: descDraft
+      }
+    }));
+    setIsEditing(false);
+  };
 
   return (
     <div className={`bg-header-bg transition-all duration-500 rounded-sm overflow-hidden border border-primary/30 shadow-sm ${isExpanded ? 'shadow-md' : 'hover:shadow-md'}`}>
@@ -227,6 +241,57 @@ const EntityCard = React.memo(function EntityCard({ item, onConsultOracle }) {
 
       {isExpanded && (
         <div className="px-5 pt-5 pb-5 animate-fade-in flex flex-col gap-6 bg-item-bg/80 border-t border-primary/50">
+          {/* Global Description Section */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between border-b border-accent/20 pb-2">
+              <div className="flex items-center gap-2">
+                <Sparkles size={14} className="text-accent/60" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent/70">Esencia Permanente</span>
+              </div>
+              {!isEditing ? (
+                <button 
+                  onClick={() => setIsEditing(true)}
+                  className="text-[9px] font-bold text-accent px-2 py-1 hover:bg-accent/10 rounded-sm uppercase tracking-widest transition-colors"
+                >
+                  Editar Verdad
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => { setIsEditing(false); setDescDraft(item.description || ''); }}
+                    className="text-[9px] font-bold text-stone-400 px-2 py-1 hover:bg-stone-100 rounded-sm uppercase tracking-widest"
+                  >
+                    Descartar
+                  </button>
+                  <button 
+                    onClick={handleSaveLore}
+                    className="text-[9px] font-bold bg-accent text-white px-3 py-1 rounded-sm shadow-sm uppercase tracking-widest"
+                  >
+                    Fijar
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {isEditing ? (
+              <textarea
+                autoFocus
+                value={descDraft}
+                onChange={e => setDescDraft(e.target.value)}
+                className="w-full bg-header-bg/50 border border-accent/10 p-4 text-sm font-serif italic text-primary-text outline-none rounded-sm min-h-[100px] shadow-inner focus:border-accent/30 transition-all"
+                placeholder="Describe la naturaleza fundamental de este ser o lugar..."
+              />
+            ) : item.description ? (
+              <p className="text-sm text-primary-text font-serif italic leading-relaxed bg-accent/5 p-4 rounded-sm border-l-2 border-accent/30">
+                "{item.description}"
+              </p>
+            ) : (
+              <p className="text-[11px] text-stone-400 font-serif italic text-center py-4 px-8 leading-relaxed">
+                Aún no has fijado una verdad para {item.name}. Define su esencia para que resuene en todo el Archivo.
+              </p>
+            )}
+          </div>
+
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2 border-b border-accent/30 pb-2">
               <Clock size={14} className="text-accent/40" />
