@@ -219,7 +219,7 @@ const EntityCard = React.memo(function EntityCard({ item, onConsultOracle }) {
           >
             <Sparkles size={14} />
           </button>
-          <button onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }} aria-label={isExpanded ? 'Colapsar' : 'Expandir'} className="p-1.5">
+          <button onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }} aria-label={isExpanded ? 'Colapsar' : 'Expandir'} className="p-2.5">
             <ChevronRight size={20} className={`text-accent/60 transition-transform duration-300 ${isExpanded ? 'rotate-90 text-accent' : ''}`} />
           </button>
         </div>

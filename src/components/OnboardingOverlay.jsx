@@ -93,8 +93,8 @@ export function OnboardingOverlay({ onComplete }) {
            style={{ boxShadow: '0 -4px 40px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(245,158,11,0.08)' }}>
 
         {/* Double-rule header (grimoire aesthetic) */}
-        <div className="border-b-2 border-accent/20 px-8 pt-8 pb-0">
-          <div className="border border-accent/10 px-6 pt-6 pb-5">
+        <div className="border-b-2 border-accent/20 px-4 pt-6 pb-0 sm:px-8 sm:pt-8">
+          <div className="border border-accent/10 px-4 pt-4 pb-4 sm:px-6 sm:pt-6 sm:pb-5">
             <div className="flex items-center justify-between mb-1">
               <span className="text-[9px] text-accent font-serif font-bold uppercase tracking-[0.35em]">
                 {current.roman} · {STEPS.length}
@@ -131,7 +131,7 @@ export function OnboardingOverlay({ onComplete }) {
         </div>
 
         {/* Content */}
-        <div className="px-8 py-6 min-h-[220px] flex flex-col justify-start overflow-hidden">
+        <div className="px-4 py-5 sm:px-8 sm:py-6 min-h-[200px] sm:min-h-[220px] flex flex-col justify-start overflow-y-auto">
           <AnimatePresence mode="wait" custom={dir}>
             <motion.div
               key={`content-${step}`}

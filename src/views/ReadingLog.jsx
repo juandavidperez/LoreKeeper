@@ -486,7 +486,7 @@ const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, onUpdateT
                 onClick={startTimeEdit}
                 aria-label="Editar tiempo de lectura"
                 title="Tiempo de lectura"
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-sm text-[9px] border transition-all ${
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-sm text-[9px] border transition-all min-w-[44px] min-h-[44px] justify-center ${
                   entry.readingTime > 0
                     ? 'bg-accent/5 border-accent/20 text-accent font-bold'
                     : 'border-stone-200/30 text-stone-500 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-60'
@@ -497,8 +497,8 @@ const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, onUpdateT
               </button>
             )}
             <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
-              <button onClick={onEdit} aria-label="Editar crónica" className="p-2 text-stone-400 hover:text-accent active:text-accent flex items-center justify-center min-w-[40px] min-h-[40px]"><Edit3 size={18}/></button>
-              <button onClick={onDelete} aria-label="Eliminar crónica" className="p-2 text-stone-400 hover:text-red-600 active:text-red-700 flex items-center justify-center min-w-[40px] min-h-[40px]"><Trash2 size={18}/></button>
+              <button onClick={onEdit} aria-label="Editar crónica" className="p-2 text-stone-400 hover:text-accent active:text-accent flex items-center justify-center min-w-[44px] min-h-[44px]"><Edit3 size={18}/></button>
+              <button onClick={onDelete} aria-label="Eliminar crónica" className="p-2 text-stone-400 hover:text-red-600 active:text-red-700 flex items-center justify-center min-w-[44px] min-h-[44px]"><Trash2 size={18}/></button>
             </div>
           </div>
         )}
