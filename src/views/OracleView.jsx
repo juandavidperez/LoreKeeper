@@ -272,10 +272,10 @@ export function OracleView({ initialFocus, onClearFocus }) {
             ) : (
               <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest mr-1">TÚ</div>
             )}
-            <div className={`max-w-[90%] px-6 py-5 rounded-sm shadow-sm border animate-fade-in ${
+            <div className={`max-w-[90%] px-6 py-5 rounded-2xl shadow-sm border animate-fade-in ${
               msg.role === 'oracle' 
-              ? 'bg-item-bg border-primary/50 text-primary-text font-serif italic leading-relaxed text-sm sm:text-base' 
-              : 'bg-accent/10 border-accent/20 text-accent-secondary text-xs sm:text-sm font-serif'
+              ? 'bg-item-bg border-primary/50 text-primary-text font-serif italic leading-relaxed text-sm sm:text-base rounded-tl-none' 
+              : 'bg-accent/10 border-accent/20 text-accent-secondary text-xs sm:text-sm font-serif rounded-tr-none'
             }`}>
               {msg.text}
             </div>
