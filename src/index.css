@@ -271,6 +271,14 @@ body::before {
   display: none;
 }
 
+.ink-hover {
+  transition: filter 0.3s ease;
+}
+
+.ink-hover:hover {
+  filter: url(#inkBleed);
+}
+
 @layer utilities {
   .safe-top {
     padding-top: calc(1rem + env(safe-area-inset-top));
@@ -289,3 +297,55 @@ body::before {
     padding-right: calc(1.5rem + env(safe-area-inset-right));
   }
 }
+
+/* Tiptap & Markdown styling */
+.prose {
+  font-family: 'Playfair Display', serif;
+  color: var(--text-primary);
+  line-height: 1.7;
+}
+.prose strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+.prose em {
+  font-style: italic;
+}
+.prose p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+.prose blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1rem;
+  font-style: italic;
+  font-family: 'Playfair Display', serif;
+  margin: 1rem 0;
+}
+.tiptap:focus {
+  outline: none;
+}
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--text-muted);
+  pointer-events: none;
+  height: 0;
+}
+
+/* 🕯️ Candle Flicker Ambience (Legibility Fix) */
+@keyframes candleFlicker {
+  0%, 100% { opacity: 0.12; transform: scale(1); }
+  50%      { opacity: 0.22; transform: scale(1.05); }
+}
+
+.candle-glow {
+  background: radial-gradient(circle at 50% 50%, #fff9e6 0%, transparent 70%);
+  animation: candleFlicker 12s infinite ease-in-out;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .candle-glow {
+  background: radial-gradient(circle at 50% 50%, #3d2b1f 0%, transparent 80%);
+}
+

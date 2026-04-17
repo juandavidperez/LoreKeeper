@@ -12,10 +12,25 @@ import { Logo } from './Logo';
 
 const TAB_IDS = ['plan', 'log', 'encyclopedia', 'oracle'];
 
-const slideVariants = {
-  enter: (d) => ({ opacity: 0, x: d >= 0 ? 60 : -60 }),
-  center: { opacity: 1, x: 0 },
-  exit: (d) => ({ opacity: 0, x: d >= 0 ? -60 : 60 }),
+const inkRevealVariants = {
+  enter: { 
+    opacity: 0, 
+    scale: 0.95,
+    WebkitMaskImage: 'radial-gradient(circle at center, transparent 0%, transparent 0%)',
+    maskImage: 'radial-gradient(circle at center, transparent 0%, transparent 0%)',
+  },
+  center: { 
+    opacity: 1, 
+    scale: 1,
+    WebkitMaskImage: 'radial-gradient(circle at center, black 100%, black 100%)',
+    maskImage: 'radial-gradient(circle at center, black 100%, black 100%)',
+  },
+  exit: { 
+    opacity: 0, 
+    scale: 1.05,
+    WebkitMaskImage: 'radial-gradient(circle at center, transparent 0%, transparent 0%)',
+    maskImage: 'radial-gradient(circle at center, transparent 0%, transparent 0%)',
+  },
 };
 
 export function MainLayout({ activeTab, setActiveTab, children }) {
@@ -135,6 +150,9 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
 
   return (
     <div className={`min-h-dvh bg-app-bg text-primary-text font-sans overflow-x-hidden relative ${isCompactLandscape ? 'pb-16' : 'pb-32'}`}>
+      {/* 🕯️ Dedicated Background Layer for Ambience */}
+      <div className="fixed inset-0 pointer-events-none candle-glow opacity-30 z-0 bg-app-bg" aria-hidden="true" />
+      
       <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:bg-accent focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-bold">
         Saltar al contenido
       </a>
@@ -142,6 +160,7 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
         className="fixed top-0 left-0 right-0 flex items-center justify-between z-[60] px-4 border-b overflow-hidden bg-header-bg border-primary/30"
         style={{ paddingTop: 'env(safe-area-inset-top)', height: headerHeight }}
       >
+        {/* ... existing header content ... */}
         <div className="flex items-center gap-1">
           <AuthBanner />
           <SyncIndicator />
@@ -222,20 +241,19 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
       <main
         id="main-content"
         tabIndex={-1}
-        className="safe-x max-w-7xl mx-auto min-h-[calc(100dvh-80px)] outline-none"
+        className="safe-x max-w-7xl mx-auto min-h-[calc(100dvh-80px)] outline-none relative z-10"
         style={{ paddingTop: mainPaddingTop }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <AnimatePresence mode="wait" custom={direction}>
+        <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
-            custom={direction}
-            variants={slideVariants}
+            variants={inkRevealVariants}
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: 0.25, ease: "easeOut" }}
+            transition={{ duration: 0.6, ease: "easeInOut" }}
           >
             {children}
           </motion.div>
