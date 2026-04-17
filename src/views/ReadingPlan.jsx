@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef } from 'react';
-import { Trash2, Book, Layers, Layout, Download, Upload, ChevronDown, ChevronRight } from 'lucide-react';
+import { useState, useMemo, useRef, Fragment } from 'react';
+import { Trash2, Book, Layers, Layout, Download, Upload, ChevronDown, ChevronRight, Plus } from 'lucide-react';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
 import { useNotification } from '../hooks/useNotification';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -124,6 +124,30 @@ export function ReadingPlan({ onLogWeek }) {
 
   const deleteWeek = (weekNum) => {
     setSchedule(schedule.filter(w => w.week !== weekNum));
+  };
+
+  const insertWeek = (atWeekNum) => {
+    const newWeek = {
+      week: atWeekNum,
+      mangaTitle: books.find(b => b.type === 'manga')?.title || "",
+      mangaVols: "",
+      novelTitle: books.find(b => b.type === 'novel')?.title || "",
+      novelSection: "",
+      tip: ""
+    };
+    setSchedule([
+      ...schedule.filter(w => w.week < atWeekNum),
+      newWeek,
+      ...schedule.filter(w => w.week >= atWeekNum).map(w => ({ ...w, week: w.week + 1 }))
+    ]);
+    setPhases(phases.map(p => ({
+      ...p,
+      weeks: [
+        p.weeks[0] >= atWeekNum ? p.weeks[0] + 1 : p.weeks[0],
+        p.weeks[1] >= atWeekNum ? p.weeks[1] + 1 : p.weeks[1]
+      ]
+    })));
+    setCompletedWeeks(completedWeeks.map(w => w >= atWeekNum ? w + 1 : w));
   };
 
   // CRUD: Phases
@@ -269,7 +293,7 @@ export function ReadingPlan({ onLogWeek }) {
           expandedPhases={expandedPhases} onTogglePhase={togglePhase}
           nextUpWeek={nextUpWeek}
           onToggleWeek={toggleWeek} onUpdateWeek={updateWeek}
-          onDeleteWeek={deleteWeek} onAddWeek={addWeek}
+          onDeleteWeek={deleteWeek} onInsertWeek={insertWeek} onAddWeek={addWeek}
           onLogWeek={onLogWeek}
         />
       )}
@@ -476,7 +500,7 @@ function HabitGraph({ entries }) {
       <div className="flex gap-1 mt-1.5">
         {weeks.map((week, i) => (
           <div key={i} className="flex-1 text-center">
-            <span className={`text-[7px] font-mono leading-none block truncate ${week.isCurrent ? 'text-accent' : 'text-stone-600'}`}>
+            <span className={`text-[8px] font-mono leading-none block truncate ${week.isCurrent ? 'text-accent' : 'text-stone-600'}`}>
               {week.label}
             </span>
           </div>
@@ -524,8 +548,8 @@ function ActivityGrid({ entries }) {
         ))}
       </div>
       <div className="flex justify-between mt-1.5">
-        <span className="text-[7px] font-mono text-stone-600">{days[0]?.date?.slice(5).replace('-', '/')}</span>
-        <span className="text-[7px] font-mono text-accent">hoy</span>
+        <span className="text-[8px] font-mono text-stone-600">{days[0]?.date?.slice(5).replace('-', '/')}</span>
+        <span className="text-[8px] font-mono text-accent">hoy</span>
       </div>
     </div>
   );
@@ -634,24 +658,58 @@ function PhaseManager({ phases, onUpdate, onDelete, onAdd }) {
     <div className="flex flex-col gap-6 animate-fade-in px-2">
       <h3 className="font-serif italic text-stone-500 text-sm border-b border-accent/20 pb-2">Cronología de Eras</h3>
       {phases.map((phase) => (
-        <div className="w-full bg-input-bg border border-primary rounded-xl p-4 flex flex-col gap-3 group relative transition-all hover:bg-card-bg shadow-sm">
-          <button onClick={() => onDelete(phase.id)} className="absolute top-4 right-4 p-3 text-stone-200 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
-          <div className="flex flex-col gap-1.5">
-            <input value={phase.label} onChange={e => onUpdate(phase.id, 'label', e.target.value)} className="bg-transparent border-0 border-b border-accent/20 p-0 text-xl font-serif font-bold text-primary-text focus:ring-0 focus:border-accent" placeholder="Nombre de la Era/Fase" />
-            <input value={phase.desc} onChange={e => onUpdate(phase.id, 'desc', e.target.value)} className="bg-transparent border-0 p-0 text-xs font-serif italic text-stone-600 focus:ring-0 placeholder:text-stone-400" placeholder="Breve descripción histórica..." />
+        <div key={phase.id} className="w-full bg-input-bg border border-primary/40 rounded-xl p-5 flex flex-col gap-4 group relative transition-all hover:bg-card-bg shadow-sm">
+          <button 
+            onClick={() => onDelete(phase.id)} 
+            className="absolute top-4 right-4 p-3 text-stone-400 hover:text-red-500 transition-all opacity-60 hover:opacity-100 flex items-center justify-center min-w-[48px] min-h-[48px]"
+          >
+            <Trash2 size={18}/>
+          </button>
+          
+          <div className="flex flex-col gap-1.5 pr-12">
+            <input 
+              value={phase.label} 
+              onChange={e => onUpdate(phase.id, 'label', e.target.value)} 
+              className="bg-transparent border-0 border-b border-accent/20 p-0 text-xl font-serif font-bold text-primary-text focus:ring-0 focus:border-accent w-full" 
+              placeholder="Nombre de la Era/Fase" 
+            />
+            <input 
+              value={phase.desc} 
+              onChange={e => onUpdate(phase.id, 'desc', e.target.value)} 
+              className="bg-transparent border-0 p-0 text-xs font-serif italic text-stone-600 focus:ring-0 placeholder:text-stone-400 w-full" 
+              placeholder="Breve descripción histórica..." 
+            />
           </div>
-          <div className="flex gap-6 items-center">
-            <div className="flex flex-col gap-1.5 flex-1">
-              <span className="text-[9px] uppercase font-bold text-stone-500 tracking-wider">Origen (Semana)</span>
-              <input type="number" value={phase.weeks[0]} onChange={e => onUpdate(phase.id, 'weeks', [parseInt(e.target.value), phase.weeks[1]])} inputMode="numeric" className="bg-section-bg border border-accent/20 rounded px-3 py-2 text-sm text-primary-text focus:border-accent outline-none" />
-            </div>
-            <div className="flex flex-col gap-1.5 flex-1">
-              <span className="text-[9px] uppercase font-bold text-stone-500 tracking-wider">Ocaso (Semana)</span>
-              <input type="number" value={phase.weeks[1]} onChange={e => onUpdate(phase.id, 'weeks', [phase.weeks[0], parseInt(e.target.value)])} inputMode="numeric" className="bg-section-bg border border-accent/20 rounded px-3 py-2 text-sm text-primary-text focus:border-accent outline-none" />
+
+          <div className="grid grid-cols-[1fr,1fr,auto] gap-3 sm:gap-6 items-end pt-2 border-t border-primary/10">
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[9px] uppercase font-bold text-stone-500 tracking-wider">Origen</span>
+              <input 
+                type="number" 
+                value={phase.weeks[0]} 
+                onChange={e => onUpdate(phase.id, 'weeks', [parseInt(e.target.value), phase.weeks[1]])} 
+                inputMode="numeric" 
+                className="bg-section-bg border border-accent/20 rounded px-3 py-2 text-sm text-primary-text focus:border-accent outline-none w-full" 
+              />
             </div>
             <div className="flex flex-col gap-1.5">
-              <span className="text-[9px] uppercase font-bold text-stone-400 tracking-wider">Estandarte</span>
-              <input type="color" value={phase.color} onChange={e => onUpdate(phase.id, 'color', e.target.value)} className="w-10 h-10 rounded-full border-2 border-white shadow-md cursor-pointer overflow-hidden p-0" />
+              <span className="text-[9px] uppercase font-bold text-stone-500 tracking-wider">Ocaso</span>
+              <input 
+                type="number" 
+                value={phase.weeks[1]} 
+                onChange={e => onUpdate(phase.id, 'weeks', [phase.weeks[0], parseInt(e.target.value)])} 
+                inputMode="numeric" 
+                className="bg-section-bg border border-accent/20 rounded px-3 py-2 text-sm text-primary-text focus:border-accent outline-none w-full" 
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[9px] uppercase font-bold text-stone-400 tracking-wider">Color</span>
+              <input 
+                type="color" 
+                value={phase.color} 
+                onChange={e => onUpdate(phase.id, 'color', e.target.value)} 
+                className="w-10 h-10 rounded-full border-2 border-white/20 shadow-md cursor-pointer overflow-hidden p-0" 
+              />
             </div>
           </div>
         </div>
@@ -661,7 +719,7 @@ function PhaseManager({ phases, onUpdate, onDelete, onAdd }) {
   );
 }
 
-function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, expandedPhases, onTogglePhase, nextUpWeek, onToggleWeek, onUpdateWeek, onDeleteWeek, onAddWeek, onLogWeek }) {
+function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, expandedPhases, onTogglePhase, nextUpWeek, onToggleWeek, onUpdateWeek, onDeleteWeek, onInsertWeek, onAddWeek, onLogWeek }) {
   return (
     <div className="flex flex-col gap-10">
       {phases.map((phase) => {
@@ -697,8 +755,8 @@ function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, expa
                 const novelBook = books.find(b => b.title === week.novelTitle);
 
                 return (
+                  <Fragment key={week.week}>
                   <div
-                    key={week.week}
                     onClick={() => !isEditing && onToggleWeek(week.week)}
                     className={`group py-5 flex items-center justify-between gap-4 sm:gap-6 transition-all duration-500 relative ${!isEditing ? 'cursor-pointer hover:bg-accent/5' : 'bg-item-bg shadow-lg border-l-4 border-accent' } ${isNextUp && !isEditing ? 'bg-accent/5' : ''} -mx-4 px-4 my-2 rounded-sm`}
                   >
@@ -818,9 +876,15 @@ function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, expa
                       </div>
                     </div>
 
-                    <div className="flex-shrink-0 flex items-center justify-center w-24 group/seal">
+                    <div className={`flex-shrink-0 flex items-center justify-center group/seal ${isEditing ? 'w-6' : 'w-24'}`}>
                       {isEditing ? (
-                        <button onClick={(e) => { e.stopPropagation(); onDeleteWeek(week.week); }} className="p-3 text-stone-200 hover:text-red-500 hover:bg-red-50 rounded-full transition-all group-hover:text-stone-400"><Trash2 size={20}/></button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); onDeleteWeek(week.week); }} 
+                          className="absolute top-2 right-2 p-2.5 text-stone-300 hover:text-red-500 rounded transition-all opacity-60 hover:opacity-100 flex items-center justify-center min-w-[44px] min-h-[44px]" 
+                          aria-label="Eliminar semana"
+                        >
+                          <Trash2 size={16}/>
+                        </button>
                       ) : (
                         <div className="relative w-20 h-20 flex items-center justify-center">
                           {isCompleted ? (
@@ -859,6 +923,16 @@ function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, expa
                       )}
                     </div>
                   </div>
+                  {isEditing && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onInsertWeek(week.week + 1); }}
+                      aria-label={`Insertar semana después de ${week.week}`}
+                      className="flex items-center justify-center gap-1.5 w-full py-1.5 text-[10px] font-serif italic text-stone-500 hover:text-accent hover:bg-accent/5 transition-colors"
+                    >
+                      <Plus size={10} /> insertar semana aquí
+                    </button>
+                  )}
+                  </Fragment>
                 );
               })}
             </div>
