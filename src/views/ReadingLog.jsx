@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { Plus, Search, User, Globe, HelpCircle, Edit3, Trash2, Link as LinkIcon, Image as ImageIcon, CalendarDays, CheckSquare, Square, X, Share2, ChevronDown, Shield, ScrollText, Sparkles, Clock } from 'lucide-react';
+import { Plus, Search, User, Globe, HelpCircle, Edit3, Trash2, Link as LinkIcon, Image as ImageIcon, CalendarDays, CheckSquare, Square, X, Share2, ChevronDown, Shield, ScrollText, Sparkles, Clock, BookOpen } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ShareQuote } from '../components/ShareQuote';
 import { EntryForm } from './EntryForm';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
@@ -15,8 +16,11 @@ let _nextId = 0;
 function uid() { return `entry-${Date.now()}-${_nextId++}-${Math.random().toString(36).slice(2, 7)}`; }
 
 export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData, onClearPrefilled }) {
-  const { entries, setEntries, books, archive } = useLorekeeperState();
+  const { entries, setEntries, books, archive, schedule, completedWeeks, setCompletedWeeks } = useLorekeeperState();
   const notify = useNotification();
+
+  const [showActiveReading, setShowActiveReading] = useState(false);
+  const [localDraft, setLocalDraft] = useState(null);
 
   // Migration Effect
   useEffect(() => {
@@ -205,8 +209,16 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
     setSelected(new Set());
   };
 
+  useEffect(() => {
+    if (prefilledData || localDraft) {
+      setIsAdding(true);
+      setEditingId(null);
+    }
+  }, [prefilledData, localDraft]);
+
+  const initialData = editingId ? entries.find(e => e.id === editingId) : (prefilledData || localDraft);
+
   if (isAdding) {
-    const initialData = editingId ? entries.find(e => e.id === editingId) : prefilledData;
     return (
       <EntryForm 
         books={books} 
@@ -215,6 +227,7 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
           setIsAdding(false);
           setEditingId(null);
           if (onClearPrefilled) onClearPrefilled();
+          setLocalDraft(null);
           restoreScroll();
         }}
         initialData={initialData} 
@@ -282,18 +295,51 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
         )}
       </div>
 
-      {/* FLOATING FAB — always accessible */}
-      {/* WAX SEAL FAB */}
+      {/* FLOATING FABs — always accessible */}
       {!bulkMode && (
-        <button
-          onClick={() => { savedScrollY.current = window.scrollY; setIsAdding(true); }}
-          aria-label="Nueva crónica"
-          className="fixed bottom-24 right-6 z-[110] bg-accent text-white w-16 h-16 rounded-full shadow-md transition-all active:scale-90 flex flex-col items-center justify-center border-2 border-accent-secondary"
-        >
-          <span className="text-[7px] font-bold tracking-[0.2em] mb-0.5">NUEVA</span>
-          <Plus size={20} strokeWidth={3} />
-        </button>
+        <div className="fixed bottom-24 right-6 z-[110] flex flex-col gap-4 items-end">
+          {/* MODO LECTURA FAB */}
+          <button
+            onClick={() => setShowActiveReading(true)}
+            aria-label="Modo Lectura Activa"
+            className="group relative flex items-center justify-center bg-zinc-900 text-accent w-12 h-12 rounded-full shadow-lg border border-accent/30 transition-all hover:scale-110 active:scale-95 overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-accent/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <BookOpen size={20} strokeWidth={2.5} />
+            <span className="sr-only">Modo Lectura</span>
+          </button>
+
+          {/* WAX SEAL FAB */}
+          <button
+            onClick={() => { savedScrollY.current = window.scrollY; setIsAdding(true); setLocalDraft(null); }}
+            aria-label="Nueva crónica"
+            className="bg-accent text-white w-16 h-16 rounded-full shadow-md transition-all active:scale-90 flex flex-col items-center justify-center border-2 border-accent-secondary"
+          >
+            <span className="text-[7px] font-bold tracking-[0.2em] mb-0.5">NUEVA</span>
+            <Plus size={20} strokeWidth={3} />
+          </button>
+        </div>
       )}
+
+      {/* ACTIVE READING OVERLAY */}
+      <AnimatePresence>
+        {showActiveReading && (
+          <ActiveReadingOverlay 
+            schedule={schedule}
+            completedWeeks={completedWeeks}
+            onClose={() => setShowActiveReading(false)}
+            onSeal={(idx) => {
+              setCompletedWeeks([...completedWeeks, idx]);
+              notify(`Semana ${idx + 1} sellada correctamente.`, 'success');
+              setShowActiveReading(false);
+            }}
+            onLog={(week) => {
+              setLocalDraft({ book: week.novelTitle || week.mangaTitle, chapter: week.novelSection || week.mangaVols });
+              setShowActiveReading(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* SEARCH & FILTER */}
       {entries.length > 0 && (
@@ -654,5 +700,84 @@ function EntrySection({ label, list, onNavigate, onConsult }) {
         ))}
       </div>
     </div>
+  );
+}
+
+function ActiveReadingOverlay({ schedule, completedWeeks, onClose, onSeal, onLog }) {
+  const nextIdx = schedule.findIndex((_, i) => !completedWeeks.includes(i));
+  const week = nextIdx !== -1 ? schedule[nextIdx] : null;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[300] bg-zinc-950 flex flex-col items-center justify-center p-8 text-center"
+    >
+      <button 
+        onClick={onClose}
+        className="absolute top-8 right-8 p-3 text-zinc-500 hover:text-white transition-colors"
+      >
+        <X size={32} />
+      </button>
+
+      {week ? (
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="max-w-md w-full"
+        >
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <div className="h-[1px] w-8 bg-accent/30" />
+            <span className="text-accent font-bold uppercase tracking-[0.3em] text-[10px]">Leyendo Ahora</span>
+            <div className="h-[1px] w-8 bg-accent/30" />
+          </div>
+
+          <h2 className="text-zinc-500 font-serif text-lg mb-2 uppercase tracking-widest">Semana {week.week}</h2>
+          <h1 className="text-white font-serif text-4xl mb-4 leading-tight">
+            {week.novelTitle || week.mangaTitle}
+          </h1>
+          <p className="text-zinc-400 font-serif italic text-xl mb-6">
+            {week.novelSection || week.mangaVols}
+          </p>
+          
+          {week.tip && (
+            <div className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-2xl mb-12">
+              <p className="text-zinc-500 text-sm font-serif italic leading-relaxed">
+                "{week.tip}"
+              </p>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-4">
+            <button
+              onClick={() => onSeal(nextIdx)}
+              className="w-full py-6 bg-accent text-white rounded-2xl font-serif font-bold text-xl shadow-xl shadow-accent/10 hover:bg-accent-secondary active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+            >
+              <Sparkles size={20} />
+              ✦ Sellar esta semana
+            </button>
+            
+            <button
+              onClick={() => onLog(week)}
+              className="w-full py-4 bg-transparent text-zinc-400 hover:text-white rounded-2xl font-serif text-lg transition-all flex items-center justify-center gap-2"
+            >
+              <Edit3 size={18} />
+              ✎ Inscribir Crónica
+            </button>
+          </div>
+        </motion.div>
+      ) : (
+        <div className="text-center">
+          <Sparkles size={48} className="text-accent mx-auto mb-6 opacity-30" />
+          <h1 className="text-white font-serif text-3xl mb-4">Gran Viaje Completado</h1>
+          <p className="text-zinc-500 font-serif italic mb-8">Has sellado todas las semanas de tu plan actual.</p>
+          <button onClick={onClose} className="px-8 py-3 border border-zinc-800 text-zinc-400 rounded-full hover:bg-zinc-900 transition-all">
+            Volver
+          </button>
+        </div>
+      )}
+    </motion.div>
   );
 }
