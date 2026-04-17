@@ -45,8 +45,9 @@ export function WisdomMap() {
   const [assets, setAssets]         = useState(null)
   const [loading, setLoading]       = useState(true)
   const [selectedBook, setSelectedBook]   = useState('all')
-  const [showConnections, setShowConnections] = useState(true)
-  const [focusedNode, setFocusedNode] = useState(null)
+  const [showConnections, setShowConnections] = useState(true);
+  const [showFog, setShowFog] = useState(true);
+  const [focusedNode, setFocusedNode] = useState(null);
   const svgRef    = useRef(null)
   const vpRef     = useRef({ x: 0, y: 0, scale: 1 })       // source of truth
   const [vp, setVpState] = useState({ x: 0, y: 0, scale: 1 })
@@ -399,6 +400,18 @@ export function WisdomMap() {
         >
           hilos
         </button>
+        <button
+          onClick={() => setShowFog(v => !v)}
+          aria-label={showFog ? 'Ocultar bruma' : 'Mostrar bruma'}
+          className="text-[10px] font-serif italic rounded-lg border px-2.5 py-1.5 transition-colors"
+          style={{
+            borderColor: showFog ? 'var(--text-accent)' : 'var(--border-subtle)',
+            color:       showFog ? 'var(--text-accent)' : 'var(--text-muted)',
+            background:  'var(--bg-card)',
+          }}
+        >
+          bruma
+        </button>
       </div>
 
       {/* ── Map canvas ── */}
@@ -442,11 +455,42 @@ export function WisdomMap() {
             <pattern id="mapGrid" width="80" height="80" patternUnits="userSpaceOnUse">
               <path d="M 80 0 L 0 0 0 80" fill="none" stroke={PARCHMENT_LINES} strokeWidth="0.5" opacity="0.5" />
             </pattern>
+
+            <filter id="fogBlur">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="30" />
+            </filter>
+
+            <mask id="fogMask">
+              <rect width={MAP_W} height={MAP_H} fill="white" />
+              <g filter="url(#fogBlur)">
+                {resolvedNodes.map(n => (
+                  <circle key={`fog-node-${n.name}`} cx={n.x} cy={n.y} r={n.r + 120} fill="black" />
+                ))}
+                {edges.map(({ a, b }) => {
+                  const na = nodeMap[a], nb = nodeMap[b];
+                  if (!na || !nb) return null;
+                  return <line key={`fog-link-${a}-${b}`} x1={na.x ?? 0} y1={na.y ?? 0} x2={nb.x ?? 0} y2={nb.y ?? 0} stroke="black" strokeWidth="60" strokeLinecap="round" />;
+                })}
+              </g>
+            </mask>
           </defs>
 
           <rect width={MAP_W} height={MAP_H} fill="url(#mapGrid)" />
-
+          
           <g transform={`translate(${vp.x},${vp.y}) scale(${vp.scale})`}>
+            {/* The Map Background / Parchment texture is already the SVG background */}
+
+            {/* Fog Layer */}
+            {showFog && !isEmpty && (
+              <rect 
+                width={MAP_W} 
+                height={MAP_H} 
+                fill="#d4c9b0" 
+                mask="url(#fogMask)" 
+                opacity="0.85"
+                style={{ pointerEvents: 'none', transition: 'opacity 1s' }}
+              />
+            )}
 
             {/* Connection lines */}
             {showConnections && edges.map(({ a, b, weight }) => {
