@@ -5,6 +5,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useTheme } from '../hooks/useTheme';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { useSoundscape } from '../hooks/useSoundscape';
 import { AuthBanner } from './AuthBanner';
 import { SyncIndicator } from './SyncIndicator';
 import { GlobalSearch } from './GlobalSearch';
@@ -37,6 +38,20 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
   const { theme, toggleTheme } = useTheme();
   const { isOnline } = useNetworkStatus();
 
+  // VisualViewport: hide bottom nav when soft keyboard is open
+  const initialVVHeight = useRef(window.visualViewport?.height ?? window.innerHeight);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setKeyboardOpen(vv.height < initialVVHeight.current * 0.75);
+    vv.addEventListener('resize', update);
+    return () => vv.removeEventListener('resize', update);
+  }, []);
+
+  // Scroll position memory per tab
+  const scrollPositions = useRef({});
+
   // Compact layout for mobile landscape (header+nav eat too much vertical space)
   const [isCompactLandscape, setIsCompactLandscape] = useState(() =>
     window.matchMedia('(orientation: landscape) and (max-height: 500px)').matches
@@ -49,8 +64,28 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
   }, []);
   const [reminder, setReminder] = useLocalStorage('lore-reminder', '0');
   const [reminderTime, setReminderTime] = useLocalStorage('lore-reminder-time', '21:00');
+  const { playPaperRustle } = useSoundscape();
   const [showSearch, setShowSearch] = useState(false);
   const [showReminderPicker, setShowReminderPicker] = useState(false);
+  const [showHeader, setShowHeader] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const scrollDelta = currentScrollY - lastScrollY.current;
+
+      if (currentScrollY < 60) {
+        setShowHeader(true);
+      } else if (Math.abs(scrollDelta) > 10) {
+        setShowHeader(scrollDelta < 0);
+      }
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const tabs = [
     { id: 'plan', label: 'Plan', icon: Calendar },
@@ -67,10 +102,23 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
     const cur = TAB_IDS.indexOf(activeTab);
     const next = TAB_IDS.indexOf(tabId);
     if (next === -1 || next === cur) return;
+    scrollPositions.current[activeTab] = window.scrollY;
     setDirection(next > cur ? 1 : -1);
     setActiveTab(tabId);
+    setShowHeader(true);
+
+    // Subtle physical feedback for navigation
+    navigator.vibrate?.(10);
+    playPaperRustle();
+
     document.getElementById('main-content')?.focus();
   }, [activeTab, setActiveTab]);
+
+  // Restore scroll position after tab switch
+  useEffect(() => {
+    const saved = scrollPositions.current[activeTab] ?? 0;
+    window.scrollTo({ top: saved, behavior: 'instant' });
+  }, [activeTab]);
 
   const handleTouchStart = useCallback((e) => {
     // Check if the touch target is inside a horizontally scrollable container
@@ -160,7 +208,7 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
         Saltar al contenido
       </a>
       <header
-        className="fixed top-0 left-0 right-0 flex items-center justify-between z-[60] px-4 border-b overflow-hidden bg-header-bg border-primary/30"
+        className={`fixed top-0 left-0 right-0 flex items-center justify-between z-[60] px-4 border-b overflow-hidden bg-header-bg border-primary/30 transition-transform duration-500 ease-in-out ${showHeader ? 'translate-y-0' : '-translate-y-full'}`}
         style={{ paddingTop: 'env(safe-area-inset-top)', height: headerHeight }}
       >
         {/* ... existing header content ... */}
@@ -267,7 +315,7 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
         role="tablist"
         aria-label="Navegación principal"
         className="fixed bottom-0 left-0 right-0 backdrop-blur-lg flex justify-evenly items-center z-[100] px-2 border-t bg-header-bg/95 border-primary/30 max-w-5xl mx-auto rounded-t-2xl sm:mb-4 sm:border sm:shadow-lg lg:max-w-2xl safe-bottom"
-        style={{ height: navHeight }}
+        style={{ height: navHeight, display: keyboardOpen ? 'none' : undefined }}
       >
         {tabs.map((tab) => {
           const Icon = tab.icon;
