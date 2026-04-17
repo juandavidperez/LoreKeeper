@@ -6,7 +6,7 @@
 [![Supabase](https://img.shields.io/badge/supabase-cloud-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com/)
 [![Gemini AI](https://img.shields.io/badge/Gemini_AI-Oracle-4285F4?logo=google-gemini&logoColor=white)](https://deepmind.google/technologies/gemini/)
 
-**LoreKeeper** es una Progressive Web App (PWA) diseñada para lectores que desean trascender la simple lectura. Inspirada en la estética de los grimorios clásicos, permite llevar un registro profundo de crónicas, visualizar redes de personajes mediante un mapa de sabiduría con física dinámica y consultar a un Oráculo potenciado por IA.
+**LoreKeeper** es una Progressive Web App (PWA) diseñada para lectores que desean trascender la simple lectura. Inspirada en la estética de los grimorios clásicos, permite llevar un registro profundo de crónicas, visualizar redes de personajes mediante un mapa de sabiduría y consultar a un Oráculo potenciado por IA.
 
 ---
 
@@ -16,44 +16,64 @@
 | :--- | :---: | :---: |
 | **Plan Maestro** <br> Gestión Ritual de Lectura | ![Desktop Plan](./public/screenshots/plan_desktop.png) | ![Mobile Plan](./public/screenshots/plan_mobile.png) |
 | **Crónicas** <br> Registro profundo (Modo Oscuro) | ![Desktop Log](./public/screenshots/log_desktop.png) | ![Mobile Log](./public/screenshots/log_mobile.png) |
-| **Wisdom Map** <br> Redes con Física d3-force | ![Desktop Map](./public/screenshots/map_desktop.png) | ![Mobile Map](./public/screenshots/map_mobile.png) |
+| **Wisdom Map** <br> Redes de personajes con bruma cartográfica | ![Desktop Map](./public/screenshots/map_desktop.png) | ![Mobile Map](./public/screenshots/map_mobile.png) |
 
 ---
 
 ## ⚔️ Características Principales
 
 ### 🕸️ Wisdom Map (Mapa de Sabiduría)
-Motor de visualización basado en **d3-force** que genera una red de conexiones entre personajes y lugares automáticamente a partir de tus crónicas. La física dinámica permite explorar la complejidad de la historia de forma interactiva.
+Motor de visualización que genera una red de conexiones entre personajes y lugares a partir de tus crónicas. Incluye **bruma cartográfica** (fog of war) que revela el mapa sólo alrededor de los nodos conocidos, pan/zoom, filtro por libro y visualización de hilos de co-ocurrencia.
 
 ### 📜 Plan Maestro (Rituales)
-Sistema de gestión de lectura inspirado en "rituales" semanales. Organiza tus libros actuales y próximos, marcando el ritmo de tu progreso en el grimorio.
+Sistema de gestión de lectura inspirado en "rituales" semanales. Organiza tus libros y arcos de lectura por fases. Detecta automáticamente **semanas huérfanas** (fuera de rango de cualquier era) para mantener el cronograma íntegro.
 
 ### ✍️ Crónicas de Lectura
-Editor enriquecido para registrar momentos clave. Incluye captura de imágenes para fragmentos físicos y detección automática de entidades (personajes/lugares) que alimentan el Archivo Global.
+Editor enriquecido para registrar momentos clave. Incluye captura de imágenes, detección automática de entidades (personajes/lugares) y un **cajón de referencia de lore** — consulta el Archivo completo sin cerrar la crónica activa.
+
+### 📖 El Archivo (Encyclopedia)
+Agrega automáticamente personajes, lugares, glosario y reglas del mundo a partir de todas tus entradas. Cada entidad puede recibir una **Esencia Permanente**: descripción canónica editable que persiste en el grimorio.
 
 ### 🔮 El Oráculo de Lore
 Integración con la API de **Google Gemini**. El Oráculo conoce tu archivo personal y puede responder preguntas sobre la trama, sugerir conexiones entre personajes o predecir giros basados en tu progreso actual.
 
 ---
 
+## 📱 PWA & Experiencia Móvil
+
+LoreKeeper está optimizado para instalarse y usarse desde el celular como app nativa:
+
+- **Instalable** en Android (Chrome) e iOS (Safari) via Web App Manifest
+- **Offline-first**: todas las crónicas y entidades viven en localStorage + IndexedDB
+- **Teclado virtual inteligente**: la barra de navegación se oculta cuando el teclado bloquea la pantalla
+- **Header auto-oculto**: se retrae al desplazar hacia abajo, reaparece al subir
+- **Memoria de posición por pestaña**: al volver a una pestaña, el scroll se restaura exactamente donde quedó
+- **Retroalimentación háptica**: vibración diferenciada en éxito, error, navegación y guardado
+- **Soundscape**: susurro de papel al cambiar pestaña, rasguño de pluma al guardar (opcional, navegador permitting)
+- **Bloqueo de scroll en modales**: sin deslizamiento accidental del fondo en iOS
+- **Sin zoom automático en inputs**: `font-size: max(16px, 1em)` previene el auto-zoom de Safari
+- **Reduced motion**: respeta `prefers-reduced-motion` del sistema
+- **theme-color adaptativo**: barra del navegador en color pergamino (claro) u oscuro según el sistema
+
+---
+
 ## 🛠️ Stack Tecnológico
 
-- **Frontend**: React 19 (Hooks avanzados, Suspense, Lazy Loading).
-- **Estilo**: Tailwind CSS 4 con sistema de diseño "Grimorio Dorado" (soporte Dark/Light mode real).
-- **Animaciones**: Framer Motion para transiciones de página suaves y micro-interacciones.
-- **Gráficos**: d3-force para el motor de física del mapa de sabiduría.
-- **Backend & Sync**: Supabase para autenticación y respaldo en la nube de crónicas e imágenes.
-- **IA**: Modelos Gemini de Google para el motor de sabiduría.
-- **PWA**: Instalable, con soporte offline y notificaciones de recordatorio de lectura.
+- **Frontend**: React 19 (Hooks avanzados, Suspense, Lazy Loading)
+- **Estilo**: Tailwind CSS 4 con sistema de diseño "Grimorio Dorado" (Dark/Light mode real)
+- **Animaciones**: Framer Motion para transiciones de página y micro-interacciones
+- **Backend & Sync**: Supabase para autenticación y respaldo en la nube (opcional — degrada sin variables de entorno)
+- **IA**: Google Gemini para el Oráculo y extracción automática de metadata
+- **PWA**: vite-plugin-pwa (generateSW), soporte offline, notificaciones push de recordatorio
 
 ---
 
 ## 🏛️ Filosofía de Diseño: "El Grimorio"
 
 LoreKeeper no es una herramienta de productividad; es un artefacto. La interfaz busca evocar la sensación de un libro antiguo y valioso:
-- **Tipografía**: Dualidad entre serifas clásicas para contenido y sans-serif modernas para UI.
-- **Paleta**: Tonos pergamino, acentos dorados y sombras profundas.
-- **Interactividad**: Cada acción tiene peso, desde el efecto de "forjar" una entrada hasta la vibración de los hilos en el mapa.
+- **Tipografía**: Playfair Display (títulos), Inter (UI), Source Serif 4 (cuerpo)
+- **Paleta**: pergamino `#f4ead5` / ámbar dorado `#b45309` en claro; `#0c0a08` / ámbar `#f59e0b` en oscuro
+- **Interactividad**: cada acción tiene peso — forjar una entrada, sellar una semana, explorar el mapa bajo la bruma
 
 ---
 
@@ -66,6 +86,14 @@ LoreKeeper no es una herramienta de productividad; es un artefacto. La interfaz 
    - `VITE_SUPABASE_ANON_KEY`
    - `VITE_GEMINI_API_KEY`
 4. Inicia el servidor de desarrollo: `npm run dev`
+
+| Comando | Acción |
+| :--- | :--- |
+| `npm run dev` | Servidor de desarrollo con HMR |
+| `npm run build` | Build de producción en `dist/` |
+| `npm run preview` | Vista previa del build |
+| `npm run test` | Tests con Vitest |
+| `npm run lint` | ESLint |
 
 ---
 
