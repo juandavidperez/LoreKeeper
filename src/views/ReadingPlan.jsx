@@ -1,8 +1,9 @@
-import { useState, useMemo, useRef, Fragment } from 'react';
-import { Trash2, Book, Layers, Layout, Download, Upload, ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { useState, useMemo, useRef, Fragment, useEffect } from 'react';
+import { Trash2, Book, Layers, Layout, Download, Upload, ChevronDown, ChevronRight, Plus, Sparkles, Loader2, Scroll, Share2 } from 'lucide-react';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
 import { useNotification } from '../hooks/useNotification';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { callGemini } from '../utils/ai';
 export function ReadingPlan({ onLogWeek }) {
   const {
     phases, setPhases,
@@ -32,6 +33,7 @@ export function ReadingPlan({ onLogWeek }) {
 
   const [justSealed, setJustSealed] = useState(null);
   const sealTimeout = useRef(null);
+  const [sealModal, setSealModal] = useState(null);
 
   // Identify the "Next Up" week (needed for initial expansion)
   const nextUpWeek = useMemo(() => {
@@ -75,6 +77,13 @@ export function ReadingPlan({ onLogWeek }) {
       setJustSealed(week);
       if (sealTimeout.current) clearTimeout(sealTimeout.current);
       sealTimeout.current = setTimeout(() => setJustSealed(null), 1500);
+
+      const weekData = schedule.find(w => w.week === week);
+      if (weekData) {
+        const bookTitles = [weekData.novelTitle, weekData.mangaTitle].filter(t => t && !t.startsWith('—'));
+        const weekEntries = entries.filter(e => bookTitles.includes(e.book));
+        setSealModal({ weekData, weekEntries });
+      }
     }
   };
 
@@ -276,6 +285,13 @@ export function ReadingPlan({ onLogWeek }) {
           onCancel={() => setConfirmModal(null)}
         />
       )}
+      {sealModal && (
+        <WeeklySealModal
+          weekData={sealModal.weekData}
+          weekEntries={sealModal.weekEntries}
+          onClose={() => setSealModal(null)}
+        />
+      )}
 
       {/* HEADER */}
       <div className="sticky top-[-24px] z-30 bg-header-bg pb-4 border-b border-primary/20">
@@ -298,6 +314,11 @@ export function ReadingPlan({ onLogWeek }) {
           progress={progress}
           entries={entries}
         />
+      )}
+
+      {/* RHYTHM COMPARATOR */}
+      {!isEditing && entries.length > 0 && schedule.length > 0 && (
+        <RhythmComparator completedWeeks={completedWeeks} schedule={schedule} entries={entries} />
       )}
 
       {/* HABIT & ACTIVITY CHARTS */}
@@ -484,6 +505,48 @@ function ArchivalStats({ completedTotal, totalWeeks, progress, entries }) {
           <span className="text-3xl font-serif text-primary-text drop-shadow-sm leading-none">{timeLabel}</span>
           <span className="text-[8px] font-bold text-stone-600 uppercase tracking-tighter text-center mt-1">Tiempo Total</span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function RhythmComparator({ completedWeeks, schedule, entries }) {
+  const { expectedWeeks, delta, startDate } = useMemo(() => {
+    if (!entries.length || !schedule.length) return { expectedWeeks: 0, delta: 0, startDate: null };
+    const sorted = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const start = new Date(sorted[0].date);
+    const daysElapsed = Math.floor((new Date() - start) / (1000 * 60 * 60 * 24));
+    const expected = Math.min(Math.max(Math.floor(daysElapsed / 7), 0), schedule.length);
+    return { expectedWeeks: expected, delta: completedWeeks.length - expected, startDate: start };
+  }, [entries, schedule, completedWeeks]);
+
+  if (!startDate) return null;
+
+  const actual = completedWeeks.length;
+  const total = schedule.length;
+  const actualPct = Math.min((actual / total) * 100, 100);
+  const expectedPct = Math.min((expectedWeeks / total) * 100, 100);
+
+  const statusColor = delta > 0 ? 'text-amber-400' : delta < 0 ? 'text-red-400' : 'text-accent';
+  const statusLabel = delta > 0 ? `${delta} sem. adelante` : delta < 0 ? `${Math.abs(delta)} sem. atrás` : 'A tiempo';
+  const statusIcon = delta > 0 ? '↑' : delta < 0 ? '↓' : '✦';
+
+  return (
+    <div className="bg-header-bg border border-primary/20 rounded-sm px-5 py-4 flex flex-col gap-3 shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-stone-500">Ritmo del Viaje</span>
+        <span className={`text-[10px] font-bold font-serif ${statusColor}`}>{statusIcon} {statusLabel}</span>
+      </div>
+      <div className="relative h-1.5 bg-item-bg rounded-full">
+        <div className="absolute top-0 left-0 h-full bg-accent rounded-full transition-all duration-500" style={{ width: `${actualPct}%` }} />
+        {expectedPct > 0 && (
+          <div className="absolute top-1/2 -translate-y-1/2 w-px h-4 bg-stone-400/50" style={{ left: `${expectedPct}%` }} />
+        )}
+      </div>
+      <div className="flex justify-between text-[9px] text-stone-500 font-mono">
+        <span>Selladas: <span className="text-accent font-bold">{actual}</span></span>
+        <span>Esperadas: <span className="text-stone-400">{expectedWeeks}</span></span>
+        <span>Total: {total}</span>
       </div>
     </div>
   );
@@ -1033,6 +1096,193 @@ function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, expa
           <p className="text-[10px] text-center text-red-700/50 italic font-serif">Aumenta el rango de semanas en el Gestor de Fases para rescatar estas semanas.</p>
         </div>
       )}
+    </div>
+  );
+}
+
+function WeeklySealModal({ weekData, weekEntries, onClose }) {
+  const [phrase, setPhrase] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [sharing, setSharing] = useState(false);
+
+  const charCount = weekEntries.reduce((acc, e) => acc + (e.characters?.length || 0), 0);
+  const placeCount = weekEntries.reduce((acc, e) => acc + (e.places?.length || 0), 0);
+  const quoteCount = weekEntries.reduce((acc, e) => acc + (e.quotes?.length || 0), 0);
+
+  const novelLabel = weekData.novelTitle && !weekData.novelTitle.startsWith('—') ? weekData.novelTitle : null;
+  const mangaLabel = weekData.mangaTitle && !weekData.mangaTitle.startsWith('—') ? weekData.mangaTitle : null;
+
+  useEffect(() => {
+    const books = [novelLabel, mangaLabel].filter(Boolean).join(' y ');
+    const sections = [
+      novelLabel && weekData.novelSection ? `${novelLabel} — ${weekData.novelSection}` : null,
+      mangaLabel && weekData.mangaVols ? `${mangaLabel} — ${weekData.mangaVols}` : null,
+    ].filter(Boolean).join('; ');
+
+    const prompt = `Semana ${weekData.week} sellada en el grimorio. Leído: ${sections || books}. ${weekData.tip ? `Reflexión del cronista: "${weekData.tip}".` : ''} Registrado: ${charCount} personajes, ${placeCount} lugares.
+
+Escribe una sola oración poética (máximo 25 palabras) en español que capture el espíritu de esta semana de lectura. Tono solemne, de archivista antiguo. Sin comillas. Sin explicaciones adicionales.`;
+
+    callGemini(prompt, 'Eres el archivista del Gran Grimorio. Cierras cada semana con una inscripción poética breve.')
+      .then(text => setPhrase(text.trim()))
+      .catch(() => setPhrase('Los hilos de esta semana han sido tejidos en la eternidad del Archivo.'))
+      .finally(() => setLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-zinc-950/90 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="w-full sm:max-w-md bg-header-bg border border-accent/40 rounded-t-2xl sm:rounded-xl shadow-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="bg-accent/10 border-b border-accent/20 px-6 pt-6 pb-4 text-center">
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <Scroll size={14} className="text-accent" />
+            <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-accent">Semana {weekData.week} · Sellada</span>
+            <Scroll size={14} className="text-accent" />
+          </div>
+          <h3 className="font-serif text-xl text-primary-text leading-tight">
+            {[novelLabel, mangaLabel].filter(Boolean).join(' · ') || `Semana ${weekData.week}`}
+          </h3>
+          {(weekData.novelSection || weekData.mangaVols) && (
+            <p className="text-[10px] text-stone-400 italic mt-1 font-serif">
+              {[weekData.novelSection, weekData.mangaVols].filter(Boolean).join(' · ')}
+            </p>
+          )}
+        </div>
+
+        {/* Stats */}
+        <div className="flex justify-center gap-6 py-4 border-b border-primary/20">
+          {[
+            { count: charCount, label: 'personajes' },
+            { count: placeCount, label: 'lugares' },
+            { count: quoteCount, label: 'frases' },
+          ].map(({ count, label }) => (
+            <div key={label} className="flex flex-col items-center gap-0.5">
+              <span className="text-2xl font-serif font-bold text-accent">{count}</span>
+              <span className="text-[9px] uppercase tracking-widest text-stone-500">{label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Gemini phrase */}
+        <div className="px-6 py-5 min-h-[80px] flex items-center justify-center">
+          {loading ? (
+            <div className="flex items-center gap-2 text-stone-400">
+              <Loader2 size={14} className="animate-spin text-accent" />
+              <span className="text-[11px] font-serif italic">El Oráculo inscribe la crónica...</span>
+            </div>
+          ) : (
+            <div className="flex items-start gap-3">
+              <Sparkles size={14} className="text-accent flex-shrink-0 mt-0.5" />
+              <p className="font-serif italic text-sm text-primary-text/80 leading-relaxed text-center">{phrase}</p>
+            </div>
+          )}
+        </div>
+
+        {/* CTA */}
+        <div className="px-6 pb-6 pt-2 flex gap-2">
+          <button
+            onClick={async () => {
+              setSharing(true);
+              try {
+                const SIZE = 1080;
+                const canvas = document.createElement('canvas');
+                canvas.width = SIZE; canvas.height = SIZE;
+                const ctx = canvas.getContext('2d');
+
+                ctx.fillStyle = '#0c0a08';
+                ctx.fillRect(0, 0, SIZE, SIZE);
+                ctx.strokeStyle = '#78350f'; ctx.lineWidth = 4;
+                ctx.strokeRect(20, 20, SIZE - 40, SIZE - 40);
+                ctx.strokeStyle = '#a16207'; ctx.lineWidth = 1.5;
+                ctx.strokeRect(34, 34, SIZE - 68, SIZE - 68);
+
+                const center = (text, y, font, color) => {
+                  ctx.font = font; ctx.fillStyle = color; ctx.textAlign = 'center';
+                  ctx.fillText(text, SIZE / 2, y);
+                };
+                const wrap = (text, y, font, color, maxW, lh) => {
+                  ctx.font = font; ctx.fillStyle = color; ctx.textAlign = 'center';
+                  let line = '', curY = y;
+                  for (const w of text.split(' ')) {
+                    const t = line + w + ' ';
+                    if (ctx.measureText(t).width > maxW && line) { ctx.fillText(line.trim(), SIZE/2, curY); line = w + ' '; curY += lh; }
+                    else line = t;
+                  }
+                  ctx.fillText(line.trim(), SIZE/2, curY);
+                  return curY;
+                };
+                const hline = (y) => {
+                  ctx.strokeStyle = '#78350f'; ctx.lineWidth = 1;
+                  ctx.beginPath(); ctx.moveTo(80, y); ctx.lineTo(SIZE-80, y); ctx.stroke();
+                };
+
+                center(`✦  SEMANA ${weekData.week}  ·  SELLADA  ✦`, 140, 'bold 26px serif', '#f59e0b');
+                hline(168);
+
+                const titleText = [novelLabel, mangaLabel].filter(Boolean).join('  ·  ') || `Semana ${weekData.week}`;
+                const fs = titleText.length > 40 ? 44 : titleText.length > 25 ? 52 : 60;
+                const lastY = wrap(titleText, 280, `italic bold ${fs}px serif`, '#fafaf9', 900, 70);
+
+                const secs = [
+                  novelLabel && weekData.novelSection ? weekData.novelSection : null,
+                  mangaLabel && weekData.mangaVols ? weekData.mangaVols : null,
+                ].filter(Boolean).join('  ·  ');
+                if (secs) wrap(secs, lastY + 60, '28px serif', '#a8a29e', 900, 40);
+
+                hline(500);
+
+                const colW = (SIZE - 160) / 3;
+                [{ count: charCount, label: 'PERSONAJES' }, { count: placeCount, label: 'LUGARES' }, { count: quoteCount, label: 'FRASES' }]
+                  .forEach(({ count, label }, i) => {
+                    const x = 80 + colW * i + colW / 2;
+                    ctx.font = 'bold 64px serif'; ctx.fillStyle = '#f59e0b'; ctx.textAlign = 'center';
+                    ctx.fillText(count.toString(), x, 580);
+                    ctx.font = 'bold 18px serif'; ctx.fillStyle = '#78716c';
+                    ctx.fillText(label, x, 616);
+                  });
+
+                hline(648);
+                if (phrase) wrap(`"${phrase}"`, 748, 'italic 30px serif', '#d6d3d1', 840, 44);
+                hline(940);
+                center('✦  LoreKeeper  ·  El Gran Archivo', 990, '22px serif', '#57534e');
+
+                canvas.toBlob(async (blob) => {
+                  const file = new File([blob], `lorekeeper-semana-${weekData.week}.png`, { type: 'image/png' });
+                  try {
+                    if (navigator.share && navigator.canShare?.({ files: [file] })) {
+                      await navigator.share({ files: [file], title: `Semana ${weekData.week} — LoreKeeper` });
+                    } else {
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url; a.download = file.name; a.click();
+                      URL.revokeObjectURL(url);
+                    }
+                  } catch (_) { /* user cancelled share */ }
+                }, 'image/png');
+              } finally {
+                setSharing(false);
+              }
+            }}
+            disabled={loading || sharing}
+            className="flex-1 py-3.5 bg-item-bg border border-accent/30 text-accent font-serif font-bold uppercase tracking-[0.15em] text-[11px] rounded-sm hover:bg-accent/10 active:scale-[0.98] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+          >
+            {sharing ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
+            Compartir
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-[2] py-3.5 bg-accent text-white font-serif font-bold uppercase tracking-[0.15em] text-[11px] rounded-sm hover:bg-accent-secondary active:scale-[0.98] transition-all shadow-lg"
+          >
+            Archivar en el Grimorio
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

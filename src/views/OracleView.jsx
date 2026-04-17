@@ -9,7 +9,7 @@ import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { getAnalysisPrompt } from '../utils/archiveAnalysis';
 
 export function OracleView({ initialFocus, onClearFocus }) {
-  const { archive } = useLorekeeperState();
+  const { archive, entries } = useLorekeeperState();
   const notify = useNotification();
   
   // States
@@ -80,10 +80,41 @@ export function OracleView({ initialFocus, onClearFocus }) {
     }
   }, [messages, isTyping]);
 
+  const buildAccumulatedContext = (entity, allEntries) => {
+    if (entity) {
+      const categoryKey = { personajes: 'characters', lugares: 'places', glosario: 'glossary', reglas: 'worldRules' }[entity.category] || 'characters';
+      const mentions = [...allEntries]
+        .filter(e => (e[categoryKey] || []).some(item => item.name === entity.name))
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(-8)
+        .map(e => {
+          const item = (e[categoryKey] || []).find(i => i.name === entity.name);
+          const tags = item?.tags?.length ? ` [${item.tags.join(', ')}]` : '';
+          return `• ${e.date} · ${e.book} · ${e.chapter}: ${item?.content || '(sin notas)'}${tags}`;
+        });
+
+      return `El buscador consulta sobre: ${entity.name} (${entity.category}).
+
+Conocimiento acumulado en el Archivo: ${entity.content || '(sin resumen consolidado)'}
+Tags: ${entity.tags?.join(', ') || 'ninguno'}
+
+Historial de apariciones en las crónicas (${mentions.length} registradas, orden cronológico):
+${mentions.length > 0 ? mentions.join('\n') : '(sin apariciones detalladas aún)'}`;
+    }
+
+    const recent = [...allEntries]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5)
+      .map(e => `• ${e.date} · ${e.book} · ${e.chapter}${e.summary ? ': ' + e.summary.slice(0, 180) : ''}`)
+      .join('\n');
+
+    return `Consulta general sobre el Gran Archivo.${recent ? `\n\nÚltimas crónicas registradas:\n${recent}` : '\n\nEl grimorio aún no contiene crónicas.'}`;
+  };
+
   const handleSend = async (e) => {
     e?.preventDefault();
     if (!input.trim() || isTyping || isProcessing.current) return;
-    
+
     isProcessing.current = true;
 
     const userText = input.trim();
@@ -93,18 +124,11 @@ export function OracleView({ initialFocus, onClearFocus }) {
     setIsTyping(true);
 
     try {
-      let contextPrompt = "";
-      if (selectedEntity) {
-        contextPrompt = `Estás hablando específicamente sobre ${selectedEntity.name} (${selectedEntity.category}). 
-        Contexto del archivo: ${selectedEntity.content || ''}. Tags: ${selectedEntity.tags?.join(', ') || ''}.`;
-      } else {
-        contextPrompt = "Te consultan sobre los archivos del grimorio en general.";
-      }
+      const contextPrompt = buildAccumulatedContext(selectedEntity, entries);
+      const prompt = `${contextPrompt}\n\nPregunta del buscador: "${userText}"\n\nResponde como Oráculo solemne y poético en español. Tono místico pero informativo. No demasiado extenso.`;
 
-      const prompt = `${contextPrompt}\n\nPregunta del usuario: "${userText}"\n\nResponde como un Oráculo solemne y poético en español. Usa un tono místico pero informativo. No seas demasiado extenso.`;
-      
-      const response = await callGemini(prompt, "Eres el Oráculo del Gran Archivo, un sabio eterno que conoce todos los hilos del destino.");
-      
+      const response = await callGemini(prompt, "Eres el Oráculo del Gran Archivo, un sabio eterno que conoce todos los hilos del destino y la evolución de cada ser registrado en las crónicas.");
+
       setMessages(prev => [...prev, { id: Date.now() + 1, role: 'oracle', text: response }]);
     } catch (err) {
       notify(err?.message || "El Oráculo se ha sumido en el silencio. Intenta de nuevo.", "error");
@@ -131,7 +155,7 @@ export function OracleView({ initialFocus, onClearFocus }) {
       const response = await callGemini(prompt, "Eres el Oráculo del Gran Archivo. Tu misión es revelar los vacíos en la historia con un lenguaje místico y evocador.");
       
       setMessages(prev => [...prev, { id: Date.now(), role: 'oracle', text: response }]);
-    } catch (err) {
+    } catch {
       notify("Las brumas del archivo son demasiado densas ahora. Intenta de nuevo.", "error");
     } finally {
       setIsTyping(false);
@@ -273,11 +297,17 @@ export function OracleView({ initialFocus, onClearFocus }) {
               <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest mr-1">TÚ</div>
             )}
             <div className={`max-w-[90%] px-6 py-5 rounded-2xl shadow-sm border animate-fade-in ${
-              msg.role === 'oracle' 
-              ? 'bg-item-bg border-primary/50 text-primary-text font-serif italic leading-relaxed text-sm sm:text-base rounded-tl-none' 
+              msg.role === 'oracle'
+              ? 'bg-item-bg border-primary/50 text-primary-text font-serif italic leading-relaxed text-sm sm:text-base rounded-tl-none'
               : 'bg-accent/10 border-accent/20 text-accent-secondary text-xs sm:text-sm font-serif rounded-tr-none'
             }`}>
-              {msg.text}
+              {msg.role === 'oracle' ? (
+                <span dangerouslySetInnerHTML={{ __html: msg.text
+                  .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                  .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                  .replace(/\n/g, '<br/>')
+                }} />
+              ) : msg.text}
             </div>
           </div>
         ))}
