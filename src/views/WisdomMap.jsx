@@ -600,7 +600,7 @@ export function WisdomMap() {
                 initial={{ x: 300, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: 300, opacity: 0 }}
-                className="absolute bottom-14 left-3 right-3 sm:bottom-auto sm:top-3 sm:left-auto sm:right-3 sm:w-80 rounded-sm shadow-2xl border-2 overflow-hidden flex flex-col max-h-[70vh]"
+                className="fixed bottom-[calc(var(--nav-height)+12px)] left-3 right-3 sm:bottom-auto sm:top-3 sm:left-auto sm:right-3 sm:w-80 rounded-sm shadow-2xl border-2 overflow-hidden flex flex-col max-h-[70vh]"
                 style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)', zIndex: 100 }}
               >
                 {/* Header */}

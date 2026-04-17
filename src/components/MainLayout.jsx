@@ -149,7 +149,10 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
   const mainPaddingTop = `calc(${chromeH} + 2rem + ${offlineBannerH} + env(safe-area-inset-top))`;
 
   return (
-    <div className={`min-h-dvh bg-app-bg text-primary-text font-sans overflow-x-hidden relative ${isCompactLandscape ? 'pb-16' : 'pb-32'}`}>
+    <div 
+      className={`min-h-dvh bg-app-bg text-primary-text font-sans overflow-x-hidden relative ${isCompactLandscape ? 'pb-16' : 'pb-32'}`}
+      style={{ '--nav-height': navHeight }}
+    >
       {/* 🕯️ Dedicated Background Layer for Ambience */}
       <div className="fixed inset-0 pointer-events-none candle-glow opacity-30 z-0 bg-app-bg" aria-hidden="true" />
       
@@ -263,8 +266,8 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
       <nav
         role="tablist"
         aria-label="Navegación principal"
-        className="fixed bottom-0 left-0 right-0 backdrop-blur-lg flex justify-evenly items-center z-[100] px-2 border-t bg-header-bg/95 border-primary/30 max-w-5xl mx-auto rounded-t-2xl sm:mb-4 sm:border sm:shadow-lg lg:max-w-2xl"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)', height: navHeight }}
+        className="fixed bottom-0 left-0 right-0 backdrop-blur-lg flex justify-evenly items-center z-[100] px-2 border-t bg-header-bg/95 border-primary/30 max-w-5xl mx-auto rounded-t-2xl sm:mb-4 sm:border sm:shadow-lg lg:max-w-2xl safe-bottom"
+        style={{ height: navHeight }}
       >
         {tabs.map((tab) => {
           const Icon = tab.icon;
