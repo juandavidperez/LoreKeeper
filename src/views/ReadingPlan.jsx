@@ -527,23 +527,37 @@ function RhythmComparator({ completedWeeks, schedule, entries }) {
   const actualPct = Math.min((actual / total) * 100, 100);
   const expectedPct = Math.min((expectedWeeks / total) * 100, 100);
 
-  const statusColor = delta > 0 ? 'text-amber-400' : delta < 0 ? 'text-red-400' : 'text-accent';
+  const statusColor = delta > 0 ? 'text-amber-500' : delta < 0 ? 'text-red-500' : 'text-accent';
   const statusLabel = delta > 0 ? `${delta} sem. adelante` : delta < 0 ? `${Math.abs(delta)} sem. atrás` : 'A tiempo';
   const statusIcon = delta > 0 ? '↑' : delta < 0 ? '↓' : '✦';
 
   return (
-    <div className="bg-header-bg border border-primary/20 rounded-sm px-5 py-4 flex flex-col gap-3 shadow-sm">
+    <div className="bg-header-bg border border-primary/20 rounded-sm px-5 py-4 flex flex-col gap-3 shadow-sm relative overflow-hidden group">
+      <div className="absolute top-0 left-0 w-1 h-full bg-accent/20" />
       <div className="flex items-center justify-between">
-        <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-stone-500">Ritmo del Viaje</span>
-        <span className={`text-[10px] font-bold font-serif ${statusColor}`}>{statusIcon} {statusLabel}</span>
+        <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-stone-500">Ritmo del Viaje</span>
+        <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-item-bg border border-primary/10 shadow-sm transition-all group-hover:border-accent/30`}>
+          <span className={`text-[10px] font-bold font-serif ${statusColor}`}>{statusIcon} {statusLabel}</span>
+        </div>
       </div>
-      <div className="relative h-1.5 bg-item-bg rounded-full">
-        <div className="absolute top-0 left-0 h-full bg-accent rounded-full transition-all duration-500" style={{ width: `${actualPct}%` }} />
+      <div className="relative h-2 bg-item-bg rounded-full border border-primary/5 overflow-hidden">
+        {/* Actual Progress (Amber) */}
+        <div 
+          className="absolute top-0 left-0 h-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)] transition-all duration-700 ease-out" 
+          style={{ width: `${actualPct}%` }} 
+        />
+        
+        {/* Expected Marker */}
         {expectedPct > 0 && (
-          <div className="absolute top-1/2 -translate-y-1/2 w-px h-4 bg-stone-400/50" style={{ left: `${expectedPct}%` }} />
+          <div 
+            className="absolute top-0 w-0.5 h-full bg-stone-400 group-hover:bg-accent transition-colors z-10" 
+            style={{ left: `${expectedPct}%` }}
+          >
+            <div className="absolute top-[-4px] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-stone-400 group-hover:bg-accent" />
+          </div>
         )}
       </div>
-      <div className="flex justify-between text-[9px] text-stone-500 font-mono">
+      <div className="flex justify-between text-[8px] text-stone-400 font-bold uppercase tracking-widest">
         <span>Selladas: <span className="text-accent font-bold">{actual}</span></span>
         <span>Esperadas: <span className="text-stone-400">{expectedWeeks}</span></span>
         <span>Total: {total}</span>
@@ -1131,7 +1145,7 @@ Escribe una sola oración poética (máximo 25 palabras) en español que capture
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-zinc-950/90 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-zinc-950/90 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
       <div
@@ -1170,16 +1184,20 @@ Escribe una sola oración poética (máximo 25 palabras) en español que capture
         </div>
 
         {/* Gemini phrase */}
-        <div className="px-6 py-5 min-h-[80px] flex items-center justify-center">
+        <div className="px-6 py-6 min-h-[100px] flex items-center justify-center relative bg-item-bg/30">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent pointer-events-none" />
           {loading ? (
-            <div className="flex items-center gap-2 text-stone-400">
-              <Loader2 size={14} className="animate-spin text-accent" />
-              <span className="text-[11px] font-serif italic">El Oráculo inscribe la crónica...</span>
+            <div className="flex flex-col items-center gap-3 text-stone-400">
+              <Loader2 size={24} className="animate-spin text-accent/60" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] animate-pulse">Consultando al Oráculo...</span>
             </div>
           ) : (
-            <div className="flex items-start gap-3">
-              <Sparkles size={14} className="text-accent flex-shrink-0 mt-0.5" />
-              <p className="font-serif italic text-sm text-primary-text/80 leading-relaxed text-center">{phrase}</p>
+            <div className="flex flex-col items-center gap-4 animate-inscribe max-w-[280px]">
+              <div className="h-px w-10 bg-accent/30" />
+              <p className="font-serif italic text-base text-primary-text leading-relaxed text-center">
+                “{phrase}”
+              </p>
+              <div className="h-px w-10 bg-accent/30" />
             </div>
           )}
         </div>
@@ -1277,9 +1295,9 @@ Escribe una sola oración poética (máximo 25 palabras) en español que capture
           </button>
           <button
             onClick={onClose}
-            className="flex-[2] py-3.5 bg-accent text-white font-serif font-bold uppercase tracking-[0.15em] text-[11px] rounded-sm hover:bg-accent-secondary active:scale-[0.98] transition-all shadow-lg"
+            className="flex-[2] py-3.5 bg-accent text-white font-serif font-bold uppercase tracking-[0.15em] text-[11px] rounded-sm hover:bg-accent-secondary active:scale-[0.98] transition-all shadow-lg border-2 border-accent-secondary"
           >
-            Archivar en el Grimorio
+            Archivar
           </button>
         </div>
       </div>
