@@ -107,18 +107,47 @@ export function ReadingPlan({ onLogWeek }) {
 
   // CRUD: Weeks
   const addWeek = (phaseId = null) => {
-    const nextWeek = schedule.length > 0 ? schedule[schedule.length - 1].week + 1 : 1;
-    setSchedule([...schedule, {
-      week: nextWeek,
-      mangaTitle: books.find(b => b.type === 'manga')?.title || "",
-      mangaVols: "",
-      novelTitle: books.find(b => b.type === 'novel')?.title || "",
-      novelSection: "",
-      tip: "Nueva semana de aventura."
-    }]);
-
     if (phaseId) {
-      setPhases(phases.map(p => p.id === phaseId ? { ...p, weeks: [p.weeks[0], Math.max(p.weeks[1], nextWeek)] } : p));
+      const phase = phases.find(p => p.id === phaseId);
+      if (!phase) return;
+
+      // Insert right after this phase's last week
+      const insertAt = phase.weeks[1] + 1;
+      const newWeek = {
+        week: insertAt,
+        mangaTitle: books.find(b => b.type === 'manga')?.title || "",
+        mangaVols: "",
+        novelTitle: books.find(b => b.type === 'novel')?.title || "",
+        novelSection: "",
+        tip: "Nueva semana de aventura."
+      };
+
+      // Shift all weeks that were >= insertAt
+      setSchedule([
+        ...schedule.filter(w => w.week < insertAt),
+        newWeek,
+        ...schedule.filter(w => w.week >= insertAt).map(w => ({ ...w, week: w.week + 1 }))
+      ]);
+
+      // Extend this phase's end by 1; shift all subsequent phases by 1
+      setPhases(phases.map(p => {
+        if (p.id === phaseId) return { ...p, weeks: [p.weeks[0], p.weeks[1] + 1] };
+        if (p.weeks[0] >= insertAt) return { ...p, weeks: [p.weeks[0] + 1, p.weeks[1] + 1] };
+        return p;
+      }));
+
+      setCompletedWeeks(completedWeeks.map(w => w >= insertAt ? w + 1 : w));
+    } else {
+      // No phase: append at the very end
+      const nextWeek = schedule.length > 0 ? schedule[schedule.length - 1].week + 1 : 1;
+      setSchedule([...schedule, {
+        week: nextWeek,
+        mangaTitle: books.find(b => b.type === 'manga')?.title || "",
+        mangaVols: "",
+        novelTitle: books.find(b => b.type === 'novel')?.title || "",
+        novelSection: "",
+        tip: "Nueva semana de aventura."
+      }]);
     }
   };
 
@@ -127,7 +156,24 @@ export function ReadingPlan({ onLogWeek }) {
   };
 
   const deleteWeek = (weekNum) => {
-    setSchedule(schedule.filter(w => w.week !== weekNum));
+    // Remove week, shift all subsequent weeks down by 1
+    setSchedule(schedule
+      .filter(w => w.week !== weekNum)
+      .map(w => w.week > weekNum ? { ...w, week: w.week - 1 } : w)
+    );
+
+    // Shrink containing phase's end by 1; shift phases that start after weekNum
+    setPhases(phases.map(p => {
+      const contains = p.weeks[0] <= weekNum && weekNum <= p.weeks[1];
+      if (contains) return { ...p, weeks: [p.weeks[0], p.weeks[1] - 1] };
+      if (p.weeks[0] > weekNum) return { ...p, weeks: [p.weeks[0] - 1, p.weeks[1] - 1] };
+      return p;
+    }));
+
+    setCompletedWeeks(completedWeeks
+      .filter(w => w !== weekNum)
+      .map(w => w > weekNum ? w - 1 : w)
+    );
   };
 
   const insertWeek = (atWeekNum) => {
@@ -852,18 +898,18 @@ function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, expa
                              </>
                           ) : (
                              <>
-                               <div className="flex items-center gap-2.5 text-xs text-primary-text/80 bg-item-bg/40 p-1.5 rounded border border-primary/10 shadow-sm">
-                                  <span className="text-lg">{novelBook?.emoji || '📖'}</span>
-                                  <div className="flex flex-col">
-                                    <span className="font-serif font-bold text-primary-text leading-tight">{week.novelTitle || 'Sin título'}</span>
-                                    <span className="text-[10px] text-stone-500 italic uppercase tracking-tighter">{week.novelSection || 'Tomo 1'}</span>
+                               <div className="flex items-center gap-2.5 text-xs text-primary-text/80 bg-item-bg/40 p-1.5 rounded border border-primary/10 shadow-sm overflow-hidden">
+                                  <span className="text-lg flex-shrink-0">{novelBook?.emoji || '📖'}</span>
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="font-serif font-bold text-primary-text leading-tight truncate">{week.novelTitle || 'Sin título'}</span>
+                                    <span className="text-[10px] text-stone-500 italic uppercase tracking-tighter truncate">{week.novelSection || 'Tomo 1'}</span>
                                   </div>
                                </div>
-                               <div className="flex items-center gap-2.5 text-xs text-primary-text/80 bg-item-bg/40 p-1.5 rounded border border-primary/10 shadow-sm">
-                                  <span className="text-lg">{mangaBook?.emoji || '📚'}</span>
-                                  <div className="flex flex-col">
-                                    <span className="font-serif font-bold text-primary-text leading-tight">{week.mangaTitle || 'Sin título'}</span>
-                                    <span className="text-[10px] text-stone-500 italic uppercase tracking-tighter">{week.mangaVols || 'Tomo 1'}</span>
+                               <div className="flex items-center gap-2.5 text-xs text-primary-text/80 bg-item-bg/40 p-1.5 rounded border border-primary/10 shadow-sm overflow-hidden">
+                                  <span className="text-lg flex-shrink-0">{mangaBook?.emoji || '📚'}</span>
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="font-serif font-bold text-primary-text leading-tight truncate">{week.mangaTitle || 'Sin título'}</span>
+                                    <span className="text-[10px] text-stone-500 italic uppercase tracking-tighter truncate">{week.mangaVols || 'Tomo 1'}</span>
                                   </div>
                                </div>
                              </>

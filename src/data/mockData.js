@@ -7,6 +7,7 @@ export const INITIAL_BOOKS = [
   { id: "book-5", title: "El Silmarillion", emoji: "✨", color: "#0891B2", type: "novel" },
   { id: "book-6", title: "Las Batallas de Tolkien (Day)", emoji: "📖", color: "#059669", type: "novel" },
   { id: "book-7", title: "Las Leyendas del Anillo (Day)", emoji: "📖", color: "#047857", type: "novel" },
+  { id: "book-15", title: "Poderes Oscuros de Tolkien (Day)", emoji: "📖", color: "#065F46", type: "novel" },
   { id: "book-8", title: "Lovecraft", emoji: "🐙", color: "#7C2D12", type: "novel" },
   { id: "book-9", title: "Astroboy", emoji: "🤖", color: "#0284C7", type: "manga" },
   { id: "book-10", title: "Slam Dunk", emoji: "🏀", color: "#3B82F6", type: "manga" },
@@ -19,9 +20,9 @@ export const INITIAL_BOOKS = [
 export const INITIAL_PHASES = [
   { id: 1, label: "Fase 1 · El Hobbit", weeks: [1, 4], color: "#16A34A", desc: "El Hobbit + Astroboy + Slam Dunk" },
   { id: 2, label: "Fase 2 · Tierra Media", weeks: [5, 11], color: "#7C3AED", desc: "Trilogía ESDLA + Naruto Gold + Arte companion" },
-  { id: 3, label: "Fase 3 · Tolkien Profundo", weeks: [12, 19], color: "#0891B2", desc: "Silmarillion + FMA + David Day" },
-  { id: 4, label: "Fase 4 · Oscuridad", weeks: [20, 25], color: "#7C2D12", desc: "Lovecraft + Spawn Integral" },
-  { id: 5, label: "Fase 5 · El Maestro", weeks: [26, 28], color: "#A8956A", desc: "Vagabond solo" },
+  { id: 3, label: "Fase 3 · Tolkien Profundo", weeks: [12, 21], color: "#0891B2", desc: "Silmarillion + FMA + David Day" },
+  { id: 4, label: "Fase 4 · Oscuridad", weeks: [22, 27], color: "#7C2D12", desc: "Lovecraft + Spawn Integral" },
+  { id: 5, label: "Fase 5 · El Maestro", weeks: [28, 30], color: "#A8956A", desc: "Vagabond solo" },
 ];
 
 export const INITIAL_SCHEDULE = [
@@ -41,18 +42,20 @@ export const INITIAL_SCHEDULE = [
   { week: 14, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 3", novelTitle: "El Silmarillion", novelSection: "Quenta (caps. 8–15)", tip: "Beren y Lúthien es belleza pura." },
   { week: 15, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 4", novelTitle: "El Silmarillion", novelSection: "Quenta (caps. 16–22)", tip: "Ambos se ponen filosóficamente oscuros." },
   { week: 16, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 5", novelTitle: "El Silmarillion", novelSection: "Akallabêth + Anillos (fin)", tip: "Tolkien completo. Reflexión necesaria." },
-  { week: 17, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 6 (fin)", novelTitle: "Las Batallas de Tolkien (Day)", novelSection: "Primera mitad", tip: "David Day entra como enciclopedia." },
-  { week: 18, mangaTitle: "— Pausa de manga —", mangaVols: "Descanso", novelTitle: "Las Batallas de Tolkien (Day)", novelSection: "Segunda mitad (fin)", tip: "Day no necesita competencia." },
-  { week: 19, mangaTitle: "— Pausa de manga —", mangaVols: "Preparación", novelTitle: "Las Leyendas del Anillo (Day)", novelSection: "Completo", tip: "Cierra el universo Tolkien definitivamente." },
-  { week: 20, mangaTitle: "Spawn Integral", mangaVols: "Vol. 1–2", novelTitle: "Lovecraft", novelSection: "Relatos tempranos", tip: "Redención demoníaca y horror cósmico." },
-  { week: 21, mangaTitle: "Spawn Integral", mangaVols: "Vol. 3–4", novelTitle: "Lovecraft", novelSection: "Ratas de las paredes + Red Hook", tip: "Relatos cortos, gran atmósfera." },
-  { week: 22, mangaTitle: "Spawn Integral", mangaVols: "Vol. 5–6", novelTitle: "Lovecraft", novelSection: "Montañas locura (I–VI)", tip: "La obra maestra de Lovecraft." },
-  { week: 23, mangaTitle: "Spawn Integral", mangaVols: "Vol. 7–8", novelTitle: "Lovecraft", novelSection: "Montañas locura (VII–XII)", tip: "El final es inquietante." },
-  { week: 24, mangaTitle: "Spawn Integral", mangaVols: "Vol. 9 (fin)", novelTitle: "Lovecraft", novelSection: "Charles Dexter Ward (I–III)", tip: "Terminas Spawn. Lovecraft se vuelve narrativo." },
-  { week: 25, mangaTitle: "— Pausa de manga —", mangaVols: "Pre-Vagabond", novelTitle: "Lovecraft", novelSection: "Charles Dexter Ward (IV–V)", tip: "Semana de transición antes del final." },
-  { week: 26, mangaTitle: "Vagabond", mangaVols: "Vol. 1", novelTitle: "— Vagabond merece toda la atención —", novelSection: "Sin novela", tip: "El final boss. Tómate tu tiempo." },
-  { week: 27, mangaTitle: "Vagabond", mangaVols: "Vol. 2", novelTitle: "— Meditación —", novelSection: "Búsqueda del sentido", tip: "¿A qué te recuerda la búsqueda de Musashi?" },
-  { week: 28, mangaTitle: "Vagabond", mangaVols: "Vol. 3 (fin)", novelTitle: "🏁 Fin del Gran Viaje Lector", novelSection: "Fin del viaje", tip: "No se termina Vagabond, se experimenta." }
+  { week: 17, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 6", novelTitle: "Las Batallas de Tolkien (Day)", novelSection: "Primera mitad", tip: "David Day entra como enciclopedia." },
+  { week: 18, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 7 (fin)", novelTitle: "Las Batallas de Tolkien (Day)", novelSection: "Segunda mitad (fin)", tip: "FMA cierra. Day completa su primera mitad." },
+  { week: 19, mangaTitle: "— Pausa de manga —", mangaVols: "Descanso", novelTitle: "Poderes Oscuros de Tolkien (Day)", novelSection: "Completo", tip: "El lado oscuro del legendarium, en su propio espacio." },
+  { week: 20, mangaTitle: "— Pausa de manga —", mangaVols: "Descanso", novelTitle: "Las Leyendas del Anillo (Day)", novelSection: "Completo", tip: "Day no necesita competencia." },
+  { week: 21, mangaTitle: "— Pausa de manga —", mangaVols: "Preparación", novelTitle: "Las Leyendas del Anillo (Day)", novelSection: "Repaso + notas", tip: "Cierra el universo Tolkien definitivamente." },
+  { week: 22, mangaTitle: "Spawn Integral", mangaVols: "Vol. 1–2", novelTitle: "Lovecraft", novelSection: "Relatos tempranos", tip: "Redención demoníaca y horror cósmico." },
+  { week: 23, mangaTitle: "Spawn Integral", mangaVols: "Vol. 3–4", novelTitle: "Lovecraft", novelSection: "Ratas de las paredes + Red Hook", tip: "Relatos cortos, gran atmósfera." },
+  { week: 24, mangaTitle: "Spawn Integral", mangaVols: "Vol. 5–6", novelTitle: "Lovecraft", novelSection: "Montañas locura (I–VI)", tip: "La obra maestra de Lovecraft." },
+  { week: 25, mangaTitle: "Spawn Integral", mangaVols: "Vol. 7–8", novelTitle: "Lovecraft", novelSection: "Montañas locura (VII–XII)", tip: "El final es inquietante." },
+  { week: 26, mangaTitle: "Spawn Integral", mangaVols: "Vol. 9 (fin)", novelTitle: "Lovecraft", novelSection: "Charles Dexter Ward (I–III)", tip: "Terminas Spawn. Lovecraft se vuelve narrativo." },
+  { week: 27, mangaTitle: "— Pausa de manga —", mangaVols: "Pre-Vagabond", novelTitle: "Lovecraft", novelSection: "Charles Dexter Ward (IV–V)", tip: "Semana de transición antes del final." },
+  { week: 28, mangaTitle: "Vagabond", mangaVols: "Vol. 1", novelTitle: "— Vagabond merece toda la atención —", novelSection: "Sin novela", tip: "El final boss. Tómate tu tiempo." },
+  { week: 29, mangaTitle: "Vagabond", mangaVols: "Vol. 2", novelTitle: "— Meditación —", novelSection: "Búsqueda del sentido", tip: "¿A qué te recuerda la búsqueda de Musashi?" },
+  { week: 30, mangaTitle: "Vagabond", mangaVols: "Vol. 3 (fin)", novelTitle: "🏁 Fin del Gran Viaje Lector", novelSection: "Fin del viaje", tip: "No se termina Vagabond, se experimenta." }
 ];
 
 export const INITIAL_ENTRIES = [];
