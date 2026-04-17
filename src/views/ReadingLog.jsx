@@ -7,12 +7,24 @@ import { useNotification } from '../hooks/useNotification';
 import { resolvePanels } from '../utils/imageStore';
 import { ConfirmModal } from '../components/ConfirmModal';
 
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { migrateAllEntries } from '../utils/migrateEntries';
+
 let _nextId = 0;
 function uid() { return `entry-${Date.now()}-${_nextId++}-${Math.random().toString(36).slice(2, 7)}`; }
 
 export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData, onClearPrefilled }) {
-  const { entries, setEntries, books } = useLorekeeperState();
+  const { entries, setEntries, books, archive } = useLorekeeperState();
   const notify = useNotification();
+
+  // Migration Effect
+  useEffect(() => {
+    const unmigrated = entries.some(e => !e.migrated);
+    if (unmigrated && Object.keys(archive).some(k => archive[k].length > 0)) {
+      setEntries(prev => migrateAllEntries(prev, archive));
+    }
+  }, [entries, archive, setEntries]);
 
   const [editingId, setEditingId] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -496,23 +508,23 @@ const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, onUpdateT
         ref={contentRef}
         className={`transition-all duration-500 overflow-hidden ${isExpanded ? 'max-h-[5000px] opacity-100' : 'max-h-0 opacity-0'}`}
       >
-        <div className="p-6 flex flex-col gap-8 bg-item-bg/80">
+        <div className="p-6 flex flex-col gap-8 bg-item-bg">
         {entry.summary && (
           <div className="px-1">
             <div className="flex items-center gap-2 text-accent/50 mb-2">
               <ScrollText size={12}/>
               <span className="text-[9px] uppercase font-bold tracking-widest">Resumen de la Sesión</span>
             </div>
-            <p className="text-sm text-primary-text/80 font-serif leading-relaxed px-1 italic">
-              {entry.summary}
-            </p>
+            <div className="text-sm text-primary-text/80 font-serif leading-relaxed px-1 italic prose prose-stone max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{entry.summary}</ReactMarkdown>
+            </div>
           </div>
         )}
 
         {entry.reingreso && (
-          <div className="bg-item-bg p-5 rounded-sm border-l-4 border-accent italic font-serif text-primary-text leading-relaxed relative shadow-inner">
+          <div className="bg-header-bg p-5 rounded-sm border-l-4 border-accent italic font-serif text-primary-text leading-relaxed relative shadow-inner prose prose-stone max-w-none">
              <span className="absolute -top-3 left-4 bg-header-bg px-2 text-[9px] text-accent uppercase tracking-widest font-bold">Reingreso</span>
-            &ldquo;{entry.reingreso}&rdquo;
+             <ReactMarkdown remarkPlugins={[remarkGfm]}>{entry.reingreso}</ReactMarkdown>
           </div>
         )}
 
@@ -521,9 +533,9 @@ const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, onUpdateT
             {entry.quotes.map((q, i) => (
               <div key={i} className="relative pl-8 py-2 group/quote">
                 <span className="absolute left-0 top-0 text-accent text-3xl font-serif opacity-30">&ldquo;</span>
-                <p className="text-base italic font-serif text-primary-text leading-relaxed">
-                  {q}
-                </p>
+                <div className="text-base italic font-serif text-primary-text leading-relaxed prose prose-stone max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{q}</ReactMarkdown>
+                </div>
                 <div className="absolute left-0 bottom-0 w-1 h-full rounded-full bg-accent/10" />
                 {onShareQuote && (
                   <button
