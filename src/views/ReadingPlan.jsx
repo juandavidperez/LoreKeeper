@@ -106,7 +106,7 @@ export function ReadingPlan({ onLogWeek }) {
   };
 
   // CRUD: Weeks
-  const addWeek = () => {
+  const addWeek = (phaseId = null) => {
     const nextWeek = schedule.length > 0 ? schedule[schedule.length - 1].week + 1 : 1;
     setSchedule([...schedule, {
       week: nextWeek,
@@ -116,6 +116,10 @@ export function ReadingPlan({ onLogWeek }) {
       novelSection: "",
       tip: "Nueva semana de aventura."
     }]);
+
+    if (phaseId) {
+      setPhases(phases.map(p => p.id === phaseId ? { ...p, weeks: [p.weeks[0], Math.max(p.weeks[1], nextWeek)] } : p));
+    }
   };
 
   const updateWeek = (weekNum, field, value) => {
@@ -720,6 +724,13 @@ function PhaseManager({ phases, onUpdate, onDelete, onAdd }) {
 }
 
 function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, expandedPhases, onTogglePhase, nextUpWeek, onToggleWeek, onUpdateWeek, onDeleteWeek, onInsertWeek, onAddWeek, onLogWeek }) {
+  const renderedWeekNumbers = new Set();
+  phases.forEach(phase => {
+    schedule.filter(w => w.week >= phase.weeks[0] && w.week <= phase.weeks[1])
+      .forEach(w => renderedWeekNumbers.add(w.week));
+  });
+  const orphanWeeks = schedule.filter(w => !renderedWeekNumbers.has(w.week));
+
   return (
     <div className="flex flex-col gap-10">
       {phases.map((phase) => {
@@ -938,13 +949,44 @@ function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, expa
             </div>
             
             {isEditing && (
-              <button onClick={onAddWeek} className="mt-4 py-4 border-2 border-dashed border-primary/30 text-stone-400 rounded-lg hover:text-accent hover:border-accent/50 transition-all font-serif italic text-sm text-center bg-item-bg/30">
-                + Inscribir nueva semana en este arco histórico
+              <button onClick={() => onAddWeek(phase.id)} className="mt-4 py-4 border-2 border-dashed border-primary/30 text-stone-400 rounded-lg hover:text-accent hover:border-accent/50 transition-all font-serif italic text-sm text-center bg-item-bg/30">
+                + Inscribir nueva semana en {phase.label}
               </button>
             )}
           </div>
         );
       })}
+
+      {/* ORPHAN WEEKS (Safety for invisible weeks) */}
+      {isEditing && orphanWeeks.length > 0 && (
+        <div className="flex flex-col gap-6 mt-4 border-2 border-red-500/20 p-6 rounded-xl bg-red-500/5">
+          <div className="flex justify-between items-baseline border-b-2 border-red-500/20 pb-3 mb-2">
+             <h3 className="font-serif text-2xl text-red-700 tracking-tight shrink-0">Semanas fuera de cronología</h3>
+             <span className="text-[10px] font-serif italic text-red-600/60 text-right leading-tight">Estas semanas existen en el registro pero no pertenecen a ninguna Era definida.</span>
+          </div>
+          
+          <div className="flex flex-col divide-y divide-red-500/10 bg-item-bg/40 rounded-sm px-4 border border-red-500/10">
+            {orphanWeeks.map((week) => (
+              <div key={week.week} className="py-4 flex items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <span className="text-3xl font-serif font-bold text-red-800/40">{week.week}</span>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-serif font-bold text-stone-600">{week.novelTitle || week.mangaTitle || 'Semana sin asignar'}</span>
+                    <span className="text-[10px] text-stone-400 italic">No visible en el Plan Maestro</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => onDeleteWeek(week.week)} 
+                  className="p-3 text-red-400 hover:text-red-600 transition-all flex items-center justify-center min-w-[48px] min-h-[48px]"
+                >
+                  <Trash2 size={18}/>
+                </button>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-center text-red-700/50 italic font-serif">Aumenta el rango de semanas en el Gestor de Fases para rescatar estas semanas.</p>
+        </div>
+      )}
     </div>
   );
 }
