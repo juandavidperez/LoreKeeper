@@ -499,7 +499,8 @@ export function WisdomMap() {
               const edgeKey = [a, b].sort().join('|||')
               const isConnected = focusedNode && (a === focusedNode || b === focusedNode)
               const dimmed = focusedNode && !isConnected
-              const opacity = dimmed ? 0.04 : Math.min(0.65, 0.15 + weight * 0.12)
+              const baseOpacity = weight ? Math.max(0.3, Math.min(1.0, 0.1 + weight * 0.2)) : 0.6
+              const opacity = dimmed ? 0.04 : baseOpacity
               const strokeW = Math.min(3.5, 0.8 + weight * 0.45)
               const isStrong = weight > 3
               return (
@@ -513,7 +514,7 @@ export function WisdomMap() {
                   y1={simRunningRef.current ? undefined : na.y}
                   x2={simRunningRef.current ? undefined : nb.x}
                   y2={simRunningRef.current ? undefined : nb.y}
-                  stroke="#9c845a"
+                  stroke="#b45309"
                   strokeWidth={strokeW}
                   strokeOpacity={opacity}
                   strokeDasharray={isStrong ? "none" : "5 7"}
