@@ -11,6 +11,7 @@ import { pruneOrphanedPanels } from './utils/imageStore'
 import { AuthProvider } from './hooks/useAuth'
 import { SyncProvider } from './hooks/useSync'
 import { ThemeProvider } from './context/ThemeProvider'
+import { SVGFilters } from './components/SVGFilters'
 
 const ReadingPlan = lazy(() => import('./views/ReadingPlan').then(m => ({ default: m.ReadingPlan })))
 const ReadingLog = lazy(() => import('./views/ReadingLog').then(m => ({ default: m.ReadingLog })))
@@ -123,6 +124,7 @@ function AppContent() {
 function App() {
   return (
     <ThemeProvider>
+      <SVGFilters />
       <NotificationProvider>
         <AuthProvider>
           <LorekeeperProvider>

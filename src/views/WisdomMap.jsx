@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { forceSimulation, forceManyBody, forceCenter, forceCollide, forceLink } from 'd3-force'
+import { drag } from 'd3-drag'
+import { select } from 'd3-selection'
 import { useLorekeeperState } from '../hooks/useLorekeeperState'
 import { loadMapAssets, getCharacterArchetype, getLandmarkType } from '../utils/mapImages'
 
@@ -153,12 +156,17 @@ export function WisdomMap() {
     edgeElemsRef.current.clear()
     if (allNodes.length === 0) return
 
-    const nodes = allNodes.map(n => ({
-      id: n.name,
-      r: n.r,
-      x: MAP_W / 2 + (Math.random() - 0.5) * 200,
-      y: MAP_H / 2 + (Math.random() - 0.5) * 200,
-    }))
+    const nodes = allNodes.map(n => {
+      const saved = simPositions[n.name]
+      return {
+        id: n.name,
+        r: n.r,
+        x: saved ? saved.x : MAP_W / 2 + (Math.random() - 0.5) * 200,
+        y: saved ? saved.y : MAP_H / 2 + (Math.random() - 0.5) * 200,
+        fx: saved ? saved.fx : null,
+        fy: saved ? saved.fy : null,
+      }
+    })
 
     const idxMap = Object.fromEntries(nodes.map((n, i) => [n.id, i]))
     const links = edges
@@ -190,11 +198,36 @@ export function WisdomMap() {
         })
       })
       .alphaDecay(0.04)
+
+    // ── Drag behavior ──
+    const dragBehavior = drag()
+      .on('start', (event, d) => {
+        if (!event.active) sim.alphaTarget(0.3).restart()
+        d.fx = d.x
+        d.fy = d.y
+      })
+      .on('drag', (event, d) => {
+        d.fx = event.x
+        d.fy = event.y
+      })
+      .on('end', (event, d) => {
+        if (!event.active) sim.alphaTarget(0)
+        // Keep them pinned: fx/fy remain set
+      })
+
+    sim
       .on('tick', () => {
         // Direct DOM mutation — no React state update
         nodes.forEach(n => {
           const el = nodeElemsRef.current.get(n.id)
-          if (el) el.setAttribute('transform', `translate(${n.x},${n.y})`)
+          if (el) {
+            el.setAttribute('transform', `translate(${n.x},${n.y})`)
+            // Apply drag behavior if not already applied
+            if (!el.__dragBound) {
+              select(el).call(dragBehavior).datum(n)
+              el.__dragBound = true
+            }
+          }
         })
         links.forEach(l => {
           const key = [l.source.id, l.target.id].sort().join('|||')
@@ -211,7 +244,9 @@ export function WisdomMap() {
         simRunningRef.current = false
         // Persist final positions to state (for re-mount)
         const pos = {}
-        nodes.forEach(n => { pos[n.id] = { x: n.x, y: n.y } })
+        nodes.forEach(n => { 
+          pos[n.id] = { x: n.x, y: n.y, fx: n.fx, fy: n.fy } 
+        })
         setSimPositions(pos)
       })
 
@@ -223,11 +258,16 @@ export function WisdomMap() {
   }, [allNodes, edges])
 
   const resolvedNodes = useMemo(() => {
-    return allNodes.map(n => ({
-      ...n,
-      x: simPositions[n.name] !== undefined ? simPositions[n.name].x : n.x,
-      y: simPositions[n.name] !== undefined ? simPositions[n.name].y : n.y,
-    }))
+    return allNodes.map(n => {
+      const saved = simPositions[n.name]
+      return {
+        ...n,
+        x: saved !== undefined ? saved.x : n.x,
+        y: saved !== undefined ? saved.y : n.y,
+        fx: saved !== undefined ? saved.fx : null,
+        fy: saved !== undefined ? saved.fy : null,
+      }
+    })
   }, [allNodes, simPositions])
 
   const charNodes     = resolvedNodes.filter(n => n.kind === 'character')
@@ -402,15 +442,6 @@ export function WisdomMap() {
             <pattern id="mapGrid" width="80" height="80" patternUnits="userSpaceOnUse">
               <path d="M 80 0 L 0 0 0 80" fill="none" stroke={PARCHMENT_LINES} strokeWidth="0.5" opacity="0.5" />
             </pattern>
-            <filter id="sticker" x="-30%" y="-30%" width="160%" height="160%">
-              <feMorphology in="SourceAlpha" operator="dilate" radius="3" result="expanded" />
-              <feFlood floodColor="white" floodOpacity="0.9" result="white" />
-              <feComposite in="white" in2="expanded" operator="in" result="outline" />
-              <feMerge>
-                <feMergeNode in="outline" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
           </defs>
 
           <rect width={MAP_W} height={MAP_H} fill="url(#mapGrid)" />
@@ -424,8 +455,9 @@ export function WisdomMap() {
               const edgeKey = [a, b].sort().join('|||')
               const isConnected = focusedNode && (a === focusedNode || b === focusedNode)
               const dimmed = focusedNode && !isConnected
-              const opacity = dimmed ? 0.04 : Math.min(0.55, 0.12 + weight * 0.09)
-              const strokeW = Math.min(2.5, 0.6 + weight * 0.35)
+              const opacity = dimmed ? 0.04 : Math.min(0.65, 0.15 + weight * 0.12)
+              const strokeW = Math.min(3.5, 0.8 + weight * 0.45)
+              const isStrong = weight > 3
               return (
                 <line
                   key={`edge-${a}-${b}`}
@@ -440,8 +472,9 @@ export function WisdomMap() {
                   stroke="#9c845a"
                   strokeWidth={strokeW}
                   strokeOpacity={opacity}
-                  strokeDasharray="5 7"
+                  strokeDasharray={isStrong ? "none" : "5 7"}
                   strokeLinecap="round"
+                  filter="url(#inkLine)"
                   style={{ transition: 'stroke-opacity 0.25s' }}
                 />
               )
@@ -461,14 +494,35 @@ export function WisdomMap() {
                     if (el) nodeElemsRef.current.set(node.name, el)
                     else nodeElemsRef.current.delete(node.name)
                   }}
+                  className={`cursor-pointer transition-opacity duration-500 ${focusedNode && !isFocused && !isNeighbor ? 'opacity-15 grayscale' : 'opacity-100'}`}
                   transform={simRunningRef.current ? undefined : `translate(${node.x},${node.y})`}
-                  style={{ cursor: 'pointer', opacity: dimmed ? 0.12 : 1, transition: 'opacity 0.25s' }}
-                  onClick={e => { e.stopPropagation(); setFocusedNode(node.name === focusedNode ? null : node.name) }}
+                  onClick={e => {
+                    e.stopPropagation()
+                    if (isFocused) {
+                      setFocusedNode(null)
+                    } else {
+                      setFocusedNode(node.name)
+                      navigator.vibrate?.(10)
+                    }
+                  }}
+                  onDoubleClick={e => {
+                    e.stopPropagation()
+                    if (!simRef.current) return
+                    const simNode = simRef.current.nodes().find(n => n.id === node.name)
+                    if (simNode) {
+                      simNode.fx = null
+                      simNode.fy = null
+                      simRef.current.alpha(0.3).restart()
+                    }
+                  }}
                   onMouseDown={e => e.stopPropagation()}
                 >
-                  <g style={{ transform: isFocused ? 'scale(1.2)' : 'scale(1)', transformOrigin: 'center', transition: 'transform 0.2s' }}>
+                  {node.fx !== null && (
+                    <circle r={half + 5} fill="none" stroke="#7a6545" strokeWidth="1.5" strokeDasharray="2 3" opacity="0.6" />
+                  )}
+                  <g style={{ transform: isFocused ? 'scale(1.2)' : 'scale(1)', transformOrigin: 'center', transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
                     <image href={src} x={-half} y={-half} width={LANDMARK_SIZE} height={LANDMARK_SIZE} style={{ pointerEvents: 'none' }} />
-                    <text y={half + 16} textAnchor="middle" fontSize="11" fontFamily="'Playfair Display', serif" fontStyle="italic" fill="#7a6545">
+                    <text y={half + 16} textAnchor="middle" fontSize="11" fontWeight="700" fontFamily="'Playfair Display', serif" fontStyle="italic" fill={isFocused ? 'var(--text-accent)' : '#7a6545'}>
                       {node.name.length > 15 ? node.name.slice(0, 14) + '…' : node.name}
                     </text>
                   </g>
@@ -491,16 +545,37 @@ export function WisdomMap() {
                     if (el) nodeElemsRef.current.set(node.name, el)
                     else nodeElemsRef.current.delete(node.name)
                   }}
+                  className={`cursor-pointer transition-opacity duration-500 ${focusedNode && !isFocused && !isNeighbor ? 'opacity-15 grayscale' : 'opacity-100'}`}
                   transform={simRunningRef.current ? undefined : `translate(${node.x},${node.y})`}
-                  style={{ cursor: 'pointer', opacity: dimmed ? 0.12 : 1, transition: 'opacity 0.25s' }}
-                  onClick={e => { e.stopPropagation(); setFocusedNode(node.name === focusedNode ? null : node.name) }}
+                  onClick={e => {
+                    e.stopPropagation()
+                    if (isFocused) {
+                      setFocusedNode(null)
+                    } else {
+                      setFocusedNode(node.name)
+                      navigator.vibrate?.(10)
+                    }
+                  }}
+                  onDoubleClick={e => {
+                    e.stopPropagation()
+                    if (!simRef.current) return
+                    const simNode = simRef.current.nodes().find(n => n.id === node.name)
+                    if (simNode) {
+                      simNode.fx = null
+                      simNode.fy = null
+                      simRef.current.alpha(0.3).restart()
+                    }
+                  }}
                   onMouseDown={e => e.stopPropagation()}
                 >
-                  <circle r={half + 16} fill={aura} opacity={isFocused ? 0.45 : 0.14} style={{ transition: 'opacity 0.25s' }} />
-                  <circle r={half + 9}  fill={aura} opacity={isFocused ? 0.28 : 0.10} style={{ transition: 'opacity 0.25s' }} />
-                  <g style={{ transform: isFocused ? 'scale(1.2)' : 'scale(1)', transformOrigin: 'center', transition: 'transform 0.2s' }}>
+                  {node.fx !== null && (
+                    <circle r={half + 22} fill="none" stroke="#7a6545" strokeWidth="1.5" strokeDasharray="2 3" opacity="0.6" />
+                  )}
+                  <circle r={half + 16} fill={aura} opacity={isFocused ? 0.6 : 0.14} style={{ transition: 'opacity 0.3s' }} />
+                  <circle r={half + 9}  fill={aura} opacity={isFocused ? 0.4 : 0.10} style={{ transition: 'opacity 0.3s' }} />
+                  <g style={{ transform: isFocused ? 'scale(1.2)' : 'scale(1)', transformOrigin: 'center', transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
                     <image href={src} x={-half} y={-half} width={CHAR_SIZE} height={CHAR_SIZE} filter="url(#sticker)" style={{ pointerEvents: 'none' }} />
-                    <text y={half + 16} textAnchor="middle" fontSize="10" fontFamily="'Playfair Display', serif" fill="#7a6545">
+                    <text y={half + 18} textAnchor="middle" fontSize="11" fontWeight="700" fontFamily="'Playfair Display', serif" fill={isFocused ? 'var(--text-accent)' : '#7a6545'}>
                       {node.name.length > 15 ? node.name.slice(0, 14) + '…' : node.name}
                     </text>
                   </g>
@@ -511,103 +586,108 @@ export function WisdomMap() {
         </svg>
 
         {/* ── Focus Panel ── */}
-        {focusedNode && (() => {
-          const node = nodeMap[focusedNode]
-          if (!node) return null
-          const connections = focusedNeighbors
-            ? Array.from(focusedNeighbors.entries()).sort((a, b) => b[1] - a[1])
-            : []
-          return (
-            <div
-              role="region"
-              aria-label="Detalle del nodo"
-              className="absolute bottom-14 left-3 right-3 sm:bottom-auto sm:top-3 sm:left-auto sm:right-3 sm:w-64 rounded-xl shadow-xl border overflow-hidden"
-              style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)', zIndex: 10 }}
-            >
-              {/* Header */}
-              <div className="flex items-start justify-between gap-2 p-3 pb-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-serif font-bold leading-tight truncate" style={{ color: 'var(--text-primary)' }}>
-                    {node.name}
-                  </p>
-                  {node.book && (
-                    <p className="text-[10px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{node.book}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span
-                    className="text-[10px] rounded-full px-2 py-0.5 font-serif italic"
-                    style={{
-                      background: 'color-mix(in srgb, var(--text-accent) 10%, transparent)',
-                      color: 'var(--text-accent)',
-                    }}
-                  >
-                    {node.kind === 'character' ? 'Personaje' : 'Lugar'}
-                  </span>
-                  <button
-                    autoFocus
-                    onClick={() => setFocusedNode(null)}
-                    className="text-[10px] leading-none p-1 rounded"
-                    style={{ color: 'var(--text-muted)' }}
-                    aria-label="Cerrar panel de enfoque"
-                  >✕</button>
-                </div>
-              </div>
-
-              {/* Tags */}
-              {node.tags?.length > 0 && (
-                <div className="flex flex-wrap gap-1 px-3 pb-2">
-                  {node.tags.slice(0, 6).map(tag => (
+        <AnimatePresence>
+          {focusedNode && (() => {
+            const node = nodeMap[focusedNode]
+            if (!node) return null
+            const connections = focusedNeighbors
+              ? Array.from(focusedNeighbors.entries()).sort((a, b) => b[1] - a[1])
+              : []
+            return (
+              <motion.div
+                role="region"
+                aria-label="Detalle del nodo"
+                initial={{ x: 300, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 300, opacity: 0 }}
+                className="absolute bottom-14 left-3 right-3 sm:bottom-auto sm:top-3 sm:left-auto sm:right-3 sm:w-80 rounded-sm shadow-2xl border-2 overflow-hidden flex flex-col max-h-[70vh]"
+                style={{ background: 'var(--bg-card)', borderColor: 'var(--border-subtle)', zIndex: 100 }}
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2 p-3 pb-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-serif font-bold leading-tight truncate" style={{ color: 'var(--text-primary)' }}>
+                      {node.name}
+                    </p>
+                    {node.book && (
+                      <p className="text-[10px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{node.book}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <span
-                      key={tag}
-                      className="text-[10px] rounded-full px-1.5 py-0.5"
+                      className="text-[10px] rounded-full px-2 py-0.5 font-serif italic"
                       style={{
-                        background: 'color-mix(in srgb, var(--text-accent) 12%, transparent)',
+                        background: 'color-mix(in srgb, var(--text-accent) 10%, transparent)',
                         color: 'var(--text-accent)',
                       }}
                     >
-                      {tag}
+                      {node.kind === 'character' ? 'Personaje' : 'Lugar'}
                     </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Mentions */}
-              {node.mentions?.length > 0 && (
-                <p className="text-[10px] px-3 pb-2 italic" style={{ color: 'var(--text-muted)' }}>
-                  {node.mentions.length} {node.mentions.length === 1 ? 'mención' : 'menciones'}
-                </p>
-              )}
-
-              {/* Connected entities */}
-              {connections.length > 0 && (
-                <div className="border-t" style={{ borderColor: 'var(--border-subtle)' }}>
-                  <p
-                    className="text-[10px] font-serif uppercase tracking-wider px-3 pt-2 pb-1"
-                    style={{ color: 'var(--text-muted)' }}
-                  >
-                    Conexiones
-                  </p>
-                  <div className="flex flex-col pb-1 max-h-40 overflow-y-auto">
-                    {connections.map(([name, weight]) => (
-                      <button
-                        key={name}
-                        onClick={() => setFocusedNode(name)}
-                        className="flex items-center justify-between text-[10px] px-3 py-1.5 text-left transition-colors"
-                        style={{ color: 'var(--text-primary)' }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--text-accent) 6%, transparent)'}
-                        onMouseLeave={e => e.currentTarget.style.background = ''}
-                      >
-                        <span className="font-serif truncate">{name}</span>
-                        <span className="shrink-0 ml-2 tabular-nums" style={{ color: 'var(--text-muted)' }}>×{weight}</span>
-                      </button>
-                    ))}
+                    <button
+                      autoFocus
+                      onClick={() => setFocusedNode(null)}
+                      className="text-[10px] leading-none p-1 rounded"
+                      style={{ color: 'var(--text-muted)' }}
+                      aria-label="Cerrar panel de enfoque"
+                    >✕</button>
                   </div>
                 </div>
-              )}
-            </div>
-          )
-        })()}
+
+                {/* Tags */}
+                {node.tags?.length > 0 && (
+                  <div className="flex flex-wrap gap-1 px-3 pb-2">
+                    {node.tags.slice(0, 6).map(tag => (
+                      <span
+                        key={tag}
+                        className="text-[10px] rounded-full px-1.5 py-0.5"
+                        style={{
+                          background: 'color-mix(in srgb, var(--text-accent) 12%, transparent)',
+                          color: 'var(--text-accent)',
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Mentions */}
+                {node.mentions?.length > 0 && (
+                  <p className="text-[10px] px-3 pb-2 italic" style={{ color: 'var(--text-muted)' }}>
+                    {node.mentions.length} {node.mentions.length === 1 ? 'mención' : 'menciones'}
+                  </p>
+                )}
+
+                {/* Connected entities */}
+                {connections.length > 0 && (
+                  <div className="border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+                    <p
+                      className="text-[10px] font-serif uppercase tracking-wider px-3 pt-2 pb-1"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      Conexiones
+                    </p>
+                    <div className="flex flex-col pb-1 max-h-40 overflow-y-auto">
+                      {connections.map(([name, weight]) => (
+                        <button
+                          key={name}
+                          onClick={() => setFocusedNode(name)}
+                          className="flex items-center justify-between text-[10px] px-3 py-1.5 text-left transition-colors"
+                          style={{ color: 'var(--text-primary)' }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--text-accent) 6%, transparent)'}
+                          onMouseLeave={e => e.currentTarget.style.background = ''}
+                        >
+                          <span className="font-serif truncate">{name}</span>
+                          <span className="shrink-0 ml-2 tabular-nums" style={{ color: 'var(--text-muted)' }}>×{weight}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )
+          })()}
+        </AnimatePresence>
 
         {/* ── Zoom controls ── */}
         {!isEmpty && <div className="absolute bottom-3 right-3 flex flex-col gap-1.5" style={{ zIndex: 20 }}>

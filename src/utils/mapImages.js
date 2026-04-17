@@ -94,20 +94,24 @@ export function getCharacterArchetype(tags = [], name = '') {
 // ─── Landmark type detection ───────────────────────────────────────────────
 
 const LANDMARK_TYPES = [
-  { keywords: ['castillo', 'fortaleza', 'ciudadela', 'palacio', 'castle', 'fortress'], type: 'castle' },
+  { keywords: ['castillo', 'fortaleza', 'ciudadela', 'palacio', 'castle', 'fortress', 'lothlorien', 'minas tirith'], type: 'castle' },
   { keywords: ['bosque', 'selva', 'arboleda', 'floresta', 'forest', 'jungle'], type: 'forest' },
-  { keywords: ['montaña', 'cumbre', 'pico', 'cordillera', 'mountain', 'peak'], type: 'mountain' },
-  { keywords: ['ruinas', 'antiguo', 'abandonado', 'templo', 'ruins', 'temple'], type: 'ruins' },
+  { keywords: ['montana', 'cumbre', 'pico', 'cordillera', 'mountain', 'peak', 'monte del destino', 'mordor'], type: 'mountain' },
+  { keywords: ['ruinas', 'antiguo', 'abandonado', 'templo', 'ruins', 'temple', 'moria', 'cirith ungol'], type: 'ruins' },
   { keywords: ['lago', 'ribera', 'orilla', 'lake', 'lakeside'], type: 'town' },
-  { keywords: ['ciudad', 'metrópolis', 'capital', 'city'], type: 'city' },
+  { keywords: ['ciudad', 'metropolis', 'capital', 'city'], type: 'city' },
   { keywords: ['escuela', 'academia', 'instituto', 'gimnasio', 'school', 'academy'], type: 'school' },
   { keywords: ['konoha', 'shinobi', 'ninja', 'aldea ninja'], type: 'shinobi' },
   { keywords: ['pueblo', 'villa', 'town', 'barrio'], type: 'town' },
 ]
 
+function normalize(str) {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
 export function getLandmarkType(name = '', tags = []) {
-  const lowerTags = tags.map(t => t.toLowerCase())
-  const lowerName = name.toLowerCase()
+  const lowerTags = tags.map(t => normalize(t.toLowerCase()))
+  const lowerName = normalize(name.toLowerCase())
   for (const { keywords, type } of LANDMARK_TYPES) {
     if (keywords.some(k => lowerTags.some(t => t.includes(k)) || lowerName.includes(k))) return type
   }
