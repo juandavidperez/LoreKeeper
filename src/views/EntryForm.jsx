@@ -1,4 +1,5 @@
-import { BookOpen, Mic, Sparkles, ChevronDown, ChevronUp, Save, X, Loader2, Plus, Trash2, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { BookOpen, Mic, Sparkles, ChevronDown, ChevronUp, Save, X, Loader2, Plus, Trash2, Image as ImageIcon, Link as LinkIcon, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { callGemini } from '../utils/ai';
 import { MOODS } from '../data/mockData';
@@ -84,6 +85,51 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
   const { archive } = useLorekeeperState();
   const { playInkScratch } = useSoundscape();
   const { recordingField, toggle: toggleRecording, error: speechError, isSupported: speechSupported } = useSpeechRecognition();
+  
+  // READING SESSION TIMER
+  const SESSION_KEY = 'lore-session-start';
+  const MAX_SESSION_MS = 4 * 60 * 60 * 1000;
+  const [sessionStart, setSessionStart] = useState(null);
+  const [elapsedMins, setElapsedMins] = useState(0);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(SESSION_KEY);
+    if (stored) {
+      const startTime = parseInt(stored, 10);
+      const now = Date.now();
+      if (now - startTime > MAX_SESSION_MS) {
+        localStorage.removeItem(SESSION_KEY);
+        notify('Sesión huérfana de más de 4h detectada y limpiada.', 'info');
+      } else {
+        setSessionStart(startTime);
+        setElapsedMins(Math.floor((now - startTime) / 60000));
+      }
+    }
+  }, [notify]);
+
+  useEffect(() => {
+    if (!sessionStart) return;
+    const interval = setInterval(() => {
+      setElapsedMins(Math.floor((Date.now() - sessionStart) / 60000));
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [sessionStart]);
+
+  const handleStartTimer = () => {
+    const now = Date.now();
+    localStorage.setItem(SESSION_KEY, now.toString());
+    setSessionStart(now);
+    setElapsedMins(0);
+  };
+
+  const handleEndTimer = () => {
+    const totalMins = Math.max(1, Math.floor((Date.now() - sessionStart) / 60000));
+    setForm(prev => ({ ...prev, readingTime: (prev.readingTime || 0) + totalMins }));
+    localStorage.removeItem(SESSION_KEY);
+    setSessionStart(null);
+    setElapsedMins(0);
+    notify(`Cronología extendida: +${totalMins}m de lectura registrados.`, 'success');
+  };
 
   const DRAFT_KEY = 'lore-entry-draft';
   const isNewEntry = !initialData;
@@ -377,10 +423,31 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
         />
       )}
       {/* HEADER ROW */}
-      <div className="flex items-center justify-between">
-        <h3 className="font-serif text-primary-text text-2xl tracking-tight">
-          {initialData ? 'Editar Crónica' : 'Nueva Crónica'}
-        </h3>
+        <div className="flex flex-col gap-0.5">
+          <h3 className="font-serif text-primary-text text-2xl tracking-tight">
+            {initialData ? 'Editar Crónica' : 'Nueva Crónica'}
+          </h3>
+          {/* SESSION TIMER CHIP */}
+          {!sessionStart ? (
+            <button
+              onClick={handleStartTimer}
+              className="group flex items-center gap-1.5 px-2 py-0.5 w-fit rounded-full bg-accent/10 border border-accent/20 hover:bg-accent/20 transition-all active:scale-95"
+            >
+              <div className="w-1 h-1 rounded-full bg-accent group-hover:animate-ping" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-accent">▶ Iniciar Sesión</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleEndTimer}
+              className="flex items-center gap-1.5 px-2 py-0.5 w-fit rounded-full bg-accent border border-accent/30 shadow-sm hover:bg-accent-secondary transition-all active:scale-95 animate-fade-in"
+            >
+              <Clock size={10} className="text-white animate-pulse" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-white">
+                ⏱ {elapsedMins}m · Terminar
+              </span>
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <button onClick={handleCancel} aria-label="Cancelar" className="p-2 text-stone-400 hover:text-stone-600 flex items-center justify-center">
             <X size={20}/>
