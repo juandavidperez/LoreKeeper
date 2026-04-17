@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { motion, AnimatePresence } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import { Calendar, BookOpen, Library, Sparkles, Map, Clock, ChevronRight, Feather } from 'lucide-react';
 
@@ -72,6 +73,7 @@ const slideVariants = {
 };
 
 export function OnboardingOverlay({ onComplete }) {
+  useBodyScrollLock();
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const current = STEPS[step];

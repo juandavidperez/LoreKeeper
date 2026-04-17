@@ -1,4 +1,8 @@
+import { useEffect } from 'react';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+
 export function ConfirmModal({ title, message, confirmLabel = 'Confirmar', danger = false, onConfirm, onCancel }) {
+  useBodyScrollLock();
   return (
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"

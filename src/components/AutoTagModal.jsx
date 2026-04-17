@@ -1,7 +1,9 @@
 import { CheckSquare, Square, X } from 'lucide-react'
 import { useState } from 'react'
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock'
 
 export function AutoTagModal({ detected, onConfirm, onCancel }) {
+  useBodyScrollLock();
   // detected is { characters: [], places: [], glossary: [], worldRules: [] }
   const [selected, setSelected] = useState(() => {
     const initial = {}
@@ -48,7 +50,7 @@ export function AutoTagModal({ detected, onConfirm, onCancel }) {
         </div>
 
         {/* List */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-5 space-y-6">
           {Object.entries(detected).map(([cat, list]) => {
             if (list.length === 0) return null
             const label = { 

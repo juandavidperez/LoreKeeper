@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { Search, X, BookOpen, User, Globe, HelpCircle, Scroll, Quote, FileText } from 'lucide-react';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
 
@@ -35,6 +36,7 @@ export function GlobalSearch({ onNavigate, onClose }) {
   const { entries, archive } = useLorekeeperState();
   const [query, setQuery] = useState('');
   const inputRef = useRef(null);
+  useBodyScrollLock();
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -137,7 +139,7 @@ export function GlobalSearch({ onNavigate, onClose }) {
         </div>
 
         {/* Results */}
-        <div className="max-h-[60vh] overflow-y-auto">
+        <div className="max-h-[60vh] overflow-y-auto overscroll-contain">
           {query.length < 2 ? (
             <div className="px-5 py-8 text-center">
               <p className="text-xs text-stone-400 font-serif italic">Escribe al menos 2 caracteres para buscar</p>
