@@ -736,6 +736,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
             )}
           </div>
         )}
+      </div>}
       {/* ── LORE REFERENCE DRAWER ── */}
       <AnimatePresence>
         {showLoreRef && (
