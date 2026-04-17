@@ -28,6 +28,13 @@ export function NotificationProvider({ children }) {
 
   const notify = useCallback((message, type = 'info') => {
     setNotification({ message, type, id: Date.now() });
+
+    // Haptic feedback for mobile devices
+    if (type === 'error') {
+      navigator.vibrate?.([60, 40, 60]);
+    } else if (type === 'success') {
+      navigator.vibrate?.(50);
+    }
   }, []);
 
   const dismiss = useCallback(() => setNotification(null), []);
