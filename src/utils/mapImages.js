@@ -54,7 +54,7 @@ const ARCHETYPES_BY_TAG = [
   { keywords: ['jefe', 'deidad', 'terror', 'colosal', 'entidad', 'dios', 'bijuu'],               archetype: 'monster'  },
   { keywords: ['oscuro', 'venganza', 'solitario', 'gris', 'renegado', 'mercenario'],              archetype: 'antihero' },
   { keywords: ['mentor', 'sensei', 'guía', 'autoridad', 'leyenda', 'capitán'],                    archetype: 'master'   },
-  { keywords: ['intelecto', 'estrategia', 'investigador', 'conocimiento', 'bibliotecario'],        archetype: 'scholar'  },
+  { keywords: ['intelecto', 'estrategia', 'investigador', 'conocimiento', 'bibliotecario', 'científico', 'sabio', 'alquimista', 'médico', 'inventor'],  archetype: 'scholar'  },
   { keywords: ['protagonista', 'elegido', 'viajero', 'esperanza', 'aventurero'],                  archetype: 'hero'     },
   { keywords: ['tanque', 'combate', 'soldado', 'escudero', 'caballero', 'defensor'],              archetype: 'warrior'  },
   { keywords: ['bestia', 'animal', 'esbirro', 'horda', 'invocación', 'mascota'],                  archetype: 'creature' },
