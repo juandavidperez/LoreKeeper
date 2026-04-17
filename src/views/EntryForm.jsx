@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Mic, Sparkles, ChevronDown, ChevronUp, Save, X, Loader2, Plus, Trash2, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
+import { BookOpen, Mic, Sparkles, ChevronDown, ChevronUp, Save, X, Loader2, Plus, Trash2, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { callGemini } from '../utils/ai';
 import { MOODS } from '../data/mockData';
 import { externalizePanels } from '../utils/imageStore';
@@ -7,6 +7,7 @@ import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useNotification } from '../hooks/useNotification';
 import { useTheme } from '../hooks/useTheme';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
+import { useSoundscape } from '../hooks/useSoundscape';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { TiptapEditor } from '../components/TiptapEditor';
 import { autoTag } from '../utils/autoTag';
@@ -81,6 +82,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
   const notify = useNotification();
   const { theme } = useTheme();
   const { archive } = useLorekeeperState();
+  const { playInkScratch } = useSoundscape();
   const { recordingField, toggle: toggleRecording, error: speechError, isSupported: speechSupported } = useSpeechRecognition();
 
   const DRAFT_KEY = 'lore-entry-draft';
@@ -210,6 +212,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
 
     isSaving.current = true;
     navigator.vibrate?.(20);
+    playInkScratch();
     if (isNewEntry) window.localStorage.removeItem(DRAFT_KEY);
     // Move inline manga images to IndexedDB before saving
     if (formData.mangaPanels?.length > 0) {
@@ -238,10 +241,23 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
   const isSaving = useRef(false);
   const [pendingAutoTags, setPendingAutoTags] = useState(null);
   const [panelToRemove, setPanelToRemove] = useState(null);
+  const [showLoreRef, setShowLoreRef] = useState(false);
+  const [loreSearch, setLoreSearch] = useState('');
   const [openSections, setOpenSections] = useState({
     quotes: true, characters: false, places: false,
     glossary: false, world: false, connections: false, panels: false
   });
+
+  const filteredLore = useMemo(() => {
+    const all = [
+      ...(archive.personajes || []).map(p => ({ ...p, cat: 'personaje' })),
+      ...(archive.lugares || []).map(l => ({ ...l, cat: 'lugar' })),
+      ...(archive.glosario || []).map(g => ({ ...g, cat: 'glosario' })),
+      ...(archive.reglas || []).map(r => ({ ...r, cat: 'regla' })),
+    ];
+    if (!loreSearch) return all;
+    return all.filter(e => e.name.toLowerCase().includes(loreSearch.toLowerCase()));
+  }, [archive, loreSearch]);
 
   const handleAIAutocomplete = async () => {
     if (!form.reingreso || isExtracting || isExtractingLock.current) return;
@@ -261,6 +277,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
       }));
       setOpenSections(prev => ({ ...prev, characters: true, places: true, quotes: true, world: true }));
       setStep('knowledge');
+      playInkScratch();
       notify("Conocimientos destilados con éxito.", "success");
     } catch {
       notify("El Oráculo no pudo destilar los conocimientos. Intenta de nuevo.", "error");
@@ -377,6 +394,14 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
             <span className="font-bold text-xs uppercase tracking-[0.2em] font-serif">
               {theme === 'dark' ? 'FORJAR' : 'GUARDAR'}
             </span>
+          </button>
+          <button
+            onClick={() => setShowLoreRef(true)}
+            aria-label="Consultar Archivo"
+            title="Consultar Archivo"
+            className="p-2.5 bg-item-bg text-accent rounded-sm border border-accent/20 hover:border-accent transition-colors"
+          >
+            <BookOpen size={20} />
           </button>
         </div>
       </div>
@@ -711,8 +736,79 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
             )}
           </div>
         )}
-      </div>}
+      {/* ── LORE REFERENCE DRAWER ── */}
+      <AnimatePresence>
+        {showLoreRef && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowLoreRef(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90]"
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 bottom-0 w-full sm:w-[400px] bg-header-bg z-[100] shadow-2xl border-l border-accent/20 flex flex-col"
+            >
+              <div className="p-4 border-b border-accent/20 flex items-center justify-between bg-section-bg">
+                <div className="flex items-center gap-2">
+                  <BookOpen size={18} className="text-accent" />
+                  <span className="font-serif font-bold text-primary-text tracking-tight">Referencia del Archivo</span>
+                </div>
+                <button onClick={() => setShowLoreRef(false)} className="p-2 text-stone-400 hover:text-accent transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
 
+              <div className="p-4 border-b border-accent/10">
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Buscar conocimiento..."
+                  value={loreSearch}
+                  onChange={e => setLoreSearch(e.target.value)}
+                  className="w-full bg-app-bg border border-accent/20 rounded-sm px-4 py-3 text-sm font-serif italic outline-none focus:border-accent/50 transition-all shadow-inner"
+                />
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {filteredLore.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-sm text-stone-400 font-serif italic">No hay registros que coincidan con tu búsqueda.</p>
+                  </div>
+                ) : (
+                  filteredLore.map(entity => (
+                    <div key={`${entity.cat}-${entity.name}`} className="bg-item-bg p-4 rounded-sm border border-primary/10 shadow-sm">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-serif font-bold text-primary-text">{entity.name}</h4>
+                        <span className="text-[8px] uppercase tracking-widest bg-accent/10 text-accent px-1.5 py-0.5 rounded-full border border-accent/20">{entity.cat}</span>
+                      </div>
+                      {entity.description ? (
+                        <p className="text-xs text-primary-text/70 italic font-serif leading-relaxed line-clamp-3 mb-2">"{entity.description}"</p>
+                      ) : (
+                        <p className="text-[10px] text-stone-400 italic font-serif mb-2">Sin descripción permanente.</p>
+                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {entity.tags?.slice(0, 3).map(t => (
+                          <span key={t} className="text-[8px] text-stone-400 border border-stone-200 px-1.5 py-0.5 rounded-sm">#{t}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              <div className="p-4 bg-section-bg border-t border-accent/10">
+                <p className="text-[9px] text-stone-400 text-center font-serif italic">Consulta el lore sin cerrar tu crónica actual.</p>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
