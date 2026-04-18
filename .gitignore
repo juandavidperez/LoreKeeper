@@ -31,3 +31,6 @@ dist-ssr
 
 # GSD Planning
 .planning/
+
+# GEMINI
+GEMINI.md
