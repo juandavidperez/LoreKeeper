@@ -7,76 +7,282 @@ export const INITIAL_BOOKS = [
   { id: "book-5", title: "El Silmarillion", emoji: "✨", color: "#0891B2", type: "novel" },
   { id: "book-6", title: "Las Batallas de Tolkien (Day)", emoji: "📖", color: "#059669", type: "novel" },
   { id: "book-7", title: "Las Leyendas del Anillo (Day)", emoji: "📖", color: "#047857", type: "novel" },
-  { id: "book-15", title: "Poderes Oscuros de Tolkien (Day)", emoji: "📖", color: "#065F46", type: "novel" },
-  { id: "book-8", title: "Lovecraft", emoji: "🐙", color: "#7C2D12", type: "novel" },
-  { id: "book-9", title: "Astroboy", emoji: "🤖", color: "#0284C7", type: "manga" },
-  { id: "book-10", title: "Slam Dunk", emoji: "🏀", color: "#3B82F6", type: "manga" },
-  { id: "book-11", title: "Naruto Gold", emoji: "🍃", color: "#F59E0B", type: "manga" },
-  { id: "book-12", title: "Fullmetal Alchemist", emoji: "⚗️", color: "#EF4444", type: "manga" },
-  { id: "book-13", title: "Spawn Integral", emoji: "👹", color: "#9CA3AF", type: "manga" },
-  { id: "book-14", title: "Vagabond", emoji: "⚔️", color: "#A8956A", type: "manga" }
+  { id: "book-8", title: "Poderes Oscuros de Tolkien (Day)", emoji: "📖", color: "#065F46", type: "novel" },
+  { id: "book-9", title: "Lovecraft", emoji: "🐙", color: "#7C2D12", type: "novel" },
+  { id: "book-10", title: "Astroboy", emoji: "🤖", color: "#0284C7", type: "manga" },
+  { id: "book-11", title: "Slam Dunk", emoji: "🏀", color: "#3B82F6", type: "manga" },
+  { id: "book-12", title: "Naruto Gold", emoji: "🍃", color: "#F59E0B", type: "manga" },
+  { id: "book-13", title: "Fullmetal Alchemist", emoji: "⚗️", color: "#EF4444", type: "manga" },
+  { id: "book-14", title: "Spawn Integral", emoji: "👹", color: "#9CA3AF", type: "manga" },
+  { id: "book-15", title: "Vagabond", emoji: "⚔️", color: "#A8956A", type: "manga" }
 ];
 
 export const INITIAL_PHASES = [
-  { id: 1, label: "Fase 1 · El Hobbit",      weeks: [1,  4],  color: "#16A34A", desc: "El Hobbit + Astroboy + Slam Dunk" },
-  { id: 2, label: "Fase 2 · Tierra Media",   weeks: [5,  14], color: "#7C3AED", desc: "Trilogía ESDLA + Naruto Gold + Arte companion (10 semanas)" },
+  { id: 1, label: "Fase 1 · El Hobbit", weeks: [1, 4], color: "#16A34A", desc: "El Hobbit + Astroboy + Slam Dunk" },
+  { id: 2, label: "Fase 2 · Tierra Media", weeks: [5, 14], color: "#7C3AED", desc: "Trilogía ESDLA + Naruto Gold + Arte companion (10 semanas)" },
   { id: 3, label: "Fase 3 · Tolkien Profundo", weeks: [15, 24], color: "#0891B2", desc: "Silmarillion + FMA + David Day" },
-  { id: 4, label: "Fase 4 · Oscuridad",      weeks: [25, 30], color: "#7C2D12", desc: "Lovecraft + Spawn Integral" },
-  { id: 5, label: "Fase 5 · El Maestro",     weeks: [31, 33], color: "#A8956A", desc: "Vagabond solo" },
+  { id: 4, label: "Fase 4 · Oscuridad", weeks: [25, 33], color: "#7C2D12", desc: "Lovecraft + Spawn Integral" },
+  { id: 5, label: "Fase 5 · El Maestro", weeks: [34, 36], color: "#A8956A", desc: "Vagabond solo" },
 ];
 
 export const INITIAL_SCHEDULE = [
   // ── Fase 1 · El Hobbit ────────────────────────────────────────────────────
-  { week: 1,  mangaTitle: "Astroboy",        mangaVols: "Tomo 1 (caps. 1–4)",      novelTitle: "El Hobbit",                 novelSection: "Caps. 1–5",                    tip: "Dos clásicos fundacionales arrancan juntos. Tezuka y Tolkien, misma semana." },
-  { week: 2,  mangaTitle: "Astroboy",        mangaVols: "Tomo 1 (caps. 5–8, fin)", novelTitle: "El Hobbit",                 novelSection: "Caps. 6–10",                   tip: "Terminas Astroboy esta semana. La ternura de Tezuka es el antídoto al peligro de Tolkien." },
-  { week: 3,  mangaTitle: "Slam Dunk",       mangaVols: "Vol. 1",                  novelTitle: "El Hobbit",                 novelSection: "Caps. 11–15",                  tip: "Slam Dunk entra con energía pura. Sakuragi y Bilbo tienen más en común de lo que parece." },
-  { week: 4,  mangaTitle: "Slam Dunk",       mangaVols: "Vol. 2 (fin)",            novelTitle: "El Hobbit",                 novelSection: "Caps. 16–19 (fin)",            tip: "Cierras El Hobbit y Slam Dunk. Bilbo vuelve diferente. Sakuragi apenas empieza." },
+  { week: 1, mangaTitle: "Astroboy", mangaVols: "Tomo 1 (caps. 1–4)", novelTitle: "El Hobbit", novelSection: "Caps. 1–5", tip: "Dos clásicos fundacionales arrancan juntos. Tezuka y Tolkien, misma semana." },
+  { week: 2, mangaTitle: "Astroboy", mangaVols: "Tomo 1 (caps. 5–8, fin de colección)", novelTitle: "El Hobbit", novelSection: "Caps. 6–10", tip: "Llegas al límite de tu colección de Astroboy. La ternura de Tezuka es el antídoto al peligro de Tolkien." },
+  { week: 3, mangaTitle: "Slam Dunk", mangaVols: "Vol. 1", novelTitle: "El Hobbit", novelSection: "Caps. 11–15", tip: "Slam Dunk entra con energía pura. Sakuragi y Bilbo tienen más en común de lo que parece." },
+  { week: 4, mangaTitle: "Slam Dunk", mangaVols: "Vol. 2 (fin de colección)", novelTitle: "El Hobbit", novelSection: "Caps. 16–19 (fin)", tip: "Cierras El Hobbit y tu colección actual de Slam Dunk. Bilbo vuelve diferente. Sakuragi apenas empieza." },
 
   // ── Fase 2 · Tierra Media (10 semanas) ───────────────────────────────────
-  { week: 5,  mangaTitle: "Naruto Gold",     mangaVols: "Vol. 1",                  novelTitle: "La Comunidad del Anillo",   novelSection: "Libro I — La Comarca a Weathertop",     companion: "Ilustraciones de La Comarca", tip: "Lee despacio. La Comarca es el jardín que vale perder — Tolkien la pinta para que su abandono duela." },
-  { week: 6,  mangaTitle: "Naruto Gold",     mangaVols: "Vol. 2",                  novelTitle: "La Comunidad del Anillo",   novelSection: "Libro I — Weathertop a Rivendell (fin)", companion: "Rivendell y los Elfos",        tip: "Weathertop es el primer golpe real. Tolkien no avisa cuando el cuento de hadas termina." },
-  { week: 7,  mangaTitle: "Naruto Gold",     mangaVols: "Vol. 3",                  novelTitle: "La Comunidad del Anillo",   novelSection: "Libro II — Moria y Lothlórien",         companion: "Moria y Lothlórien",          tip: "Moria es catedral de oscuridad. La caída de Gandalf en el puente vale toda la semana." },
-  { week: 8,  mangaTitle: "Naruto Gold",     mangaVols: "Vol. 4",                  novelTitle: "Las Dos Torres",            novelSection: "Libro III — Rohan y los Ents",          companion: "Rohan, los Ents e Isengard",  tip: "Rohan huele a anglosajón puro. Los Ents se mueven en tiempo geológico — deja que pasen." },
-  { week: 9,  mangaTitle: "Naruto Gold",     mangaVols: "Vol. 5",                  novelTitle: "Las Dos Torres",            novelSection: "Libro IV — Gollum, Frodo y Sam",        companion: "Gollum, Ithilien y Cirith Ungol", tip: "La dualidad Sméagol/Gollum es el corazón de ESDLA. Lee la escena del lago dos veces." },
-  { week: 10, mangaTitle: "Naruto Gold",     mangaVols: "Vol. 6",                  novelTitle: "El Retorno del Rey",        novelSection: "Libro V — Minas Tirith y Pelennor",     companion: "Minas Tirith y Pelennor",     tip: "Pelennor Fields. Éowyn. Merry. El loophole que Tolkien escondió desde el principio." },
-  { week: 11, mangaTitle: "Naruto Gold",     mangaVols: "Vol. 7 (fin)",            novelTitle: "El Retorno del Rey",        novelSection: "Libro VI — El Monte del Destino",       companion: "Los Puertos Grises",          tip: "Sam carga a Frodo porque Frodo ya no puede. El heroísmo más honesto de la literatura." },
-  { week: 12, mangaTitle: "— Pausa —",       mangaVols: "Sin manga",               novelTitle: "El Retorno del Rey",        novelSection: "Apéndices — Cronología + Anillos de Poder", tip: "No tienes que leerlos todos. Cronología y Anillos de Poder bastan para el contexto." },
-  { week: 13, mangaTitle: "— Pausa —",       mangaVols: "Sin manga",               novelTitle: "El Retorno del Rey",        novelSection: "Companion — Ilustraciones y mapas",    tip: "Semana visual. Los companion de Day son álbumes de arte — hojea sin presión, sin examen." },
-  { week: 14, mangaTitle: "— Pausa —",       mangaVols: "Sin manga",               novelTitle: "— Reflexión y transición —", novelSection: "Releer pasaje favorito de ESDLA",      tip: "Antes de entrar al Silmarillion, cierra ESDLA en tu mente. ¿Quién te marcó más?" },
+  { week: 5, mangaTitle: "Naruto Gold", mangaVols: "Vol. 1", novelTitle: "La Comunidad del Anillo", novelSection: "Libro I — La Comarca a Weathertop", companion: "Ilustraciones de La Comarca", tip: "Lee despacio. La Comarca es el jardín que vale perder — Tolkien la pinta para que su abandono duela." },
+  { week: 6, mangaTitle: "Naruto Gold", mangaVols: "Vol. 2", novelTitle: "La Comunidad del Anillo", novelSection: "Libro I — Weathertop a Rivendell (fin)", companion: "Rivendell y los Elfos", tip: "Weathertop es el primer golpe real. Tolkien no avisa cuando el cuento de hadas termina." },
+  { week: 7, mangaTitle: "Naruto Gold", mangaVols: "Vol. 3", novelTitle: "La Comunidad del Anillo", novelSection: "Libro II — Moria y Lothlórien", companion: "Moria y Lothlórien", tip: "Moria es catedral de oscuridad. La caída de Gandalf en el puente vale toda la semana." },
+  { week: 8, mangaTitle: "Naruto Gold", mangaVols: "Vol. 4", novelTitle: "Las Dos Torres", novelSection: "Libro III — Rohan y los Ents", companion: "Rohan, los Ents e Isengard", tip: "Rohan huele a anglosajón puro. Los Ents se mueven en tiempo geológico — deja que pasen." },
+  { week: 9, mangaTitle: "Naruto Gold", mangaVols: "Vol. 5", novelTitle: "Las Dos Torres", novelSection: "Libro IV — Gollum, Frodo y Sam", companion: "Gollum, Ithilien y Cirith Ungol", tip: "La dualidad Sméagol/Gollum es el corazón de ESDLA. Lee la escena del lago dos veces." },
+  { week: 10, mangaTitle: "Naruto Gold", mangaVols: "Vol. 6", novelTitle: "El Retorno del Rey", novelSection: "Libro V — Minas Tirith y Pelennor", companion: "Minas Tirith y Pelennor", tip: "Pelennor Fields. Éowyn. Merry. El loophole que Tolkien escondió desde el principio." },
+  { week: 11, mangaTitle: "Naruto Gold", mangaVols: "Vol. 7 (fin de colección)", novelTitle: "El Retorno del Rey", novelSection: "Libro VI — El Monte del Destino", companion: "Los Puertos Grises", tip: "Sam carga a Frodo porque Frodo ya no puede. El heroísmo más honesto de la literatura." },
+  { week: 12, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "El Retorno del Rey", novelSection: "Apéndices — Cronología + Anillos de Poder", tip: "No tienes que leerlos todos. Cronología y Anillos de Poder bastan para el contexto." },
+  { week: 13, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "El Retorno del Rey", novelSection: "Companion — Ilustraciones y mapas", tip: "Semana visual. Los companion de Day son álbumes de arte — hojea sin presión, sin examen." },
+  { week: 14, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "— Reflexión y transición —", novelSection: "Releer pasaje favorito de ESDLA", tip: "Antes de entrar al Silmarillion, cierra ESDLA en tu mente. ¿Quién te marcó más?" },
 
   // ── Fase 3 · Tolkien Profundo ─────────────────────────────────────────────
-  { week: 15, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 1",             novelTitle: "El Silmarillion",           novelSection: "Ainulindalë + Valaquenta",              tip: "FMA y El Sil exploran el precio de la ambición. La Música de Ainur es creación pura." },
-  { week: 16, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 2",             novelTitle: "El Silmarillion",           novelSection: "Quenta (caps. 1–7)",                   tip: "Morgoth paralelo a la alquimia de FMA. La corrupción del poder tiene la misma forma." },
-  { week: 17, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 3",             novelTitle: "El Silmarillion",           novelSection: "Quenta (caps. 8–15)",                  tip: "Beren y Lúthien es la historia de amor más antigua de Tolkien. Léela como poema." },
-  { week: 18, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 4",             novelTitle: "El Silmarillion",           novelSection: "Quenta (caps. 16–22)",                 tip: "Ambos se oscurecen filosóficamente. La caída de Númenor es la más trágica del legendarium." },
-  { week: 19, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 5",             novelTitle: "El Silmarillion",           novelSection: "Akallabêth + De los Anillos de Poder (fin)", tip: "Tolkien completo. Reflexiona antes de pasar a Day — el legendarium necesita digestión." },
-  { week: 20, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 6",             novelTitle: "Las Batallas de Tolkien (Day)", novelSection: "Primera mitad",              tip: "David Day entra como enciclopedia visual. FMA y el mundo tolkieniano comparten obsesión con la transmutación." },
-  { week: 21, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 7 (fin)",       novelTitle: "Las Batallas de Tolkien (Day)", novelSection: "Segunda mitad (fin)",        tip: "FMA cierra aquí. Es uno de los finales más satisfactorios del manga — merece toda tu atención." },
-  { week: 22, mangaTitle: "— Pausa —",           mangaVols: "Sin manga",          novelTitle: "Poderes Oscuros de Tolkien (Day)", novelSection: "Completo",               tip: "El lado oscuro del legendarium, en su propio espacio. Morgoth y Sauron como ensayo." },
-  { week: 23, mangaTitle: "— Pausa —",           mangaVols: "Sin manga",          novelTitle: "Las Leyendas del Anillo (Day)", novelSection: "Completo",                 tip: "Day no necesita competencia. La historia visual de los Anillos, un artefacto hermoso." },
-  { week: 24, mangaTitle: "— Pausa —",           mangaVols: "Sin manga",          novelTitle: "Las Leyendas del Anillo (Day)", novelSection: "Repaso + notas propias",   tip: "Cierra el universo Tolkien. Anota tus conexiones antes de que la oscuridad de Lovecraft llegue." },
+  { week: 15, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 1", novelTitle: "El Silmarillion", novelSection: "Ainulindalë + Valaquenta", tip: "FMA y El Sil exploran el precio de la ambición. La Música de Ainur es creación pura." },
+  { week: 16, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 2", novelTitle: "El Silmarillion", novelSection: "Quenta (caps. 1–7)", tip: "Morgoth paralelo a la alquimia de FMA. La corrupción del poder tiene la misma forma." },
+  { week: 17, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 3", novelTitle: "El Silmarillion", novelSection: "Quenta (caps. 8–15)", tip: "Beren y Lúthien es la historia de amor más antigua de Tolkien. Léela como poema." },
+  { week: 18, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 4", novelTitle: "El Silmarillion", novelSection: "Quenta (caps. 16–22)", tip: "Ambos se oscurecen filosóficamente. La caída de Númenor es la más trágica del legendarium." },
+  { week: 19, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 5", novelTitle: "El Silmarillion", novelSection: "Akallabêth + De los Anillos de Poder (fin)", tip: "Tolkien completo. Reflexiona antes de pasar a Day — el legendarium necesita digestión." },
+  { week: 20, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 6", novelTitle: "Las Batallas de Tolkien (Day)", novelSection: "Primera mitad", tip: "David Day entra como enciclopedia visual. FMA y el mundo tolkieniano comparten obsesión con la transmutación." },
+  { week: 21, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 7 (fin de colección)", novelTitle: "Las Batallas de Tolkien (Day)", novelSection: "Segunda mitad (fin)", tip: "Tu archivo físico de FMA llega a su límite. Reflexiona sobre el precio del intercambio equivalente antes de cerrar el tomo." },
+  { week: 22, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "Poderes Oscuros de Tolkien (Day)", novelSection: "Completo", tip: "El lado oscuro del legendarium, en su propio espacio. Morgoth y Sauron como ensayo." },
+  { week: 23, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "Las Leyendas del Anillo (Day)", novelSection: "Completo", tip: "Day no necesita competencia. La historia visual de los Anillos, un artefacto hermoso." },
+  { week: 24, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "Las Leyendas del Anillo (Day)", novelSection: "Repaso + notas propias", tip: "Cierra el universo Tolkien. Anota tus conexiones antes de que la oscuridad de Lovecraft llegue." },
 
   // ── Fase 4 · Oscuridad ────────────────────────────────────────────────────
-  { week: 25, mangaTitle: "Spawn Integral",  mangaVols: "Vol. 1–2",               novelTitle: "Lovecraft",                 novelSection: "Relatos tempranos",                    tip: "Redención demoníaca y horror cósmico juntos. Spawn y Lovecraft coinciden en que el universo es indiferente." },
-  { week: 26, mangaTitle: "Spawn Integral",  mangaVols: "Vol. 3–4",               novelTitle: "Lovecraft",                 novelSection: "Ratas en las paredes + El horror de Red Hook", tip: "Relatos cortos, atmósfera densa. Lovecraft construye miedo con descripción, no con acción." },
-  { week: 27, mangaTitle: "Spawn Integral",  mangaVols: "Vol. 5–6",               novelTitle: "Lovecraft",                 novelSection: "En las montañas de la locura (I–VI)",  tip: "La obra maestra de Lovecraft empieza esta semana. Lee de noche si puedes." },
-  { week: 28, mangaTitle: "Spawn Integral",  mangaVols: "Vol. 7–8",               novelTitle: "Lovecraft",                 novelSection: "En las montañas de la locura (VII–XII)", tip: "El final de Montañas es inquietante en el sentido correcto: no resuelve, se expande." },
-  { week: 29, mangaTitle: "Spawn Integral",  mangaVols: "Vol. 9 (fin)",           novelTitle: "Lovecraft",                 novelSection: "El caso de Charles Dexter Ward (I–III)", tip: "Terminas Spawn. Lovecraft se vuelve narrativo aquí — Charles es su novela más accesible." },
-  { week: 30, mangaTitle: "— Pausa —",       mangaVols: "Pre-Vagabond",           novelTitle: "Lovecraft",                 novelSection: "El caso de Charles Dexter Ward (IV–V, fin)", tip: "Semana de transición. Cierra la oscuridad de Lovecraft antes de entrar al silencio de Vagabond." },
+  { week: 25, mangaTitle: "Spawn Integral", mangaVols: "Vol. 1", novelTitle: "Lovecraft", novelSection: "Dagon, Polaris, Gatos de Ulthar, La calle", tip: "El terror incipiente. Los mitos apenas nacen; lo onírico y lo macabro se entrelazan al tiempo que Spawn despierta." },
+  { week: 26, mangaTitle: "Spawn Integral", mangaVols: "Vol. 2", novelTitle: "Lovecraft", novelSection: "El extraño, Azathoth, Ex Oblivione, Lo innombrable, Dulce Ermengarde", tip: "El vacío cósmico y el horror a uno mismo. 'El extraño' es una joya absoluta de la alienación." },
+  { week: 27, mangaTitle: "Spawn Integral", mangaVols: "Vol. 3", novelTitle: "Lovecraft", novelSection: "Las ratas de las paredes + El relato de Red Hook", tip: "Descenso a la locura y ruinas urbanas. Lovecraft construye el miedo explorando linajes y herencias malditas." },
+  { week: 28, mangaTitle: "Spawn Integral", mangaVols: "Vol. 4", novelTitle: "Lovecraft", novelSection: "La sombra sobre Innsmouth", tip: "Aislamiento asfixiante y revelaciones genéticas. El horror toma una forma física, viscosa y persecutoria." },
+  { week: 29, mangaTitle: "Spawn Integral", mangaVols: "Vol. 5", novelTitle: "Lovecraft", novelSection: "El color surgido del espacio", tip: "Horror inefable, algo que no se puede describir. El horror de lo desconocido se manifiesta en todo su esplendor." },
+  { week: 30, mangaTitle: "Spawn Integral", mangaVols: "Vol. 6", novelTitle: "Lovecraft", novelSection: "En las montañas de la locura (I–VI)", tip: "La obra maestra de Lovecraft empieza esta semana. Lee de noche si puedes." },
+  { week: 31, mangaTitle: "Spawn Integral", mangaVols: "Vol. 7", novelTitle: "Lovecraft", novelSection: "En las montañas de la locura (VII–XII)", tip: "El final de Montañas es inquietante en el sentido correcto: no resuelve, se expande." },
+  { week: 32, mangaTitle: "Spawn Integral", mangaVols: "Vol. 8", novelTitle: "Lovecraft", novelSection: "El extraño caso de Charles Dexter Ward (I–III)", tip: "Lovecraft se vuelve mucho más narrativo e histórico aquí — su obra más extensa y accesible." },
+  { week: 33, mangaTitle: "Spawn Integral", mangaVols: "Vol. 9 (fin de colección)", novelTitle: "Lovecraft", novelSection: "El extraño caso de Charles Dexter Ward (IV–V, fin)", tip: "Semana de transición. Cierra la oscuridad de Lovecraft antes de entrar al silencio de Vagabond." },
 
   // ── Fase 5 · El Maestro ───────────────────────────────────────────────────
-  { week: 31, mangaTitle: "Vagabond",        mangaVols: "Vol. 1",                 novelTitle: "— Vagabond merece toda la atención —", novelSection: "Sin novela",           tip: "El final boss del viaje. Inoue no se lee — se contempla. Sin prisa, sin calendario." },
-  { week: 32, mangaTitle: "Vagabond",        mangaVols: "Vol. 2",                 novelTitle: "— Meditación —",            novelSection: "Búsqueda del sentido",                 tip: "¿A qué te recuerda la búsqueda de Musashi? No es retórico — escríbelo en el grimorio." },
-  { week: 33, mangaTitle: "Vagabond",        mangaVols: "Vol. 3 (fin)",           novelTitle: "🏁 Fin del Gran Viaje Lector", novelSection: "Fin del viaje",             tip: "No se termina Vagabond, se experimenta. 33 semanas después, ya eres otro lector." },
+  { week: 34, mangaTitle: "Vagabond", mangaVols: "Vol. 1", novelTitle: "— Vagabond merece toda la atención —", novelSection: "Sin novela", tip: "El final boss del viaje. Inoue no se lee — se contempla. Sin prisa, sin calendario." },
+  { week: 35, mangaTitle: "Vagabond", mangaVols: "Vol. 2", novelTitle: "— Meditación —", novelSection: "Búsqueda del sentido", tip: "¿A qué te recuerda la búsqueda de Musashi? No es retórico — escríbelo en el grimorio." },
+  { week: 36, mangaTitle: "Vagabond", mangaVols: "Vol. 3 (fin de colección)", novelTitle: "🏁 Fin del Gran Viaje Lector", novelSection: "Fin del viaje", tip: "No se termina Vagabond, se experimenta. 36 semanas después, ya eres otro lector." },
 ];
 
 export const INITIAL_ENTRIES = [];
+
+const DEMO_ENTITIES = [
+  // ── Personajes LOTR ──────────────────────────────────────────────────────
+  { id: 'c-d1',  name: 'Bilbo Bolsón',                      type: 'personaje', archetype: 'hero',     aliases: [],                             description: 'Hobbit de mediana edad, respetable y amante del orden. Su firma en el contrato es el primer acto de heroísmo inadvertido.',                          metadata: { tags: ['hobbit', 'protagonista', 'inesperado'] } },
+  { id: 'c-d2',  name: 'Gandalf el Gris',                   type: 'personaje', archetype: 'master',   aliases: ['Mithrandir', 'Gandalf el Blanco'], description: 'Aparece sin avisar y reorganiza la vida de Bilbo. Ve algo en él que Bilbo no ve en sí mismo.',                                                     metadata: { tags: ['mago', 'istari', 'mentor', 'manipulador-benévolo'] } },
+  { id: 'c-d3',  name: 'Thorin Escudo de Roble',            type: 'personaje', archetype: 'warrior',  aliases: [],                             description: 'Heredero del rey bajo la montaña. El orgullo de su estirpe es visible en cada gesto.',                                                              metadata: { tags: ['enano', 'rey-en-exilio', 'orgulloso'] } },
+  { id: 'c-d6',  name: 'Gollum / Sméagol',                  type: 'personaje', archetype: 'creature', aliases: ['Sméagol'],                    description: 'Criatura consumida por el Anillo durante siglos. En El Hobbit aún conserva fragmentos de humanidad.',                                               metadata: { tags: ['criatura', 'anillo', 'dualidad', 'tragedia'] } },
+  { id: 'c-d7',  name: 'Thranduil',                         type: 'personaje', archetype: 'person',   aliases: [],                             description: 'Rey elfo del Bosque Negro. No es malvado, solo indiferente.',                                                                                       metadata: { tags: ['elfo', 'rey', 'pragmático', 'orgulloso'] } },
+  { id: 'c-d8',  name: 'Smaug',                             type: 'personaje', archetype: 'monster',  aliases: [],                             description: 'Dragón que duerme sobre oro durante décadas. Su inteligencia es más amenazante que su fuego.',                                                      metadata: { tags: ['dragón', 'antagonista', 'inteligente', 'vanidad'] } },
+  { id: 'c-d11', name: 'Bard el Arquero',                   type: 'personaje', archetype: 'warrior',  aliases: [],                             description: 'Descendiente de Girion de Valle. Mata a Smaug con la flecha negra heredada de su padre.',                                                          metadata: { tags: ['héroe', 'linaje'] } },
+  { id: 'c-d12', name: 'Frodo Bolsón',                      type: 'personaje', archetype: 'hero',     aliases: [],                             description: 'Heredero del Anillo por accidente de parentesco. Más reflexivo que Bilbo.',                                                                         metadata: { tags: ['hobbit', 'portador', 'protagonista'] } },
+  { id: 'c-d13', name: 'Aragorn / Trancos',                 type: 'personaje', archetype: 'warrior',  aliases: ['Trancos', 'Elessar'],         description: 'Aparece en Bree como mendigo sucio. La brecha entre lo que parece y lo que es define al personaje.',                                               metadata: { tags: ['ranger', 'human', 'heredero'] } },
+  { id: 'c-d18', name: 'Galadriel',                         type: 'personaje', archetype: 'master',   aliases: [],                             description: 'Señora de Lothlórien. Rechaza el Anillo cuando Frodo se lo ofrece. Su tentación es explícita y aterradora.',                                       metadata: { tags: ['élfa', 'sabia', 'portadora-de-Nenya', 'tentación', 'mentor'] } },
+  { id: 'c-d19', name: 'Boromir',                           type: 'personaje', archetype: 'warrior',  aliases: [],                             description: 'El único miembro mortal de la Comunidad sin poderes especiales.',                                                                                    metadata: { tags: ['humano', 'Gondor', 'debilidad', 'redención'] } },
+  { id: 'c-d22', name: 'Bárbol (Treebeard)',                type: 'personaje', archetype: 'creature', aliases: ['Treebeard', 'Fangorn'],       description: 'El ser más viejo de la Tierra Media aún con nombre. Su rabia final es inevitable.',                                                                 metadata: { tags: ['ent', 'guardián', 'memoria', 'lento'] } },
+  { id: 'c-d23', name: 'Théoden',                           type: 'personaje', archetype: 'person',   aliases: [],                             description: 'Rey de Rohan bajo el hechizo de Gríma y Saruman. Su despertar con Gandalf es uno de los momentos más satisfactorios.',                            metadata: { tags: ['rey', 'Rohan', 'envenenado', 'redención'] } },
+  { id: 'c-d26', name: 'Éowyn',                             type: 'personaje', archetype: 'warrior',  aliases: [],                             description: 'Sobrina de Théoden. Va a la batalla disfrazada. Su encuentro con el Nazgûl es el más preciso de la trilogía.',                                    metadata: { tags: ['Rohan', 'mujer-guerrera', 'disfraz', 'valentía'] } },
+  { id: 'c-d28', name: 'Samwise Gamgee',                    type: 'personaje', archetype: 'hero',     aliases: ['Sam'],                        description: 'Sam es el héroe de la historia. Tolkien lo sabía. Gandalf lo sabía. Sam no.',                                                                       metadata: { tags: ['hobbit', 'lealtad', 'héroe-real', 'jardín'] } },
+
+  // ── Personajes Astroboy ───────────────────────────────────────────────────
+  { id: 'c-d4',  name: 'Astroboy (Atom)',                   type: 'personaje', archetype: 'hero',     aliases: ['Atom'],                       description: 'Robot con 100.000 caballos de vapor y corazón humano.',                                                                                              metadata: { tags: ['robot', 'protagonista', 'inocente'] } },
+  { id: 'c-d5',  name: 'Dr. Tenma',                         type: 'personaje', archetype: 'scholar',  aliases: [],                             description: 'Crea a Astroboy para reemplazar a su hijo muerto. Lo abandona cuando el robot no crece.',                                                           metadata: { tags: ['científico', 'padre-ausente', 'tragedia'] } },
+
+  // ── Personajes Slam Dunk ──────────────────────────────────────────────────
+  { id: 'c-d9',  name: 'Hanamichi Sakuragi',                type: 'personaje', archetype: 'hero',     aliases: [],                             description: '50 rechazos en 3 años. Pelirrojo. Violento. Terco. Y sin embargo querible desde la primera página.',                                                metadata: { tags: ['protagonista', 'deporte', 'orgullo', 'crecimiento'] } },
+  { id: 'c-d10', name: 'Haruko Akagi',                      type: 'personaje', archetype: 'person',   aliases: [],                             description: 'La catalizadora de la transformación de Hanamichi. No es un simple interés amoroso.',                                                               metadata: { tags: ['baloncesto', 'motivación'] } },
+
+  // ── Personajes Naruto ────────────────────────────────────────────────────
+  { id: 'c-d15', name: 'Naruto Uzumaki',                    type: 'personaje', archetype: 'hero',     aliases: [],                             description: 'Huérfano portador del Zorro de Nueve Colas. Todo el mundo lo evita pero él quiere que todo el mundo lo vea. La motivación de ser Hokage es hambre de respeto.',  metadata: { tags: ['protagonista', 'jinchuriki', 'reconocimiento', 'determinación', 'aventurero'] } },
+  { id: 'c-d16', name: 'Sasuke Uchiha',                     type: 'personaje', archetype: 'antihero', aliases: [],                             description: 'El único sobreviviente de la masacre Uchiha. Genio natural que vive para la venganza.',                                                              metadata: { tags: ['rival', 'venganza', 'genio', 'trauma', 'oscuro'] } },
+  { id: 'c-d17', name: 'Kakashi Hatake',                    type: 'personaje', archetype: 'master',   aliases: ['El Ninja Copiador'],          description: 'El sensei que llega tarde. Debajo hay alguien que ha perdido todo lo que amaba y sigue de pie.',                                                    metadata: { tags: ['sensei', 'copiador', 'complejo', 'sharingan', 'mentor'] } },
+  { id: 'c-d20', name: 'Orochimaru',                        type: 'personaje', archetype: 'monster',  aliases: [],                             description: 'Científico ninja obsesionado con dominar todas las técnicas y vivir eternamente.',                                                                   metadata: { tags: ['villano', 'conocimiento', 'inmortalidad', 'serpiente', 'entidad'] } },
+  { id: 'c-d21', name: 'Gaara',                             type: 'personaje', archetype: 'antihero', aliases: [],                             description: 'Jinchuriki de Shukaku. No conoce el amor, solo el miedo de los demás.',                                                                              metadata: { tags: ['jinchuriki', 'arena', 'soledad', 'trauma', 'oscuro'] } },
+  { id: 'c-d24', name: 'Rock Lee',                          type: 'personaje', archetype: 'warrior',  aliases: [],                             description: 'Ninja que no puede usar ninjutsu ni genjutsu. Solo taijutsu.',                                                                                      metadata: { tags: ['esfuerzo', 'sin-ninjutsu', 'determinación', 'combate'] } },
+  { id: 'c-d25', name: 'Sandaime Hokage',                   type: 'personaje', archetype: 'master',   aliases: ['Hiruzen Sarutobi', 'El Profesor'], description: 'El único que puede combatir a Orochimaru de igual a igual. Su muerte es la primera de peso real.',                                          metadata: { tags: ['sacrificio', 'maestro', 'vejez', 'voluntad', 'sensei', 'mentor'] } },
+  { id: 'c-d27', name: 'Jiraiya',                           type: 'personaje', archetype: 'master',   aliases: ['El Sapo Ermitaño'],           description: 'Discípulo del Sandaime y maestro del Yondaime. Su alegría de vivir contrasta con una tristeza profunda.',                                           metadata: { tags: ['sensei', 'ermitaño', 'escritor', 'padre-sustituto', 'mentor', 'leyenda'] } },
+  { id: 'c-d29', name: 'Itachi Uchiha',                     type: 'personaje', archetype: 'warrior',  aliases: [],                             description: 'Solo aparece en flashbacks, pero su presencia domina todo. El crimen contra el clan es la herida central de Sasuke.',                              metadata: { tags: ['ausente', 'misterio', 'Akatsuki', 'hermano'] } },
+
+  // ── Lugares LOTR ─────────────────────────────────────────────────────────
+  { id: 'p-d1',  name: 'La Comarca',                        type: 'lugar', archetype: null, aliases: [],                description: 'La Comarca es la definición de lo cómodo. Tolkien la pinta para que su abandono duela.',                                          metadata: { tags: ['hobbiton', 'lugar-seguro', 'punto-de-partida'] } },
+  { id: 'p-d2',  name: 'Hogar Bolsón',                      type: 'lugar', archetype: null, aliases: [],                description: 'La madriguera hobbit como imagen del yo estable antes del viaje.',                                                              metadata: { tags: ['hogar', 'símbolo', 'pueblo'] } },
+  { id: 'p-d4',  name: 'Las Montañas Nubladas',             type: 'lugar', archetype: null, aliases: [],                description: 'Las cavernas bajo las montañas son un laberinto sin luz. El lago subterráneo de Gollum.',                                        metadata: { tags: ['peligro', 'orcos', 'oscuridad', 'montaña'] } },
+  { id: 'p-d5',  name: 'El Bosque Negro',                   type: 'lugar', archetype: null, aliases: [],                description: 'Bosque que absorbe la luz y el sentido de la dirección.',                                                                       metadata: { tags: ['oscuridad', 'peligro', 'perderse', 'bosque'] } },
+  { id: 'p-d6',  name: 'La Montaña Solitaria (Erebor)',     type: 'lugar', archetype: null, aliases: ['Erebor'],        description: 'El punto final del mapa. La promesa y la trampa.',                                                                             metadata: { tags: ['objetivo', 'reino-perdido', 'tesoro', 'montaña'] } },
+  { id: 'p-d8',  name: 'Ciudad del Lago (Esgaroth)',        type: 'lugar', archetype: null, aliases: ['Esgaroth'],      description: 'Ciudad sobre el agua gobernada por un Maestro codicioso.',                                                                     metadata: { tags: ['pueblo', 'humano', 'lago'] } },
+  { id: 'p-d9',  name: 'Bree',                              type: 'lugar', archetype: null, aliases: [],                description: 'Primera ciudad humana que ven los hobbits. El Poney Pisador como espacio de transición.',                                        metadata: { tags: ['pueblo', 'punto-de-interés'] } },
+  { id: 'p-d12', name: 'Moria (Khazad-dûm)',                type: 'lugar', archetype: null, aliases: ['Khazad-dûm'],   description: 'Las minas de Moria como ruina de una civilización. Los enanos excavaron demasiado profundo.',                                    metadata: { tags: ['enanos', 'oscuridad', 'caída', 'gloria-perdida', 'ruinas', 'moria'] } },
+  { id: 'p-d13', name: 'Lothlórien',                        type: 'lugar', archetype: null, aliases: [],                description: 'Bosque donde el tiempo no pasa igual. Los árboles mallorn, la plataforma de los Galadrim.',                                      metadata: { tags: ['elfo', 'tiempo-detenido', 'luz', 'despedida', 'lothlorien'] } },
+  { id: 'p-d15', name: 'Fangorn (Bosque de Fangorn)',       type: 'lugar', archetype: null, aliases: ['Fangorn'],       description: 'El bosque más viejo de la Tierra Media. Oscuro, vivo, con memoria.',                                                           metadata: { tags: ['ents', 'antiguo', 'peligro', 'bosque'] } },
+  { id: 'p-d16', name: 'Edoras',                            type: 'lugar', archetype: null, aliases: [],                description: 'Capital de Rohan. La sala dorada de Meduseld en la cima de la colina.',                                                         metadata: { tags: ['Rohan', 'mead-hall', 'viento', 'ciudad'] } },
+  { id: 'p-d17', name: 'Las Ciénagas de los Muertos',       type: 'lugar', archetype: null, aliases: [],                description: 'Pantano donde los rostros de los caídos aparecen bajo el agua.',                                                               metadata: { tags: ['horror', 'muertos', 'espejo', 'ruinas'] } },
+  { id: 'p-d18', name: 'Cirith Ungol',                      type: 'lugar', archetype: null, aliases: [],                description: 'El paso que Gollum guía a Frodo. La traición ya está en movimiento.',                                                          metadata: { tags: ['araña', 'traición', 'oscuridad', 'ruinas', 'cirith ungol'] } },
+  { id: 'p-d19', name: 'Minas Tirith',                      type: 'lugar', archetype: null, aliases: [],                description: 'La ciudad de siete niveles.',                                                                                                  metadata: { tags: ['Gondor', 'ciudad-blanca', 'resistencia', 'minas tirith'] } },
+  { id: 'p-d20', name: 'Monte del Destino (Orodruin)',      type: 'lugar', archetype: null, aliases: ['Orodruin'],      description: 'El único lugar donde el Anillo puede destruirse.',                                                                             metadata: { tags: ['destrucción', 'anillo', 'final', 'Mordor', 'mordor', 'montaña'] } },
+
+  // ── Lugares Astroboy ──────────────────────────────────────────────────────
+  { id: 'p-d3',  name: 'Metro City',                        type: 'lugar', archetype: null, aliases: [],                description: 'Ciudad futurista donde robots y humanos coexisten con tensión.',                                                               metadata: { tags: ['futuro', 'japón', 'tecnología', 'ciudad'] } },
+
+  // ── Lugares Slam Dunk ─────────────────────────────────────────────────────
+  { id: 'p-d7',  name: 'Instituto Shohoku',                 type: 'lugar', archetype: null, aliases: [],                description: 'La cancha de Shohoku como espacio de prueba.',                                                                                 metadata: { tags: ['club', 'cancha', 'crecimiento', 'escuela'] } },
+
+  // ── Lugares Naruto ────────────────────────────────────────────────────────
+  { id: 'p-d11', name: 'Konoha (Aldea Oculta de la Hoja)', type: 'lugar', archetype: null, aliases: ['Konoha'],         description: 'La aldea como entidad con memoria y trauma propios.',                                                                         metadata: { tags: ['aldea', 'hogar', 'shinobi', 'konoha', 'ninja'] } },
+  { id: 'p-d14', name: 'El Bosque de la Muerte',            type: 'lugar', archetype: null, aliases: [],                description: 'Zona de entrenamiento del examen chunin. 44 arenas diseñadas para que los candidatos se eliminen entre sí.',                    metadata: { tags: ['examen', 'peligro', 'selección', 'bosque'] } },
+];
+
+const DEMO_MENTIONS = [
+  // entry-demo-1: El Hobbit caps 1-5
+  { id: 'm-001', entryId: 'entry-demo-1', entityId: 'c-d1' },
+  { id: 'm-002', entryId: 'entry-demo-1', entityId: 'c-d2' },
+  { id: 'm-003', entryId: 'entry-demo-1', entityId: 'c-d3' },
+  { id: 'm-004', entryId: 'entry-demo-1', entityId: 'p-d1' },
+  { id: 'm-005', entryId: 'entry-demo-1', entityId: 'p-d2' },
+  // entry-demo-2: Astroboy
+  { id: 'm-006', entryId: 'entry-demo-2', entityId: 'c-d4' },
+  { id: 'm-007', entryId: 'entry-demo-2', entityId: 'c-d5' },
+  { id: 'm-008', entryId: 'entry-demo-2', entityId: 'p-d3' },
+  // entry-demo-3: El Hobbit riddles (Bilbo + Gollum)
+  { id: 'm-009', entryId: 'entry-demo-3', entityId: 'c-d1' },
+  { id: 'm-010', entryId: 'entry-demo-3', entityId: 'c-d6' },
+  { id: 'm-011', entryId: 'entry-demo-3', entityId: 'p-d4' },
+  // entry-demo-4: Smaug + Bosque Negro
+  { id: 'm-012', entryId: 'entry-demo-4', entityId: 'c-d1' },
+  { id: 'm-013', entryId: 'entry-demo-4', entityId: 'c-d7' },
+  { id: 'm-014', entryId: 'entry-demo-4', entityId: 'c-d8' },
+  { id: 'm-015', entryId: 'entry-demo-4', entityId: 'p-d5' },
+  { id: 'm-016', entryId: 'entry-demo-4', entityId: 'p-d6' },
+  // entry-demo-5: Slam Dunk vol 1
+  { id: 'm-017', entryId: 'entry-demo-5', entityId: 'c-d9' },
+  { id: 'm-018', entryId: 'entry-demo-5', entityId: 'c-d10' },
+  { id: 'm-019', entryId: 'entry-demo-5', entityId: 'p-d7' },
+  // entry-demo-6: El Hobbit fin (Bard, Thorin, Smaug muere)
+  { id: 'm-020', entryId: 'entry-demo-6', entityId: 'c-d1' },
+  { id: 'm-021', entryId: 'entry-demo-6', entityId: 'c-d3' },
+  { id: 'm-022', entryId: 'entry-demo-6', entityId: 'c-d8' },
+  { id: 'm-023', entryId: 'entry-demo-6', entityId: 'c-d11' },
+  { id: 'm-024', entryId: 'entry-demo-6', entityId: 'p-d8' },
+  // entry-demo-7: LOTR Libro I (Frodo, Aragorn, Gollum mencionado)
+  { id: 'm-025', entryId: 'entry-demo-7', entityId: 'c-d1' },
+  { id: 'm-026', entryId: 'entry-demo-7', entityId: 'c-d2' },
+  { id: 'm-027', entryId: 'entry-demo-7', entityId: 'c-d6' },
+  { id: 'm-028', entryId: 'entry-demo-7', entityId: 'c-d12' },
+  { id: 'm-029', entryId: 'entry-demo-7', entityId: 'c-d13' },
+  { id: 'm-030', entryId: 'entry-demo-7', entityId: 'p-d9' },
+  // entry-demo-8: Naruto vol 1 (el equipo 7)
+  { id: 'm-031', entryId: 'entry-demo-8', entityId: 'c-d15' },
+  { id: 'm-032', entryId: 'entry-demo-8', entityId: 'c-d16' },
+  { id: 'm-033', entryId: 'entry-demo-8', entityId: 'c-d17' },
+  { id: 'm-034', entryId: 'entry-demo-8', entityId: 'p-d11' },
+  // entry-demo-9: Moria + Lothlórien (Gandalf cae, Galadriel, Boromir)
+  { id: 'm-035', entryId: 'entry-demo-9', entityId: 'c-d2' },
+  { id: 'm-036', entryId: 'entry-demo-9', entityId: 'c-d12' },
+  { id: 'm-037', entryId: 'entry-demo-9', entityId: 'c-d13' },
+  { id: 'm-038', entryId: 'entry-demo-9', entityId: 'c-d18' },
+  { id: 'm-039', entryId: 'entry-demo-9', entityId: 'c-d19' },
+  { id: 'm-040', entryId: 'entry-demo-9', entityId: 'p-d12' },
+  { id: 'm-041', entryId: 'entry-demo-9', entityId: 'p-d13' },
+  // entry-demo-10: Exámenes Chunin (Orochimaru, Gaara, Naruto, Sasuke)
+  { id: 'm-042', entryId: 'entry-demo-10', entityId: 'c-d15' },
+  { id: 'm-043', entryId: 'entry-demo-10', entityId: 'c-d16' },
+  { id: 'm-044', entryId: 'entry-demo-10', entityId: 'c-d20' },
+  { id: 'm-045', entryId: 'entry-demo-10', entityId: 'c-d21' },
+  { id: 'm-046', entryId: 'entry-demo-10', entityId: 'p-d14' },
+  // entry-demo-11: Rohan y los Ents (Théoden, Bárbol, Gandalf)
+  { id: 'm-047', entryId: 'entry-demo-11', entityId: 'c-d2' },
+  { id: 'm-048', entryId: 'entry-demo-11', entityId: 'c-d22' },
+  { id: 'm-049', entryId: 'entry-demo-11', entityId: 'c-d23' },
+  { id: 'm-050', entryId: 'entry-demo-11', entityId: 'p-d15' },
+  { id: 'm-051', entryId: 'entry-demo-11', entityId: 'p-d16' },
+  // entry-demo-12: Lee vs Gaara (Lee, Gaara, Naruto en exámenes finales)
+  { id: 'm-052', entryId: 'entry-demo-12', entityId: 'c-d15' },
+  { id: 'm-053', entryId: 'entry-demo-12', entityId: 'c-d21' },
+  { id: 'm-054', entryId: 'entry-demo-12', entityId: 'c-d24' },
+  // entry-demo-13: Gollum guía (Gollum, Frodo, Sam)
+  { id: 'm-055', entryId: 'entry-demo-13', entityId: 'c-d6' },
+  { id: 'm-056', entryId: 'entry-demo-13', entityId: 'c-d12' },
+  { id: 'm-057', entryId: 'entry-demo-13', entityId: 'c-d28' },
+  { id: 'm-058', entryId: 'entry-demo-13', entityId: 'p-d17' },
+  { id: 'm-059', entryId: 'entry-demo-13', entityId: 'p-d18' },
+  // entry-demo-14: Invasión de Konoha (Sandaime, Orochimaru, Naruto, Sasuke)
+  { id: 'm-060', entryId: 'entry-demo-14', entityId: 'c-d15' },
+  { id: 'm-061', entryId: 'entry-demo-14', entityId: 'c-d16' },
+  { id: 'm-062', entryId: 'entry-demo-14', entityId: 'c-d20' },
+  { id: 'm-063', entryId: 'entry-demo-14', entityId: 'c-d25' },
+  { id: 'm-064', entryId: 'entry-demo-14', entityId: 'p-d11' },
+  // entry-demo-15: Pelennor (Éowyn, Aragorn, Minas Tirith)
+  { id: 'm-065', entryId: 'entry-demo-15', entityId: 'c-d13' },
+  { id: 'm-066', entryId: 'entry-demo-15', entityId: 'c-d26' },
+  { id: 'm-067', entryId: 'entry-demo-15', entityId: 'p-d19' },
+  // entry-demo-16: Entrenamiento con Jiraiya (Jiraiya + Naruto)
+  { id: 'm-068', entryId: 'entry-demo-16', entityId: 'c-d15' },
+  { id: 'm-069', entryId: 'entry-demo-16', entityId: 'c-d27' },
+  { id: 'm-070', entryId: 'entry-demo-16', entityId: 'p-d11' },
+  // entry-demo-17: Monte del Destino (Frodo, Sam, Gollum)
+  { id: 'm-071', entryId: 'entry-demo-17', entityId: 'c-d6' },
+  { id: 'm-072', entryId: 'entry-demo-17', entityId: 'c-d12' },
+  { id: 'm-073', entryId: 'entry-demo-17', entityId: 'c-d28' },
+  { id: 'm-074', entryId: 'entry-demo-17', entityId: 'p-d20' },
+  // entry-demo-18: Sasuke vs Itachi preparación
+  { id: 'm-075', entryId: 'entry-demo-18', entityId: 'c-d16' },
+  { id: 'm-076', entryId: 'entry-demo-18', entityId: 'c-d29' },
+  { id: 'm-077', entryId: 'entry-demo-18', entityId: 'p-d11' },
+];
+
+const DEMO_RELATIONS = [
+  // ── Naruto: cadena de maestros ────────────────────────────────────────────
+  { id: 'rel-001', sourceId: 'c-d25', targetId: 'c-d27', type: 'Maestro',       isDirectional: true,  weight: 4 }, // Sandaime → Jiraiya
+  { id: 'rel-002', sourceId: 'c-d27', targetId: 'c-d15', type: 'Maestro',       isDirectional: true,  weight: 5 }, // Jiraiya → Naruto
+  { id: 'rel-003', sourceId: 'c-d17', targetId: 'c-d15', type: 'Maestro',       isDirectional: true,  weight: 4 }, // Kakashi → Naruto
+  { id: 'rel-004', sourceId: 'c-d17', targetId: 'c-d16', type: 'Maestro',       isDirectional: true,  weight: 4 }, // Kakashi → Sasuke
+  // ── Naruto: rivalidades y vínculos ───────────────────────────────────────
+  { id: 'rel-005', sourceId: 'c-d15', targetId: 'c-d16', type: 'Rival',         isDirectional: false, weight: 5 }, // Naruto ↔ Sasuke
+  { id: 'rel-006', sourceId: 'c-d15', targetId: 'c-d21', type: 'Aliado',        isDirectional: false, weight: 3 }, // Naruto ↔ Gaara (jinchuriki)
+  { id: 'rel-007', sourceId: 'c-d20', targetId: 'c-d16', type: 'Enemigo',       isDirectional: true,  weight: 4 }, // Orochimaru → Sasuke (sello maldito)
+  // ── Naruto: familia ───────────────────────────────────────────────────────
+  { id: 'rel-008', sourceId: 'c-d29', targetId: 'c-d16', type: 'Familia',       isDirectional: false, weight: 5 }, // Itachi ↔ Sasuke (hermanos)
+  // ── Naruto: origen ────────────────────────────────────────────────────────
+  { id: 'rel-009', sourceId: 'c-d15', targetId: 'p-d11', type: 'Originario de', isDirectional: true,  weight: 3 }, // Naruto → Konoha
+  { id: 'rel-010', sourceId: 'c-d16', targetId: 'p-d11', type: 'Originario de', isDirectional: true,  weight: 3 }, // Sasuke → Konoha
+  { id: 'rel-011', sourceId: 'c-d17', targetId: 'p-d11', type: 'Originario de', isDirectional: true,  weight: 2 }, // Kakashi → Konoha
+  { id: 'rel-012', sourceId: 'c-d25', targetId: 'p-d11', type: 'Originario de', isDirectional: true,  weight: 2 }, // Sandaime → Konoha
+  // ── LOTR: cadena de mentores ──────────────────────────────────────────────
+  { id: 'rel-013', sourceId: 'c-d2',  targetId: 'c-d1',  type: 'Maestro',       isDirectional: true,  weight: 3 }, // Gandalf → Bilbo
+  { id: 'rel-014', sourceId: 'c-d2',  targetId: 'c-d12', type: 'Maestro',       isDirectional: true,  weight: 4 }, // Gandalf → Frodo
+  { id: 'rel-015', sourceId: 'c-d18', targetId: 'c-d12', type: 'Aliado',        isDirectional: false, weight: 3 }, // Galadriel ↔ Frodo
+  // ── LOTR: familia y vínculos ──────────────────────────────────────────────
+  { id: 'rel-016', sourceId: 'c-d1',  targetId: 'c-d12', type: 'Familia',       isDirectional: false, weight: 4 }, // Bilbo ↔ Frodo (tío-sobrino)
+  { id: 'rel-017', sourceId: 'c-d12', targetId: 'c-d28', type: 'Aliado',        isDirectional: false, weight: 5 }, // Frodo ↔ Sam
+  { id: 'rel-018', sourceId: 'c-d13', targetId: 'c-d12', type: 'Aliado',        isDirectional: false, weight: 4 }, // Aragorn ↔ Frodo
+  { id: 'rel-019', sourceId: 'c-d13', targetId: 'c-d19', type: 'Aliado',        isDirectional: false, weight: 3 }, // Aragorn ↔ Boromir
+  // ── LOTR: origen y viaje ──────────────────────────────────────────────────
+  { id: 'rel-020', sourceId: 'c-d1',  targetId: 'p-d1',  type: 'Originario de', isDirectional: true,  weight: 3 }, // Bilbo → La Comarca
+  { id: 'rel-021', sourceId: 'c-d12', targetId: 'p-d1',  type: 'Originario de', isDirectional: true,  weight: 3 }, // Frodo → La Comarca
+  { id: 'rel-022', sourceId: 'c-d1',  targetId: 'p-d6',  type: 'Visitó',        isDirectional: true,  weight: 4 }, // Bilbo → Erebor
+  { id: 'rel-023', sourceId: 'c-d12', targetId: 'p-d20', type: 'Visitó',        isDirectional: true,  weight: 5 }, // Frodo → Monte del Destino
+  { id: 'rel-024', sourceId: 'c-d6',  targetId: 'p-d4',  type: 'Originario de', isDirectional: true,  weight: 3 }, // Gollum → Montañas Nubladas
+  { id: 'rel-025', sourceId: 'c-d8',  targetId: 'p-d6',  type: 'Originario de', isDirectional: true,  weight: 4 }, // Smaug → Erebor
+  { id: 'rel-026', sourceId: 'c-d3',  targetId: 'p-d6',  type: 'Visitó',        isDirectional: true,  weight: 4 }, // Thorin → Erebor (reclamar su reino)
+  { id: 'rel-027', sourceId: 'c-d1',  targetId: 'c-d6',  type: 'Rival',         isDirectional: false, weight: 4 }, // Bilbo ↔ Gollum (el juego de acertijos)
+];
 
 export const DEMO_DATA = {
   books: INITIAL_BOOKS,
   phases: INITIAL_PHASES,
   schedule: INITIAL_SCHEDULE,
   completedWeeks: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+  entities: DEMO_ENTITIES,
+  mentions: DEMO_MENTIONS,
+  relations: DEMO_RELATIONS,
   entries: [
     {
       id: "entry-demo-1",
