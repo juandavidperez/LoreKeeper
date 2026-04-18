@@ -66,90 +66,101 @@ export function Encyclopedia({ entityFocus, onClearFocus, onConsultOracle }) {
   const hasMore = visibleCount < filteredData.length;
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in pb-20">
-      <div className="flex items-end justify-between">
-        <div className="flex flex-col gap-2">
-          <h2 className="text-4xl font-serif text-primary-text tracking-tight">El Archivo</h2>
-          <p className="text-xs text-stone-500 font-serif italic tracking-wide">Consulta los misterios registrados</p>
+    <div className={`animate-fade-in ${
+      view === 'map'
+        ? 'flex flex-col'
+        : 'flex flex-col gap-6 pb-20'
+    }`} style={view === 'map' ? { height: 'calc(100dvh - var(--header-height) - var(--nav-height))' } : {}}>
+      {/* STICKY HEADER BLOCK */}
+      <div className="sticky top-0 z-40 bg-app-bg/95 backdrop-blur-md pb-4 -mx-4 px-4 border-b border-primary/10 shadow-sm flex flex-col gap-4">
+        <div className="flex items-end justify-between">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-3xl font-serif text-primary-text tracking-tight">El Archivo</h2>
+            <p className="text-[10px] text-stone-500 font-serif italic tracking-wide">Consulta los misterios registrados</p>
+          </div>
+          <div className="flex gap-1 bg-item-bg rounded-sm p-1">
+            <button
+              onClick={() => setView('archive')}
+              aria-label="Vista de lista"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest font-serif transition-all ${view === 'archive' ? 'bg-accent text-white shadow-sm' : 'text-stone-500 hover:text-accent'}`}
+            >
+              <Scroll size={12} />
+              Lista
+            </button>
+            <button
+              onClick={() => setView('map')}
+              aria-label="Vista de mapa"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest font-serif transition-all ${view === 'map' ? 'bg-accent text-white shadow-sm' : 'text-stone-500 hover:text-accent'}`}
+            >
+              <Map size={12} />
+              Mapa
+            </button>
+          </div>
         </div>
-        <div className="flex gap-1 bg-item-bg rounded-sm p-1 mb-1">
-          <button
-            onClick={() => setView('archive')}
-            aria-label="Vista de lista"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest font-serif transition-all ${view === 'archive' ? 'bg-accent text-white shadow-sm' : 'text-stone-500 hover:text-accent'}`}
-          >
-            <Scroll size={12} />
-            Lista
-          </button>
-          <button
-            onClick={() => setView('map')}
-            aria-label="Vista de mapa"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-[10px] font-bold uppercase tracking-widest font-serif transition-all ${view === 'map' ? 'bg-accent text-white shadow-sm' : 'text-stone-500 hover:text-accent'}`}
-          >
-            <Map size={12} />
-            Mapa
-          </button>
-        </div>
+
+        {view !== 'map' && (
+          <div className="flex flex-col gap-4">
+            {/* SEARCH */}
+            <div className="relative group">
+              <Search className="absolute left-0 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-accent transition-colors" size={18} />
+              <input
+                type="text" placeholder="Inscribir búsqueda..."
+                aria-label="Buscar en los registros"
+                value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                className="w-full bg-transparent border-b-2 border-accent/40 py-2 pl-8 pr-4 text-base outline-none focus:border-accent transition-all font-serif italic text-primary-text placeholder:text-stone-400/60"
+              />
+            </div>
+
+            {/* QUICK FILTERS ROW */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-hide">
+                <Filter size={12} className="text-accent/40 flex-shrink-0" />
+                <button
+                  onClick={() => setBookFilter('todos')}
+                  className={`px-3 py-1.5 rounded-sm text-[9px] font-bold uppercase tracking-widest border transition-all flex-shrink-0 ${
+                    bookFilter === 'todos' 
+                    ? 'bg-accent text-zinc-950 border-accent' 
+                    : 'bg-header-bg text-stone-500 border-primary/50 hover:border-accent/40'
+                  }`}
+                >
+                  Cualquier Libro
+                </button>
+                {books.filter(b => !b.title.includes('—')).map(b => (
+                  <button
+                    key={b.id || b.title}
+                    onClick={() => setBookFilter(b.title)}
+                    className={`px-3 py-1.5 rounded-sm text-[9px] font-bold uppercase tracking-widest border transition-all flex-shrink-0 ${bookFilter === b.title ? 'bg-header-bg border-accent text-accent shadow-inner' : 'bg-item-bg border-stone-200 text-stone-500 hover:border-stone-400'}`}
+                  >
+                    {b.emoji} {b.title}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                {['todos', 'personajes', 'lugares', 'reglas', 'glosario'].map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setCategoryFilter(cat)}
+                    className={`text-[9px] font-bold uppercase tracking-widest transition-all ${categoryFilter === cat ? 'text-accent border-b border-accent' : 'text-stone-400 hover:text-stone-600'}`}
+                  >
+                    {cat === 'todos' ? 'Categorías' : cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {view === 'map' && (
-        <Suspense fallback={<div className="flex items-center justify-center py-20"><span className="text-stone-400 font-serif italic text-sm">Invocando el mapa…</span></div>}>
-          <WisdomMap />
-        </Suspense>
+        <div className="flex-1 min-h-0 flex flex-col py-3">
+          <Suspense fallback={<div className="flex h-full items-center justify-center"><span className="text-stone-400 font-serif italic text-sm">Invocando el mapa…</span></div>}>
+            <WisdomMap />
+          </Suspense>
+        </div>
       )}
 
-      {view === 'map' && null /* skip archive content below */}
       {view !== 'map' && <>
-
-      {/* SEARCH — sticky */}
-      <div className="sticky top-16 z-40 backdrop-blur-md py-3 -mt-3 border-b border-accent/20" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-app) 95%, transparent)' }}>
-        <div className="relative group">
-          <Search className="absolute left-0 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-accent transition-colors" size={18} />
-          <input
-            type="text" placeholder="Inscribir búsqueda..."
-            aria-label="Buscar en los registros"
-            value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-            className="w-full bg-transparent border-b-2 border-accent/40 py-3 pl-8 pr-4 text-lg outline-none focus:border-accent transition-all font-serif italic text-primary-text placeholder:text-stone-400/60"
-          />
-        </div>
-      </div>
-
-      {/* BOOK FILTER */}
-      <div className="flex items-center gap-3 overflow-x-auto pb-1 -mt-3 scrollbar-hide">
-        <Filter size={14} className="text-accent/40 flex-shrink-0" />
-        <button
-          onClick={() => setBookFilter('todos')}
-          className={`px-4 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest border transition-all flex-shrink-0 ${
-            bookFilter === 'todos' 
-            ? 'bg-accent text-zinc-950 border-accent' 
-            : 'bg-header-bg text-stone-500 border-primary/50 hover:border-accent/40'
-          }`}
-        >
-          Todos los Libros
-        </button>
-        {books.filter(b => !b.title.includes('—')).map(b => (
-          <button
-            key={b.id || b.title}
-            onClick={() => setBookFilter(b.title)}
-            className={`px-4 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest border transition-all flex-shrink-0 ${bookFilter === b.title ? 'bg-header-bg border-accent text-accent shadow-inner' : 'bg-item-bg border-stone-200 text-stone-500 hover:border-stone-400'}`}
-          >
-            {b.emoji} {b.title}
-          </button>
-        ))}
-      </div>
-
-      {/* CATEGORY MICRO-FILTERS */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-        {['todos', 'personajes', 'lugares', 'reglas', 'glosario'].map(cat => (
-          <button
-            key={cat}
-            onClick={() => setCategoryFilter(cat)}
-            className={`text-[10px] font-bold uppercase tracking-widest transition-all ${categoryFilter === cat ? 'text-accent border-b border-accent' : 'text-stone-400 hover:text-stone-600'}`}
-          >
-            {cat === 'todos' ? 'Cualquier Categoría' : cat}
-          </button>
-        ))}
-      </div>
 
       {/* ENTITY LIST */}
       {filteredData.length > 0 && (searchTerm || bookFilter !== 'todos' || categoryFilter !== 'todos') && (
