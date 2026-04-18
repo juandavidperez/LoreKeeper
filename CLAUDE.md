@@ -154,34 +154,33 @@ Stats in `ReadingPlan` view (Plan tab), below header when not editing and `sched
 
 ## Design Context
 
-### Users
-Juan David, manga + light novel reader. Uses LoreKeeper as personal reading journal: weekly progress, characters, places, quotes, world rules. Intimate context — opens while reading or right after a chapter. Decisions must scale for second user without prior context.
+### Usuarios
+Juan David, lector habitual de manga y novelas ligeras. Usa LoreKeeper como un diario de lectura personal e íntimo para registrar progreso, personajes, lugares y reglas del mundo narrativo ("Lore"). Aunque es personal, el diseño debe ser sólido y coherente para uso externo sin fricción.
 
-**Job to be done**: Capture narrative world knowledge before forgotten. App = living grimoire growing each reading session.
+**Job to be done**: Capturar el conocimiento del mundo narrativo antes de que se olvide. La app es un grimorio vivo que crece con cada sesión de lectura.
 
-### Brand Personality
+### Personalidad de Marca
 **Solemne · Vivo · Íntimo**
 
-Voice of ancient archivist — serious about craft but excited by discoveries. Not cold/bureaucratic; not casual/playful. Reading deserves rituals.
-
+Voz de un archivero anciano — serio pero apasionado por los descubrimientos. No es frío ni casual. El acto de leer merece rituales.
 **Vocabulario canónico**: Crónicas (entradas), El Archivo (enciclopedia), Oráculo (IA), SELLADO (completado), Forjar, Invocar, Desvanecer, el Éter (red).
 
-### Aesthetic Direction
-- **Canónico**: Golden grimoire — amber on dark bg or medieval parchment
-- **Dark**: `#0c0a08` base, `#f59e0b` sacred amber accent
-- **Light (preferred)**: `#f4ead5` parchment, `#b45309` dark amber — most authentic palette, leads design decisions
-- **Tipografía**: Playfair Display (títulos), Inter (UI), Source Serif 4 (cuerpo)
-- **Modelo estético**: `offline.html` (Archivo Silencioso) with double manuscript border closer to ideal than main app
+### Dirección Estética
+- **Canónico**: Grimorio dorado sobre fondo oscuro o pergamino medieval.
+- **Aesthetic Link**: La vista de `ReadingLog` es el modelo ideal de diseño actual.
+- **Modo Oscuro**: `#0c0a08` base, `#f59e0b` acento ámbar sagrado.
+- **Modo Claro (Referencia)**: `#f4ead5` pergamino, `#b45309` ámbar oscuro — paleta líder.
+- **Tipografía**: Playfair Display (títulos), Inter (UI), Source Serif 4 (cuerpo).
 
 **Anti-referencias**:
-- ❌ Generic productivity apps (Notion, Todoist)
-- ❌ Corporate dashboards (cold metrics, bar charts)
-- ❌ Anime/gaming aesthetic (neon, glow, HUD)
-- ❌ Social media / feed (infinite cards, public space)
+- ❌ Apps de productividad genéricas (Notion, Todoist).
+- ❌ Dashboards corporativos (métricas frías).
+- ❌ Estética anime/gaming (neón, HUD, brillo excesivo).
+- ❌ Social media / feed (cards infinitas).
 
-### Design Principles
-1. **Amber is sacred** — only for: active state, primary action, achievement moments. Never generic decoration.
-2. **UI is part of narrative world** — every string, gesture, empty state must match grimoire vocabulary. Using app = extension of reading.
-3. **Content first, minimal chrome** — on mobile, reducing sticky nav layers is functional + aesthetic priority.
-4. **Parchment leads** — light mode parchment palette = reference for evaluating design system.
-5. **Delight moments are rituals, not confetti** — animations with solemnity, not urgency. Sealed week deserves pause, not bounce.
+### Principios de Diseño
+1. **El Ámbar es Sagrado.** Solo para estado activo, acción primaria y momentos de logro. Nunca decoración genérica.
+2. **La UI es Narrativa.** Cada string, gesto y estado vacío debe coincidir con el vocabulario del grimorio.
+3. **Normalización de Saberes.** Priorizar la consistencia textual y visual en todas las vistas de la aplicación.
+4. **El Pergamino Lidera.** El modo pergamino es la referencia para evaluar cualquier decisión del sistema de diseño.
+5. **Rituales, no Confeti.** Las animaciones y estados de éxito deben tener solemnidad orgánica, no urgencia digital.
