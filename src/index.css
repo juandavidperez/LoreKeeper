@@ -80,6 +80,9 @@
   --color-entity-character: var(--entity-character);
   --color-entity-place: var(--entity-place);
   --color-entity-rule: var(--entity-rule);
+
+  --font-ritual: 'Cinzel Decorative', serif;
+  --font-archival: 'Cinzel', serif;
 }
 
 @layer base {
@@ -331,6 +334,13 @@ body::before {
     padding-left: calc(1.5rem + env(safe-area-inset-left));
     padding-right: calc(1.5rem + env(safe-area-inset-right));
   }
+
+  .font-ritual {
+    font-family: var(--font-ritual);
+  }
+  .font-archival {
+    font-family: var(--font-archival);
+  }
 }
 
 /* Tiptap & Markdown styling */
@@ -384,3 +394,102 @@ body::before {
   background: radial-gradient(circle at 50% 50%, #3d2b1f 0%, transparent 80%);
 }
 
+
+/* 🔮 ORACLE: Ritual Inscriptions & Visions */
+.oracle-inscription {
+  position: relative;
+  padding-left: 1rem;
+  font-family: 'Source Serif 4', serif;
+  color: var(--text-primary);
+  line-height: 1.7;
+  border-left: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.oracle-inscription blockquote {
+  border-left: none;
+  padding-left: 0;
+  margin: 1.25rem 0;
+  font-size: 1.1rem;
+  color: var(--text-accent);
+}
+
+@keyframes oracleGlow {
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.3)); }
+  50% { filter: drop-shadow(0 0 15px rgba(245, 158, 11, 0.6)); }
+}
+
+.animate-oracle-glow {
+  animation: oracleGlow 3s infinite ease-in-out;
+}
+
+.mystic-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 1.25rem 0;
+  opacity: 0.4;
+}
+
+.ink-line-input {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(245, 158, 11, 0.3);
+  padding: 0.75rem 0;
+  font-family: 'Source Serif 4', serif;
+  font-style: italic;
+  width: 100%;
+  transition: border-color 0.3s ease;
+}
+
+.ink-line-input:focus {
+  outline: none;
+  border-bottom-color: var(--text-accent);
+}
+
+/* 🖋️ OVERDRIVE: La Crónica Autógrafa */
+.autograph-card {
+  view-timeline-name: --card-reveal;
+  view-timeline-axis: block;
+}
+
+@keyframes drawBorderScroll {
+  from { stroke-dashoffset: 1000; opacity: 0; }
+  to { stroke-dashoffset: 0; opacity: 1; }
+}
+
+.animate-border-scroll {
+  animation: drawBorderScroll linear both;
+  animation-timeline: --card-reveal;
+  animation-range: entry 10% cover 30%;
+}
+
+@keyframes inscribeScroll {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-inscribe-scroll {
+  animation: inscribeScroll linear both;
+  animation-timeline: --card-reveal;
+  animation-range: entry 20% cover 50%;
+}
+
+@keyframes marginParallax {
+  from { transform: translateY(20px); }
+  to { transform: translateY(-20px); }
+}
+
+.animate-parallax-scroll {
+  animation: marginParallax linear both;
+  animation-timeline: --card-reveal;
+  animation-range: entry 0% exit 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-border-scroll, .animate-inscribe-scroll, .animate-parallax-scroll {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
