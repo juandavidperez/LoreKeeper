@@ -39,8 +39,12 @@ export function SyncProvider({ children }) {
         BACKUP_TIMEOUT_MS
       );
       setStatus('saved');
+      // Reset after success
+      setTimeout(() => setStatus(prev => prev === 'saved' ? 'idle' : prev), 3000);
     } catch (err) {
-      console.error('Backup error:', err);
+      // Don't crash the app, just notify UI
+      const isRetryable = err.message !== 'Backup timeout';
+      console.error('Core Sync Engine Error:', err);
       setStatus('error');
     } finally {
       inProgress.current = false;

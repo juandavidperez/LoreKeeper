@@ -42,7 +42,12 @@ export function LorekeeperProvider({ children }) {
   const [schedule, setSchedule] = useLocalStorage('lore-schedule', INITIAL_SCHEDULE);
   const [entries, setEntries] = useLocalStorage('reading-entries', INITIAL_ENTRIES);
   const [completedWeeks, setCompletedWeeks] = useLocalStorage('completed-weeks', []);
-  const [loreOverrides, setLoreOverrides] = useLocalStorage('lore-overrides', {}); // name -> { description, image, color, etc }
+  const [loreOverrides, setLoreOverrides] = useLocalStorage('lore-overrides', {}); 
+
+  // New tables for LoreHub
+  const [entities, setEntities] = useLocalStorage('lore-entities', []);
+  const [mentions, setMentions] = useLocalStorage('lore-mentions', []);
+  const [relations, setRelations] = useLocalStorage('lore-relations', []);
 
   // Expose setters so SyncProvider can update state after pull
   const stateSetters = useMemo(() => ({
@@ -52,32 +57,128 @@ export function LorekeeperProvider({ children }) {
     'reading-entries': setEntries,
     'completed-weeks': setCompletedWeeks,
     'lore-overrides': setLoreOverrides,
-  }), [setBooks, setPhases, setSchedule, setEntries, setCompletedWeeks, setLoreOverrides]);
+    'lore-entities': setEntities,
+    'lore-mentions': setMentions,
+    'lore-relations': setRelations,
+  }), [setBooks, setPhases, setSchedule, setEntries, setCompletedWeeks, setLoreOverrides, setEntities, setMentions, setRelations]);
+
+  // AUTO-MIGRATION TRIGGER
+  React.useEffect(() => {
+    const hasLegacyData = entries.length > 0 && (entries[0].characters || entries[0].places);
+    const isNewSchemaEmpty = entities.length === 0;
+
+    if (hasLegacyData && isNewSchemaEmpty) {
+
+      import('../utils/syncEngine').then(({ migrateLegacyJsonToNormalized }) => {
+        const migrated = migrateLegacyJsonToNormalized({
+          'reading-entries': entries,
+          'lore-books': books,
+        });
+
+        if (migrated['lore-entities'].length > 0) {
+          setEntities(migrated['lore-entities']);
+          setMentions(migrated['lore-mentions']);
+          setBooks(migrated['lore-books']);
+          setEntries(migrated['reading-entries']);
+
+        }
+      });
+    }
+  }, [entries, entities, setEntities, setMentions, setBooks, setEntries]);
 
   const archive = useMemo(() => {
     const raw = {
-      personajes: aggregateEntities(entries, 'characters', 'personaje'),
-      lugares: aggregateEntities(entries, 'places', 'lugar'),
-      glosario: aggregateEntities(entries, 'glossary', 'glosario'),
-      reglas: aggregateEntities(entries, 'worldRules', 'regla')
+      personajes: entities.filter(e => e.type === 'personaje'),
+      lugares: entities.filter(e => e.type === 'lugar'),
+      glosario: entities.filter(e => e.type === 'glosario'),
+      reglas: entities.filter(e => e.type === 'regla')
     };
 
-    // Apply Overrides
+    // Add mention counts and back-links if needed for UI compatibility
     Object.keys(raw).forEach(cat => {
       raw[cat] = raw[cat].map(entity => {
+        const entityMentions = mentions.filter(m => m.entityId === entity.id);
         const ov = loreOverrides[entity.name];
-        if (!ov) return entity;
+        
         return {
           ...entity,
-          description: ov.description || '',
-          customTags: ov.tags || [],
-          isCustom: true
+          mentions: entityMentions.map(m => {
+            const entry = entries.find(e => e.id === m.entryId);
+            return { date: entry?.date, book: entry?.book, text: entry?.summary || entry?.content };
+          }),
+          description: ov?.description || entity.description || '',
+          tags: Array.isArray(ov?.tags) ? ov.tags : (Array.isArray(entity.metadata?.tags) ? entity.metadata.tags : []),
+          customTags: Array.isArray(ov?.tags) ? ov.tags : (Array.isArray(entity.metadata?.tags) ? entity.metadata.tags : []),
+          isCustom: !!ov
         };
       });
     });
 
     return raw;
-  }, [entries, loreOverrides]);
+  }, [entities, mentions, entries, loreOverrides]);
+
+  const mergeEntities = useCallback((primaryId, absorbedId) => {
+    const primary = entities.find(e => e.id === primaryId);
+    const absorbed = entities.find(e => e.id === absorbedId);
+    if (!primary || !absorbed) return;
+
+    // Add absorbed name + aliases to primary aliases
+    const mergedAliases = [...new Set([
+      ...(primary.aliases || []),
+      absorbed.name,
+      ...(absorbed.aliases || []),
+    ])];
+
+    // Merge metadata tags
+    const mergedTags = [...new Set([
+      ...(primary.metadata?.tags || []),
+      ...(absorbed.metadata?.tags || []),
+    ])];
+
+    setEntities(prev => prev
+      .filter(e => e.id !== absorbedId)
+      .map(e => e.id === primaryId ? {
+        ...e,
+        aliases: mergedAliases,
+        metadata: { ...e.metadata, tags: mergedTags },
+      } : e)
+    );
+
+    // Re-point mentions from absorbed → primary, dedup
+    setMentions(prev => {
+      const primaryMentionEntries = new Set(
+        prev.filter(m => m.entityId === primaryId).map(m => m.entryId)
+      );
+      return prev
+        .map(m => m.entityId === absorbedId ? { ...m, entityId: primaryId } : m)
+        .filter(m => {
+          if (m.entityId === primaryId && primaryMentionEntries.has(m.entryId)) {
+            const dominated = prev.find(
+              om => om.entityId === absorbedId && om.entryId === m.entryId
+            );
+            if (dominated && m.id === dominated.id) return false;
+          }
+          return true;
+        });
+    });
+
+    // Re-point relations, remove self-relations, dedup
+    setRelations(prev => {
+      const updated = prev.map(r => ({
+        ...r,
+        sourceId: r.sourceId === absorbedId ? primaryId : r.sourceId,
+        targetId: r.targetId === absorbedId ? primaryId : r.targetId,
+      }));
+      const seen = new Set();
+      return updated.filter(r => {
+        if (r.sourceId === r.targetId) return false;
+        const key = [r.sourceId, r.targetId].sort().join('|');
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    });
+  }, [entities, setEntities, setMentions, setRelations]);
 
   const exportData = useCallback(async () => {
     const data = { books, phases, schedule, entries, completedWeeks, loreOverrides, exportedAt: new Date().toISOString() };
@@ -163,6 +264,9 @@ export function LorekeeperProvider({ children }) {
     }
     if (data.completedWeeks) setCompletedWeeks(data.completedWeeks);
     if (data.loreOverrides) setLoreOverrides(data.loreOverrides);
+    if (Array.isArray(data.entities)) setEntities(data.entities);
+    if (Array.isArray(data.mentions)) setMentions(data.mentions);
+    if (Array.isArray(data.relations)) setRelations(data.relations);
   }, [setBooks, setPhases, setSchedule, setEntries, setCompletedWeeks, setLoreOverrides]);
 
   const value = {
@@ -170,9 +274,13 @@ export function LorekeeperProvider({ children }) {
     phases, setPhases,
     schedule, setSchedule,
     entries, setEntries,
+    entities, setEntities,
+    mentions, setMentions,
+    relations, setRelations,
     completedWeeks, setCompletedWeeks,
     loreOverrides, setLoreOverrides,
     archive,
+    mergeEntities,
     exportData, importData,
     stateSetters,
   };
