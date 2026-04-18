@@ -423,6 +423,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
         />
       )}
       {/* HEADER ROW */}
+      <div className="flex items-center justify-between sticky top-0 z-[60] -mx-4 px-4 py-4 border-b border-primary/20 bg-header-bg">
         <div className="flex flex-col gap-0.5">
           <h3 className="font-serif text-primary-text text-2xl tracking-tight">
             {initialData ? 'Editar Crónica' : 'Nueva Crónica'}
@@ -515,7 +516,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           <select
             id="entry-book"
             value={form.book} onChange={e => setForm({...form, book: e.target.value})}
-            className="bg-transparent border-0 border-b-2 border-stone-300 py-2 px-1 text-lg outline-none focus:border-accent transition-all font-serif text-primary-text"
+            className="bg-transparent border-0 border-b-2 border-stone-300 py-2 px-1 text-sm outline-none focus:border-accent transition-all font-serif text-primary-text"
           >
             {books.map(b => <option key={b.id || b.title} value={b.title}>{b.emoji} {b.title}</option>)}
           </select>
@@ -527,7 +528,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
             value={form.chapter} onChange={e => setForm({...form, chapter: e.target.value})}
             inputMode="text"
             enterKeyHint="next"
-            className="bg-transparent border-0 border-b-2 border-stone-300 py-2 px-1 text-lg outline-none focus:border-accent transition-all font-serif text-primary-text placeholder:text-stone-300 italic"
+            className="bg-transparent border-0 border-b-2 border-stone-300 py-2 px-1 text-sm outline-none focus:border-accent transition-all font-serif text-primary-text placeholder:text-stone-300 italic"
             placeholder="Ej. Cap 12"
           />
         </div>
@@ -542,7 +543,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
             onChange={e => setForm({...form, readingTime: Math.max(0, parseInt(e.target.value, 10) || 0)})}
             inputMode="numeric"
             enterKeyHint="next"
-            className="bg-transparent border-0 border-b-2 border-stone-300 py-2 px-1 text-lg outline-none focus:border-accent transition-all font-serif text-primary-text placeholder:text-stone-300"
+            className="bg-transparent border-0 border-b-2 border-stone-300 py-2 px-1 text-sm outline-none focus:border-accent transition-all font-serif text-primary-text placeholder:text-stone-300"
             placeholder="0"
           />
         </div>
@@ -592,9 +593,9 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           value={form.reingreso}
           onChange={v => setForm({...form, reingreso: v})}
           placeholder="¿Qué sombras o luces has encontrado hoy?..."
-          className="text-lg"
+          className="text-sm"
         />
-        <button 
+        <button
           onClick={handleAIAutocomplete} 
           disabled={isExtracting || !form.reingreso?.trim()} 
           className="mt-6 flex items-center justify-center gap-2 w-full py-4 bg-app-bg text-accent border border-accent/20 rounded-sm font-bold font-serif tracking-wide hover:bg-accent hover:text-white transition-all disabled:opacity-40 disabled:cursor-default shadow-sm"
@@ -650,7 +651,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           {form.characters.map((c) => (
             <div key={c.id} className="bg-item-bg p-5 rounded-sm border-l-4 border-l-entity-character/40 mb-3 flex flex-col gap-3 relative shadow-sm hover:shadow-md transition-all">
               <button onClick={() => removeItem('characters', c.id)} aria-label="Eliminar" className="absolute top-3 right-3 p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
-              <NameAutocomplete value={c.name} onChange={v => updateItem('characters', c.id, 'name', v)} placeholder="Nombre del ser..." suggestions={archive.personajes || []} inputClassName="w-full bg-transparent border-0 border-b-2 border-primary-text/10 text-lg font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
+              <NameAutocomplete value={c.name} onChange={v => updateItem('characters', c.id, 'name', v)} placeholder="Nombre del ser..." suggestions={archive.personajes || []} inputClassName="w-full bg-transparent border-0 border-b-2 border-primary-text/10 text-sm font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
               <input value={c.tags} onChange={e => updateItem('characters', c.id, 'tags', e.target.value.split(',').map(t => t.trim()).filter(Boolean))} placeholder="Etiquetas (separadas por coma)..." className="bg-transparent border-0 border-b border-primary-text/5 text-xs text-stone-400 outline-none focus:border-accent/20 transition-all font-serif italic" />
               <TiptapEditor
                 value={c.content}
@@ -671,7 +672,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           {form.places.map((p) => (
             <div key={p.id} className="bg-item-bg p-5 rounded-sm border-l-4 border-l-entity-place/40 mb-3 flex flex-col gap-3 relative shadow-sm hover:shadow-md transition-all">
               <button onClick={() => removeItem('places', p.id)} aria-label="Eliminar" className="absolute top-3 right-3 p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
-              <NameAutocomplete value={p.name} onChange={v => updateItem('places', p.id, 'name', v)} placeholder="Nombre del paraje..." suggestions={archive.lugares || []} inputClassName="w-full bg-transparent border-0 border-b-2 border-primary/20 text-lg font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
+              <NameAutocomplete value={p.name} onChange={v => updateItem('places', p.id, 'name', v)} placeholder="Nombre del paraje..." suggestions={archive.lugares || []} inputClassName="w-full bg-transparent border-0 border-b-2 border-primary/20 text-sm font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
               <TiptapEditor
                 value={p.content}
                 onChange={v => updateItem('places', p.id, 'content', v)}
@@ -691,7 +692,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           {form.glossary.map((g) => (
             <div key={g.id} className="bg-item-bg p-5 rounded-sm border-l-4 border-l-oracle/40 mb-3 flex flex-col gap-3 relative shadow-sm hover:shadow-md transition-all">
               <button onClick={() => removeItem('glossary', g.id)} aria-label="Eliminar" className="absolute top-3 right-3 p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
-              <NameAutocomplete value={g.name} onChange={v => updateItem('glossary', g.id, 'name', v)} placeholder="Término o pregunta..." suggestions={archive.glosario || []} inputClassName="w-full bg-transparent border-0 border-b-2 border-primary/20 text-lg font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
+              <NameAutocomplete value={g.name} onChange={v => updateItem('glossary', g.id, 'name', v)} placeholder="Término o pregunta..." suggestions={archive.glosario || []} inputClassName="w-full bg-transparent border-0 border-b-2 border-primary/20 text-sm font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
               <TiptapEditor
                 value={g.content}
                 onChange={v => updateItem('glossary', g.id, 'content', v)}
@@ -711,7 +712,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
           {form.worldRules.map((w) => (
             <div key={w.id} className="bg-item-bg p-5 rounded-sm border-l-4 border-l-entity-rule/40 mb-3 flex flex-col gap-3 relative shadow-sm hover:shadow-md transition-all">
               <button onClick={() => removeItem('worldRules', w.id)} aria-label="Eliminar" className="absolute top-3 right-3 p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
-              <NameAutocomplete value={w.name} onChange={v => updateItem('worldRules', w.id, 'name', v)} placeholder="Concepto (ej. El Chakra)..." suggestions={archive.reglas || []} inputClassName="w-full bg-transparent border-0 border-b-2 border-primary/20 text-lg font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
+              <NameAutocomplete value={w.name} onChange={v => updateItem('worldRules', w.id, 'name', v)} placeholder="Concepto (ej. El Chakra)..." suggestions={archive.reglas || []} inputClassName="w-full bg-transparent border-0 border-b-2 border-primary/20 text-sm font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
               <TiptapEditor
                 value={w.content}
                 onChange={v => updateItem('worldRules', w.id, 'content', v)}

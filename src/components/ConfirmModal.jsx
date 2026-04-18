@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 export function ConfirmModal({ title, message, confirmLabel = 'Confirmar', danger = false, onConfirm, onCancel }) {
   useBodyScrollLock();
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
       onClick={onCancel}
@@ -33,6 +33,7 @@ export function ConfirmModal({ title, message, confirmLabel = 'Confirmar', dange
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
