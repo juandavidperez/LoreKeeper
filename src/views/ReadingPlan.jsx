@@ -294,7 +294,7 @@ export function ReadingPlan({ onLogWeek }) {
       )}
 
       {/* HEADER */}
-      <div className="sticky top-[-24px] z-30 bg-header-bg pb-4 border-b border-primary/20">
+      <div className="sticky top-0 z-30 bg-header-bg pb-4 border-b border-primary/20">
         <PlanHeader
           isEditing={isEditing}
           onToggleEdit={() => setIsEditing(!isEditing)}
@@ -368,19 +368,19 @@ export function ReadingPlan({ onLogWeek }) {
           onLogWeek={onLogWeek}
         />
       )}
-      
+
       {/* DECORATIVE ILLUSTRATION (Generated AI Manuscript Art) */}
       {!isEditing && schedule.length > 0 && (
         <div className="mt-12 opacity-80 flex flex-col items-center gap-4 animate-fade-in duration-1000">
-           <div className="w-full max-w-sm border-2 border-primary/30 p-2.5 bg-item-bg shadow-md relative overflow-hidden group">
-             <div className="absolute inset-0 bg-stone-900/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-             <img 
-               src="/manuscript_footer.png" 
-               alt="Scribit in Aeternum"
-               className="w-full h-auto grayscale-[0.2] contrast-[1.1] sepia-[0.1]"
-             />
-           </div>
-           <span className="text-[10px] font-serif italic text-stone-400 tracking-widest mt-2 uppercase">Scribit in Aeternum</span>
+          <div className="w-full max-w-sm border-2 border-primary/30 p-2.5 bg-item-bg shadow-md relative overflow-hidden group">
+            <div className="absolute inset-0 bg-stone-900/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            <img
+              src="/manuscript_footer.png"
+              alt="Scribit in Aeternum"
+              className="w-full h-auto grayscale-[0.2] contrast-[1.1] sepia-[0.1]"
+            />
+          </div>
+          <span className="text-[10px] font-serif italic text-stone-400 tracking-widest mt-2 uppercase">Scribit in Aeternum</span>
         </div>
       )}
     </div>
@@ -403,10 +403,10 @@ function PlanHeader({ isEditing, onToggleEdit, onExport, onImport, onLoadDemo, a
         </div>
         <div className="flex items-center gap-1">
           <button onClick={onExport} className="p-2 text-stone-400 hover:text-accent transition-all hover:scale-110 flex items-center justify-center" title="Exportar">
-            <Download size={20}/>
+            <Download size={20} />
           </button>
           <label className="p-2 text-stone-400 hover:text-accent transition-all hover:scale-110 cursor-pointer flex items-center justify-center" title="Importar">
-            <Upload size={20}/>
+            <Upload size={20} />
             <input type="file" accept=".json" onChange={onImport} className="hidden" />
           </label>
         </div>
@@ -542,15 +542,15 @@ function RhythmComparator({ completedWeeks, schedule, entries }) {
       </div>
       <div className="relative h-2 bg-item-bg rounded-full border border-primary/5 overflow-hidden">
         {/* Actual Progress (Amber) */}
-        <div 
-          className="absolute top-0 left-0 h-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)] transition-all duration-700 ease-out" 
-          style={{ width: `${actualPct}%` }} 
+        <div
+          className="absolute top-0 left-0 h-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)] transition-all duration-700 ease-out"
+          style={{ width: `${actualPct}%` }}
         />
-        
+
         {/* Expected Marker */}
         {expectedPct > 0 && (
-          <div 
-            className="absolute top-0 w-0.5 h-full bg-stone-400 group-hover:bg-accent transition-colors z-10" 
+          <div
+            className="absolute top-0 w-0.5 h-full bg-stone-400 group-hover:bg-accent transition-colors z-10"
             style={{ left: `${expectedPct}%` }}
           >
             <div className="absolute top-[-4px] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-stone-400 group-hover:bg-accent" />
@@ -612,13 +612,12 @@ function HabitGraph({ entries }) {
               </span>
             )}
             <div
-              className={`w-full rounded-[2px] transition-all duration-700 ${
-                week.count === 0
-                  ? 'bg-stone-800/50'
-                  : week.isCurrent
+              className={`w-full rounded-[2px] transition-all duration-700 ${week.count === 0
+                ? 'bg-stone-800/50'
+                : week.isCurrent
                   ? 'bg-accent shadow-[0_0_8px_rgba(245,158,11,0.3)]'
                   : 'bg-accent/40'
-              }`}
+                }`}
               style={{ height: week.count === 0 ? '4px' : `${Math.max((week.count / maxCount) * 100, 18)}%` }}
             />
           </div>
@@ -664,13 +663,12 @@ function ActivityGrid({ entries }) {
           <div
             key={i}
             title={day.date}
-            className={`aspect-square rounded-[1px] ${
-              day.hasEntry
-                ? day.isToday
-                  ? 'bg-accent'
-                  : 'bg-accent/50'
-                : 'bg-stone-800/50'
-            }`}
+            className={`aspect-square rounded-[1px] ${day.hasEntry
+              ? day.isToday
+                ? 'bg-accent'
+                : 'bg-accent/50'
+              : 'bg-stone-800/50'
+              }`}
           />
         ))}
       </div>
@@ -700,7 +698,7 @@ function BookStats({ entries, books }) {
   if (stats.length === 0) return null;
 
   const maxMinutes = Math.max(...stats.map(s => s.totalMinutes), 1);
-  const maxCount   = Math.max(...stats.map(s => s.count), 1);
+  const maxCount = Math.max(...stats.map(s => s.count), 1);
 
   const formatTime = (mins) => {
     if (!mins) return null;
@@ -772,7 +770,7 @@ function BookManager({ books, onUpdate, onDelete, onAdd }) {
             </select>
           </div>
           <input type="color" value={book.color} onChange={e => onUpdate(book.id, 'color', e.target.value)} className="w-8 h-8 rounded-full cursor-pointer border-2 border-white shadow-sm" />
-          <button onClick={() => onDelete(book.id)} className="p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
+          <button onClick={() => onDelete(book.id)} className="p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20} /></button>
         </div>
       ))}
       <button onClick={onAdd} className="py-4 border-2 border-dashed border-primary/30 text-stone-400 rounded-lg hover:text-accent hover:border-accent/50 transition-all font-serif italic text-sm bg-item-bg/40">+ Invocar nuevo Tomo al Archivo</button>
@@ -786,56 +784,56 @@ function PhaseManager({ phases, onUpdate, onDelete, onAdd }) {
       <h3 className="font-serif italic text-stone-500 text-sm border-b border-accent/20 pb-2">Cronología de Eras</h3>
       {phases.map((phase) => (
         <div key={phase.id} className="w-full bg-input-bg border border-primary/40 rounded-xl p-5 flex flex-col gap-4 group relative transition-all hover:bg-card-bg shadow-sm">
-          <button 
-            onClick={() => onDelete(phase.id)} 
+          <button
+            onClick={() => onDelete(phase.id)}
             className="absolute top-4 right-4 p-3 text-stone-400 hover:text-red-500 transition-all opacity-60 hover:opacity-100 flex items-center justify-center min-w-[48px] min-h-[48px]"
           >
-            <Trash2 size={18}/>
+            <Trash2 size={18} />
           </button>
-          
+
           <div className="flex flex-col gap-1.5 pr-12">
-            <input 
-              value={phase.label} 
-              onChange={e => onUpdate(phase.id, 'label', e.target.value)} 
-              className="bg-transparent border-0 border-b border-accent/20 p-0 text-xl font-serif font-bold text-primary-text focus:ring-0 focus:border-accent w-full" 
-              placeholder="Nombre de la Era/Fase" 
+            <input
+              value={phase.label}
+              onChange={e => onUpdate(phase.id, 'label', e.target.value)}
+              className="bg-transparent border-0 border-b border-accent/20 p-0 text-xl font-serif font-bold text-primary-text focus:ring-0 focus:border-accent w-full"
+              placeholder="Nombre de la Era/Fase"
             />
-            <input 
-              value={phase.desc} 
-              onChange={e => onUpdate(phase.id, 'desc', e.target.value)} 
-              className="bg-transparent border-0 p-0 text-xs font-serif italic text-stone-600 focus:ring-0 placeholder:text-stone-400 w-full" 
-              placeholder="Breve descripción histórica..." 
+            <input
+              value={phase.desc}
+              onChange={e => onUpdate(phase.id, 'desc', e.target.value)}
+              className="bg-transparent border-0 p-0 text-xs font-serif italic text-stone-600 focus:ring-0 placeholder:text-stone-400 w-full"
+              placeholder="Breve descripción histórica..."
             />
           </div>
 
           <div className="grid grid-cols-[1fr,1fr,auto] gap-3 sm:gap-6 items-end pt-2 border-t border-primary/10">
             <div className="flex flex-col gap-1.5">
               <span className="text-[9px] uppercase font-bold text-stone-500 tracking-wider">Origen</span>
-              <input 
-                type="number" 
-                value={phase.weeks[0]} 
-                onChange={e => onUpdate(phase.id, 'weeks', [parseInt(e.target.value), phase.weeks[1]])} 
-                inputMode="numeric" 
-                className="bg-section-bg border border-accent/20 rounded px-3 py-2 text-sm text-primary-text focus:border-accent outline-none w-full" 
+              <input
+                type="number"
+                value={phase.weeks[0]}
+                onChange={e => onUpdate(phase.id, 'weeks', [parseInt(e.target.value), phase.weeks[1]])}
+                inputMode="numeric"
+                className="bg-section-bg border border-accent/20 rounded px-3 py-2 text-sm text-primary-text focus:border-accent outline-none w-full"
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <span className="text-[9px] uppercase font-bold text-stone-500 tracking-wider">Ocaso</span>
-              <input 
-                type="number" 
-                value={phase.weeks[1]} 
-                onChange={e => onUpdate(phase.id, 'weeks', [phase.weeks[0], parseInt(e.target.value)])} 
-                inputMode="numeric" 
-                className="bg-section-bg border border-accent/20 rounded px-3 py-2 text-sm text-primary-text focus:border-accent outline-none w-full" 
+              <input
+                type="number"
+                value={phase.weeks[1]}
+                onChange={e => onUpdate(phase.id, 'weeks', [phase.weeks[0], parseInt(e.target.value)])}
+                inputMode="numeric"
+                className="bg-section-bg border border-accent/20 rounded px-3 py-2 text-sm text-primary-text focus:border-accent outline-none w-full"
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <span className="text-[9px] uppercase font-bold text-stone-400 tracking-wider">Color</span>
-              <input 
-                type="color" 
-                value={phase.color} 
-                onChange={e => onUpdate(phase.id, 'color', e.target.value)} 
-                className="w-10 h-10 rounded-full border-2 border-white/20 shadow-md cursor-pointer overflow-hidden p-0" 
+              <input
+                type="color"
+                value={phase.color}
+                onChange={e => onUpdate(phase.id, 'color', e.target.value)}
+                className="w-10 h-10 rounded-full border-2 border-white/20 shadow-md cursor-pointer overflow-hidden p-0"
               />
             </div>
           </div>
@@ -864,21 +862,21 @@ function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, expa
 
         return (
           <div key={phase.id} className="flex flex-col gap-6">
-            <button 
+            <button
               disabled={isEditing}
               onClick={() => onTogglePhase(phase.id)}
               className={`flex justify-between items-baseline border-b-2 border-accent/20 pb-3 mb-2 relative text-left transition-all ${!isEditing ? 'hover:bg-accent/5 -mx-2 px-2 cursor-pointer' : ''}`}
             >
-               <div className="absolute -bottom-0.5 left-0 w-16 h-0.5 bg-accent" />
-               <div className="flex items-center gap-3">
-                 {!isEditing && (
-                    <span className="text-stone-400 group-hover:text-accent transition-colors">
-                      {isExpanded ? <ChevronDown size={18}/> : <ChevronRight size={18}/>}
-                    </span>
-                 )}
-                 <h3 className="font-serif text-2xl text-primary-text tracking-tight">{phase.label}</h3>
-               </div>
-               <span className="text-xs font-serif italic text-stone-400 tracking-wide">Eras {phase.weeks[0]}—{phase.weeks[1]}</span>
+              <div className="absolute -bottom-0.5 left-0 w-16 h-0.5 bg-accent" />
+              <div className="flex items-center gap-3">
+                {!isEditing && (
+                  <span className="text-stone-400 group-hover:text-accent transition-colors">
+                    {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                  </span>
+                )}
+                <h3 className="font-serif text-2xl text-primary-text tracking-tight">{phase.label}</h3>
+              </div>
+              <span className="text-xs font-serif italic text-stone-400 tracking-wide">Eras {phase.weeks[0]}—{phase.weeks[1]}</span>
             </button>
 
             <div className={`flex flex-col divide-y divide-primary/10 transition-all duration-500 overflow-hidden rounded-sm px-4 ${isExpanded ? 'max-h-[5000px] opacity-100 bg-item-bg/80 border border-accent/20 shadow-sm' : 'max-h-0 opacity-0 pointer-events-none'}`}>
@@ -890,187 +888,187 @@ function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, expa
 
                 return (
                   <Fragment key={week.week}>
-                  <div
-                    onClick={() => !isEditing && onToggleWeek(week.week)}
-                    className={`group py-5 flex items-center justify-between gap-4 sm:gap-6 transition-all duration-500 relative ${!isEditing ? 'cursor-pointer hover:bg-accent/5' : 'bg-item-bg shadow-lg border-l-4 border-accent' } ${isNextUp && !isEditing ? 'bg-accent/5' : ''} -mx-4 px-4 my-2 rounded-sm`}
-                  >
-                    {isNextUp && (
-                       <div className="absolute left-0 top-0 w-1 h-full bg-accent/40" />
-                    )}
-                    
-                    <div className="flex items-start gap-4 sm:gap-6 flex-1">
-                      <div className="flex flex-col items-center">
-                        {isEditing ? (
-                          <input 
-                            type="number" 
-                            value={week.week} 
-                            onChange={(e) => onUpdateWeek(week.week, 'week', parseInt(e.target.value))}
-                            inputMode="numeric"
-                            className="w-16 bg-item-bg border-2 border-accent/30 rounded p-1 text-2xl font-serif font-bold text-accent text-center focus:border-accent outline-none"
-                          />
-                        ) : (
-                          <span className={`text-4xl font-serif font-bold transition-colors duration-500 ${isCompleted ? 'text-stone-200' : isNextUp ? 'text-accent' : 'text-stone-300'}`}>
-                            {week.week}
-                          </span>
-                        )}
-                        {isNextUp && <span className="text-[7px] font-bold text-accent tracking-tighter uppercase mt-[-4px]">Siguiente</span>}
-                      </div>
+                    <div
+                      onClick={() => !isEditing && onToggleWeek(week.week)}
+                      className={`group py-5 flex items-center justify-between gap-4 sm:gap-6 transition-all duration-500 relative ${!isEditing ? 'cursor-pointer hover:bg-accent/5' : 'bg-item-bg shadow-lg border-l-4 border-accent'} ${isNextUp && !isEditing ? 'bg-accent/5' : ''} -mx-4 px-4 my-2 rounded-sm`}
+                    >
+                      {isNextUp && (
+                        <div className="absolute left-0 top-0 w-1 h-full bg-accent/40" />
+                      )}
 
-                      <div className="flex flex-col gap-3 flex-1 mt-1">
-                        <div className="flex items-center gap-2">
-                          {isCompleted && <span className="text-[10px] font-serif italic text-stone-300">Sellada transitoriamente</span>}
-                          {isEditing && isCompleted && <span className="text-[10px] font-serif italic text-accent/60">(Editando sello histórico)</span>}
-                        </div>
-                        
-                        <div className={`grid grid-cols-1 gap-2 transition-all ${isCompleted && !isEditing ? 'opacity-40 grayscale' : 'opacity-100'}`}>
+                      <div className="flex items-start gap-4 sm:gap-6 flex-1">
+                        <div className="flex flex-col items-center">
                           {isEditing ? (
-                             <>
-                               {/* Novel Edit */}
-                               <div className="flex flex-col gap-1 bg-item-bg p-2.5 rounded border border-accent/20 shadow-md transition-all focus-within:ring-2 focus-within:ring-accent/20">
-                                 <div className="flex items-center gap-2">
-                                   <span className="text-xl">📖</span>
-                                   <select 
-                                     value={week.novelTitle} 
-                                     onChange={(e) => onUpdateWeek(week.week, 'novelTitle', e.target.value)}
-                                     className="flex-1 bg-transparent border-0 p-0 text-sm font-serif font-bold text-primary-text focus:ring-0 cursor-pointer appearance-none"
-                                   >
-                                     <option value="">(Sin Novela)</option>
-                                     {books.filter(b => b.type === 'novel').map(b => (
-                                       <option key={b.id} value={b.title} style={{ color: b.color || 'inherit' }}>{b.title}</option>
-                                     ))}
-                                   </select>
-                                 </div>
-                                 <input 
-                                   type="text" 
-                                   value={week.novelSection}
-                                   onChange={(e) => onUpdateWeek(week.week, 'novelSection', e.target.value)}
-                                   className="w-full bg-section-bg mt-1 px-2 py-1.5 rounded border border-accent/30 text-[11px] text-primary-text font-serif font-bold italic uppercase tracking-wider focus:ring-1 focus:ring-accent/50 outline-none placeholder:text-stone-400"
-                                   placeholder="Capítulos / Sección / Tomo..."
-                                 />
-                               </div>
-
-                               {/* Manga Edit */}
-                               <div className="flex flex-col gap-1 bg-item-bg p-2.5 rounded border border-accent/20 shadow-md transition-all focus-within:ring-2 focus-within:ring-accent/20">
-                                 <div className="flex items-center gap-2">
-                                   <span className="text-xl">📚</span>
-                                   <select 
-                                     value={week.mangaTitle} 
-                                     onChange={(e) => onUpdateWeek(week.week, 'mangaTitle', e.target.value)}
-                                     className="flex-1 bg-transparent border-0 p-0 text-sm font-serif font-bold text-primary-text focus:ring-0 cursor-pointer appearance-none"
-                                   >
-                                     <option value="">(Sin Manga)</option>
-                                     {books.filter(b => b.type === 'manga').map(b => (
-                                       <option key={b.id} value={b.title} style={{ color: b.color || 'inherit' }}>{b.title}</option>
-                                     ))}
-                                   </select>
-                                 </div>
-                                 <input 
-                                   type="text" 
-                                   value={week.mangaVols}
-                                   onChange={(e) => onUpdateWeek(week.week, 'mangaVols', e.target.value)}
-                                   className="w-full bg-section-bg mt-1 px-2 py-1.5 rounded border border-accent/30 text-[11px] text-primary-text font-serif font-bold italic uppercase tracking-wider focus:ring-1 focus:ring-accent/50 outline-none placeholder:text-stone-400"
-                                   placeholder="Capítulos / Tomos / Arcos..."
-                                 />
-                               </div>
-                             </>
+                            <input
+                              type="number"
+                              value={week.week}
+                              onChange={(e) => onUpdateWeek(week.week, 'week', parseInt(e.target.value))}
+                              inputMode="numeric"
+                              className="w-16 bg-item-bg border-2 border-accent/30 rounded p-1 text-2xl font-serif font-bold text-accent text-center focus:border-accent outline-none"
+                            />
                           ) : (
-                             <>
-                               <div className="flex items-center gap-2.5 text-xs text-primary-text/80 bg-item-bg/40 p-1.5 rounded border border-primary/10 shadow-sm overflow-hidden">
+                            <span className={`text-4xl font-serif font-bold transition-colors duration-500 ${isCompleted ? 'text-stone-200' : isNextUp ? 'text-accent' : 'text-stone-300'}`}>
+                              {week.week}
+                            </span>
+                          )}
+                          {isNextUp && <span className="text-[7px] font-bold text-accent tracking-tighter uppercase mt-[-4px]">Siguiente</span>}
+                        </div>
+
+                        <div className="flex flex-col gap-3 flex-1 mt-1">
+                          <div className="flex items-center gap-2">
+                            {isCompleted && <span className="text-[10px] font-serif italic text-stone-300">Sellada transitoriamente</span>}
+                            {isEditing && isCompleted && <span className="text-[10px] font-serif italic text-accent/60">(Editando sello histórico)</span>}
+                          </div>
+
+                          <div className={`grid grid-cols-1 gap-2 transition-all ${isCompleted && !isEditing ? 'opacity-40 grayscale' : 'opacity-100'}`}>
+                            {isEditing ? (
+                              <>
+                                {/* Novel Edit */}
+                                <div className="flex flex-col gap-1 bg-item-bg p-2.5 rounded border border-accent/20 shadow-md transition-all focus-within:ring-2 focus-within:ring-accent/20">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xl">📖</span>
+                                    <select
+                                      value={week.novelTitle}
+                                      onChange={(e) => onUpdateWeek(week.week, 'novelTitle', e.target.value)}
+                                      className="flex-1 bg-transparent border-0 p-0 text-sm font-serif font-bold text-primary-text focus:ring-0 cursor-pointer appearance-none"
+                                    >
+                                      <option value="">(Sin Novela)</option>
+                                      {books.filter(b => b.type === 'novel').map(b => (
+                                        <option key={b.id} value={b.title} style={{ color: b.color || 'inherit' }}>{b.title}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    value={week.novelSection}
+                                    onChange={(e) => onUpdateWeek(week.week, 'novelSection', e.target.value)}
+                                    className="w-full bg-section-bg mt-1 px-2 py-1.5 rounded border border-accent/30 text-[11px] text-primary-text font-serif font-bold italic uppercase tracking-wider focus:ring-1 focus:ring-accent/50 outline-none placeholder:text-stone-400"
+                                    placeholder="Capítulos / Sección / Tomo..."
+                                  />
+                                </div>
+
+                                {/* Manga Edit */}
+                                <div className="flex flex-col gap-1 bg-item-bg p-2.5 rounded border border-accent/20 shadow-md transition-all focus-within:ring-2 focus-within:ring-accent/20">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xl">📚</span>
+                                    <select
+                                      value={week.mangaTitle}
+                                      onChange={(e) => onUpdateWeek(week.week, 'mangaTitle', e.target.value)}
+                                      className="flex-1 bg-transparent border-0 p-0 text-sm font-serif font-bold text-primary-text focus:ring-0 cursor-pointer appearance-none"
+                                    >
+                                      <option value="">(Sin Manga)</option>
+                                      {books.filter(b => b.type === 'manga').map(b => (
+                                        <option key={b.id} value={b.title} style={{ color: b.color || 'inherit' }}>{b.title}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    value={week.mangaVols}
+                                    onChange={(e) => onUpdateWeek(week.week, 'mangaVols', e.target.value)}
+                                    className="w-full bg-section-bg mt-1 px-2 py-1.5 rounded border border-accent/30 text-[11px] text-primary-text font-serif font-bold italic uppercase tracking-wider focus:ring-1 focus:ring-accent/50 outline-none placeholder:text-stone-400"
+                                    placeholder="Capítulos / Tomos / Arcos..."
+                                  />
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="flex items-center gap-2.5 text-xs text-primary-text/80 bg-item-bg/40 p-1.5 rounded border border-primary/10 shadow-sm overflow-hidden">
                                   <span className="text-lg flex-shrink-0">{novelBook?.emoji || '📖'}</span>
                                   <div className="flex flex-col min-w-0">
                                     <span className="font-serif font-bold text-primary-text leading-tight truncate">{week.novelTitle || 'Sin título'}</span>
                                     <span className="text-[10px] text-stone-500 italic uppercase tracking-tighter truncate">{week.novelSection || 'Tomo 1'}</span>
                                   </div>
-                               </div>
-                               <div className="flex items-center gap-2.5 text-xs text-primary-text/80 bg-item-bg/40 p-1.5 rounded border border-primary/10 shadow-sm overflow-hidden">
+                                </div>
+                                <div className="flex items-center gap-2.5 text-xs text-primary-text/80 bg-item-bg/40 p-1.5 rounded border border-primary/10 shadow-sm overflow-hidden">
                                   <span className="text-lg flex-shrink-0">{mangaBook?.emoji || '📚'}</span>
                                   <div className="flex flex-col min-w-0">
                                     <span className="font-serif font-bold text-primary-text leading-tight truncate">{week.mangaTitle || 'Sin título'}</span>
                                     <span className="text-[10px] text-stone-500 italic uppercase tracking-tighter truncate">{week.mangaVols || 'Tomo 1'}</span>
                                   </div>
-                               </div>
-                             </>
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          {!isEditing && week.tip && (
+                            <p className={`text-[11px] font-serif italic text-stone-400 border-l-2 border-stone-200/50 pl-3 mt-1 leading-relaxed ${isCompleted ? 'opacity-30' : 'opacity-100'}`}>
+                              "{week.tip}"
+                            </p>
+                          )}
+
+                          {isEditing && (
+                            <textarea
+                              value={week.tip}
+                              onChange={(e) => onUpdateWeek(week.week, 'tip', e.target.value)}
+                              className="w-full bg-section-bg border border-accent/20 rounded p-2 text-[10px] text-primary-text outline-none resize-none font-serif italic mt-1 focus:border-accent transition-colors shadow-inner"
+                              placeholder="Inscribe un consejo del archivero para esta semana..."
+                            />
                           )}
                         </div>
-                        
-                        {!isEditing && week.tip && (
-                           <p className={`text-[11px] font-serif italic text-stone-400 border-l-2 border-stone-200/50 pl-3 mt-1 leading-relaxed ${isCompleted ? 'opacity-30' : 'opacity-100'}`}>
-                             "{week.tip}"
-                           </p>
+                      </div>
+
+                      <div className={`flex-shrink-0 flex items-center justify-center group/seal ${isEditing ? 'w-6' : 'w-24'}`}>
+                        {isEditing ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onDeleteWeek(week.week); }}
+                            className="absolute top-2 right-2 p-2.5 text-stone-300 hover:text-red-500 rounded transition-all opacity-60 hover:opacity-100 flex items-center justify-center min-w-[44px] min-h-[44px]"
+                            aria-label="Eliminar semana"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        ) : (
+                          <div className="relative w-20 h-20 flex items-center justify-center">
+                            {isCompleted ? (
+                              <>
+                                <div className={`bg-accent text-white rounded-full w-16 h-16 flex flex-col items-center justify-center shadow-lg transform -rotate-12 border-2 border-accent-secondary animate-seal transition-all hover:scale-110 active:scale-95 group-hover/seal:rotate-0 duration-500`}>
+                                  <span className="text-[7px] font-bold tracking-[0.2em] uppercase mb-0.5 opacity-80">ARCHIVOS</span>
+                                  <span className="text-[9px] font-serif font-bold leading-tight tracking-widest text-center px-1">SELLADO</span>
+                                  <div className="mt-1 flex gap-0.5 opacity-50">
+                                    <span className="text-[6px]">✦</span>
+                                    <span className="text-[6px]">✦</span>
+                                    <span className="text-[6px]">✦</span>
+                                  </div>
+                                </div>
+                                {onLogWeek && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onLogWeek({
+                                        book: week.novelTitle || week.mangaTitle,
+                                        chapter: `Semana ${week.week}: ${week.novelSection || week.mangaVols}`,
+                                        date: new Date().toISOString().split('T')[0]
+                                      });
+                                    }}
+                                    className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold uppercase tracking-widest text-accent hover:text-accent-secondary transition-colors animate-fade-in"
+                                  >
+                                    ✎ Inscribir Crónica
+                                  </button>
+                                )}
+                              </>
+                            ) : (
+                              <button className={`bg-item-bg border-2 border-accent text-accent rounded-sm py-2 px-4 text-[9px] font-bold uppercase tracking-[0.2em] hover:bg-accent hover:text-white transition-all shadow-md group-hover:scale-105 ${isNextUp ? 'ring-4 ring-accent/10' : ''}`}>
+                                SELLAR
+                              </button>
+                            )}
+                          </div>
                         )}
-                        
-                         {isEditing && (
-                            <textarea 
-                              value={week.tip} 
-                              onChange={(e) => onUpdateWeek(week.week, 'tip', e.target.value)} 
-                              className="w-full bg-section-bg border border-accent/20 rounded p-2 text-[10px] text-primary-text outline-none resize-none font-serif italic mt-1 focus:border-accent transition-colors shadow-inner" 
-                              placeholder="Inscribe un consejo del archivero para esta semana..." 
-                            />
-                         )}
                       </div>
                     </div>
-
-                    <div className={`flex-shrink-0 flex items-center justify-center group/seal ${isEditing ? 'w-6' : 'w-24'}`}>
-                      {isEditing ? (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); onDeleteWeek(week.week); }} 
-                          className="absolute top-2 right-2 p-2.5 text-stone-300 hover:text-red-500 rounded transition-all opacity-60 hover:opacity-100 flex items-center justify-center min-w-[44px] min-h-[44px]" 
-                          aria-label="Eliminar semana"
-                        >
-                          <Trash2 size={16}/>
-                        </button>
-                      ) : (
-                        <div className="relative w-20 h-20 flex items-center justify-center">
-                          {isCompleted ? (
-                            <>
-                              <div className={`bg-accent text-white rounded-full w-16 h-16 flex flex-col items-center justify-center shadow-lg transform -rotate-12 border-2 border-accent-secondary animate-seal transition-all hover:scale-110 active:scale-95 group-hover/seal:rotate-0 duration-500`}>
-                                 <span className="text-[7px] font-bold tracking-[0.2em] uppercase mb-0.5 opacity-80">ARCHIVOS</span>
-                                 <span className="text-[9px] font-serif font-bold leading-tight tracking-widest text-center px-1">SELLADO</span>
-                                 <div className="mt-1 flex gap-0.5 opacity-50">
-                                   <span className="text-[6px]">✦</span>
-                                   <span className="text-[6px]">✦</span>
-                                   <span className="text-[6px]">✦</span>
-                                 </div>
-                              </div>
-                              {onLogWeek && (
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onLogWeek({
-                                      book: week.novelTitle || week.mangaTitle,
-                                      chapter: `Semana ${week.week}: ${week.novelSection || week.mangaVols}`,
-                                      date: new Date().toISOString().split('T')[0]
-                                    });
-                                  }}
-                                  className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold uppercase tracking-widest text-accent hover:text-accent-secondary transition-colors animate-fade-in"
-                                >
-                                  ✎ Inscribir Crónica
-                                </button>
-                              )}
-                            </>
-                          ) : (
-                            <button className={`bg-item-bg border-2 border-accent text-accent rounded-sm py-2 px-4 text-[9px] font-bold uppercase tracking-[0.2em] hover:bg-accent hover:text-white transition-all shadow-md group-hover:scale-105 ${isNextUp ? 'ring-4 ring-accent/10' : ''}`}>
-                              SELLAR
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {isEditing && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onInsertWeek(week.week + 1); }}
-                      aria-label={`Insertar semana después de ${week.week}`}
-                      className="flex items-center justify-center gap-1.5 w-full py-1.5 text-[10px] font-serif italic text-stone-500 hover:text-accent hover:bg-accent/5 transition-colors"
-                    >
-                      <Plus size={10} /> insertar semana aquí
-                    </button>
-                  )}
+                    {isEditing && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onInsertWeek(week.week + 1); }}
+                        aria-label={`Insertar semana después de ${week.week}`}
+                        className="flex items-center justify-center gap-1.5 w-full py-1.5 text-[10px] font-serif italic text-stone-500 hover:text-accent hover:bg-accent/5 transition-colors"
+                      >
+                        <Plus size={10} /> insertar semana aquí
+                      </button>
+                    )}
                   </Fragment>
                 );
               })}
             </div>
-            
+
             {isEditing && (
               <button onClick={() => onAddWeek(phase.id)} className="mt-4 py-4 border-2 border-dashed border-primary/30 text-stone-400 rounded-lg hover:text-accent hover:border-accent/50 transition-all font-serif italic text-sm text-center bg-item-bg/30">
                 + Inscribir nueva semana en {phase.label}
@@ -1084,10 +1082,10 @@ function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, expa
       {isEditing && orphanWeeks.length > 0 && (
         <div className="flex flex-col gap-6 mt-4 border-2 border-red-500/20 p-6 rounded-xl bg-red-500/5">
           <div className="flex justify-between items-baseline border-b-2 border-red-500/20 pb-3 mb-2">
-             <h3 className="font-serif text-2xl text-red-700 tracking-tight shrink-0">Semanas fuera de cronología</h3>
-             <span className="text-[10px] font-serif italic text-red-600/60 text-right leading-tight">Estas semanas existen en el registro pero no pertenecen a ninguna Era definida.</span>
+            <h3 className="font-serif text-2xl text-red-700 tracking-tight shrink-0">Semanas fuera de cronología</h3>
+            <span className="text-[10px] font-serif italic text-red-600/60 text-right leading-tight">Estas semanas existen en el registro pero no pertenecen a ninguna Era definida.</span>
           </div>
-          
+
           <div className="flex flex-col divide-y divide-red-500/10 bg-item-bg/40 rounded-sm px-4 border border-red-500/10">
             {orphanWeeks.map((week) => (
               <div key={week.week} className="py-4 flex items-center justify-between gap-6">
@@ -1098,11 +1096,11 @@ function WeekSchedule({ phases, schedule, books, completedWeeks, isEditing, expa
                     <span className="text-[10px] text-stone-400 italic">No visible en el Plan Maestro</span>
                   </div>
                 </div>
-                <button 
-                  onClick={() => onDeleteWeek(week.week)} 
+                <button
+                  onClick={() => onDeleteWeek(week.week)}
                   className="p-3 text-red-400 hover:text-red-600 transition-all flex items-center justify-center min-w-[48px] min-h-[48px]"
                 >
-                  <Trash2 size={18}/>
+                  <Trash2 size={18} />
                 </button>
               </div>
             ))}
@@ -1229,15 +1227,15 @@ Escribe una sola oración poética (máximo 25 palabras) en español que capture
                   let line = '', curY = y;
                   for (const w of text.split(' ')) {
                     const t = line + w + ' ';
-                    if (ctx.measureText(t).width > maxW && line) { ctx.fillText(line.trim(), SIZE/2, curY); line = w + ' '; curY += lh; }
+                    if (ctx.measureText(t).width > maxW && line) { ctx.fillText(line.trim(), SIZE / 2, curY); line = w + ' '; curY += lh; }
                     else line = t;
                   }
-                  ctx.fillText(line.trim(), SIZE/2, curY);
+                  ctx.fillText(line.trim(), SIZE / 2, curY);
                   return curY;
                 };
                 const hline = (y) => {
                   ctx.strokeStyle = '#78350f'; ctx.lineWidth = 1;
-                  ctx.beginPath(); ctx.moveTo(80, y); ctx.lineTo(SIZE-80, y); ctx.stroke();
+                  ctx.beginPath(); ctx.moveTo(80, y); ctx.lineTo(SIZE - 80, y); ctx.stroke();
                 };
 
                 center(`✦  SEMANA ${weekData.week}  ·  SELLADA  ✦`, 140, 'bold 26px serif', '#f59e0b');

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, Search, User, Globe, HelpCircle, Edit3, Trash2, Link as LinkIcon, Image as ImageIcon, CalendarDays, CheckSquare, Square, X, Share2, ChevronDown, Shield, ScrollText, Sparkles, Clock, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShareQuote } from '../components/ShareQuote';
@@ -50,7 +51,7 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
   const PAGE_SIZE = 20;
 
   const setSearchTerm = useCallback((v) => { setSearchTermRaw(v); setVisibleCount(PAGE_SIZE); }, []);
-  const setBookFilter = useCallback((v) => { setBookFilterRaw(v); setVisibleCount(PAGE_SIZE); }, []);
+  const setBookFilter = useCallback((v) => { setBookFilterRaw(v); setVisibleCount(PAGE_SIZE); window.scrollTo({ top: 0, behavior: 'smooth' }); }, []);
 
   const filteredEntries = useMemo(() => {
     let result = entries;
@@ -236,7 +237,8 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
   }
 
   return (
-    <div className="flex flex-col gap-8 animate-fade-in pb-28">
+    <>
+      {/* PORTALED: fixed elements outside the animated div to avoid transform containing block */}
       {shareQuote && (
         <ShareQuote
           quote={shareQuote.quote}
@@ -275,30 +277,9 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
         />
       )}
 
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-2">
-        <h2 className="text-4xl font-serif text-primary-text tracking-tight">Crónicas</h2>
-        {bulkMode && (
-          <div className="flex items-center gap-2">
-            <button onClick={bulkDelete} disabled={selected.size === 0} className="px-4 py-2 text-xs font-bold uppercase tracking-widest bg-danger-deep hover:bg-danger-deep/80 text-white rounded-lg transition-colors disabled:opacity-40">
-              Eliminar ({selected.size})
-            </button>
-            <button onClick={exitBulk} aria-label="Salir de selección" className="p-2 text-stone-400 hover:text-stone-600">
-              <X size={20} />
-            </button>
-          </div>
-        )}
-        {!bulkMode && entries.length > 1 && (
-          <button onClick={() => setBulkMode(true)} aria-label="Selección múltiple" className="p-2 text-stone-400 hover:text-accent transition-colors">
-            <CheckSquare size={20} />
-          </button>
-        )}
-      </div>
-
-      {/* FLOATING FABs — always accessible */}
-      {!bulkMode && (
+      {/* FLOATING FABs — portaled to body so fixed positioning bypasses ancestor transforms */}
+      {!bulkMode && createPortal(
         <div className="fixed bottom-24 right-6 z-[110] flex flex-col gap-4 items-end">
-          {/* MODO LECTURA FAB */}
           <button
             onClick={() => setShowActiveReading(true)}
             aria-label="Modo Lectura Activa"
@@ -309,7 +290,6 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
             <span className="sr-only">Modo Lectura</span>
           </button>
 
-          {/* WAX SEAL FAB */}
           <button
             onClick={() => { savedScrollY.current = window.scrollY; setIsAdding(true); setLocalDraft(null); }}
             aria-label="Nueva crónica"
@@ -318,90 +298,121 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
             <span className="text-[7px] font-bold tracking-[0.2em] mb-0.5">NUEVA</span>
             <Plus size={20} strokeWidth={3} />
           </button>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* ACTIVE READING OVERLAY */}
-      <AnimatePresence>
-        {showActiveReading && (
-          <ActiveReadingOverlay 
-            schedule={schedule}
-            completedWeeks={completedWeeks}
-            onClose={() => setShowActiveReading(false)}
-            onSeal={(idx) => {
-              setCompletedWeeks([...completedWeeks, idx]);
-              notify(`Semana ${idx + 1} sellada correctamente.`, 'success');
-              setShowActiveReading(false);
-            }}
-            onLog={(week) => {
-              setLocalDraft({ book: week.novelTitle || week.mangaTitle, chapter: week.novelSection || week.mangaVols });
-              setShowActiveReading(false);
-            }}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* SEARCH & FILTER */}
-      {entries.length > 0 && (
-        <div className="flex flex-col gap-4">
-          <div className="relative group">
-            <Search className="absolute left-0 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-accent transition-colors" size={18} />
-            <input
-              type="text" placeholder="Inscribir búsqueda..."
-              aria-label="Buscar en tus crónicas"
-              value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-              inputMode="search"
-              enterKeyHint="search"
-              className="w-full bg-transparent border-b-2 border-accent/40 py-3 pl-8 pr-4 text-lg outline-none focus:border-accent transition-all font-serif italic text-primary-text placeholder:text-stone-400/60"
+      {/* ACTIVE READING OVERLAY — portaled to body */}
+      {createPortal(
+        <AnimatePresence>
+          {showActiveReading && (
+            <ActiveReadingOverlay
+              schedule={schedule}
+              completedWeeks={completedWeeks}
+              onClose={() => setShowActiveReading(false)}
+              onSeal={(idx) => {
+                setCompletedWeeks([...completedWeeks, idx]);
+                notify(`Semana ${idx + 1} sellada correctamente.`, 'success');
+                setShowActiveReading(false);
+              }}
+              onLog={(week) => {
+                setLocalDraft({ book: week.novelTitle || week.mangaTitle, chapter: week.novelSection || week.mangaVols });
+                setShowActiveReading(false);
+              }}
             />
-          </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            <button
-              onClick={() => setBookFilter('todos')}
-              className={`px-4 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest border transition-all flex-shrink-0 ${bookFilter === 'todos' ? 'bg-accent text-zinc-950 border-accent shadow-sm' : 'bg-item-bg border-primary/30 text-stone-500 hover:border-accent/40'}`}
-            >
-              Todos
-            </button>
-            {books.map(b => (
-              <button
-                key={b.id || b.title}
-                onClick={() => setBookFilter(b.title)}
-                className={`px-4 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest border transition-all flex-shrink-0 ${bookFilter === b.title ? 'bg-header-bg border-accent text-accent shadow-inner' : 'bg-item-bg border-primary/30 text-stone-500 hover:border-accent/40'}`}
-              >
-                {b.emoji} {b.title}
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+    <div className="flex flex-col gap-6 animate-fade-in pb-20">
+      {/* STICKY HEADER BLOCK */}
+      <div className="sticky top-0 z-40 bg-app-bg/95 backdrop-blur-md pb-4 -mx-4 px-4 border-b border-primary/10 shadow-sm">
+        {/* HEADER */}
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-serif text-primary-text tracking-tight">Crónicas</h2>
+          {bulkMode && (
+            <div className="flex items-center gap-2">
+              <button onClick={bulkDelete} disabled={selected.size === 0} className="px-4 py-2 text-xs font-bold uppercase tracking-widest bg-danger-deep hover:bg-danger-deep/80 text-white rounded-lg transition-colors disabled:opacity-40">
+                Eliminar ({selected.size})
               </button>
-            ))}
-            <button
-              onClick={() => setShowDateRange(prev => !prev)}
-              className={`px-4 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest border transition-all flex-shrink-0 ${(dateFrom || dateTo) ? 'bg-header-bg border-accent text-accent' : 'bg-item-bg border-primary/30 text-stone-500 hover:border-accent/40'}`}
-            >
-              <CalendarDays size={12} className="inline mr-1" />
-              {(dateFrom || dateTo) ? `${dateFrom || '…'} — ${dateTo || '…'}` : 'Fechas'}
-            </button>
-          </div>
-          {/* DATE RANGE — collapsed by default */}
-          {showDateRange && (
-            <div className="flex items-center gap-3 animate-fade-in bg-header-bg p-3 rounded-lg border border-stone-200/50">
-              <input
-                type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setVisibleCount(PAGE_SIZE); }}
-                aria-label="Fecha desde"
-                className="flex-1 bg-item-bg/50 border border-stone-200 rounded-md py-2 px-3 text-xs text-primary-text outline-none focus:border-accent font-serif"
-              />
-              <span className="text-stone-400 text-xs">—</span>
-              <input
-                type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setVisibleCount(PAGE_SIZE); }}
-                aria-label="Fecha hasta"
-                className="flex-1 bg-item-bg/50 border border-stone-200 rounded-md py-2 px-3 text-xs text-primary-text outline-none focus:border-accent font-serif"
-              />
-              {(dateFrom || dateTo) && (
-                <button onClick={() => { setDateFrom(''); setDateTo(''); }} aria-label="Limpiar fechas" className="p-3 text-stone-400 hover:text-accent flex items-center justify-center min-w-[44px] min-h-[44px]">
-                  <X size={18} />
-                </button>
-              )}
+              <button onClick={exitBulk} aria-label="Salir de selección" className="p-2 text-stone-400 hover:text-stone-600">
+                <X size={20} />
+              </button>
             </div>
           )}
+          {!bulkMode && entries.length > 1 && (
+            <button onClick={() => setBulkMode(true)} aria-label="Selección múltiple" className="p-2 text-stone-400 hover:text-accent transition-colors">
+              <CheckSquare size={20} />
+            </button>
+          )}
         </div>
-      )}
+
+        {/* SEARCH & FILTER */}
+        {entries.length > 0 && (
+          <div className="flex flex-col gap-4">
+            <div className="relative group">
+              <Search className="absolute left-0 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-accent transition-colors" size={18} />
+              <input
+                type="text" placeholder="Inscribir búsqueda..."
+                aria-label="Buscar en tus crónicas"
+                value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                inputMode="search"
+                enterKeyHint="search"
+                className="w-full bg-transparent border-b-2 border-accent/40 py-3 pl-8 pr-4 text-sm outline-none focus:border-accent transition-all font-serif italic text-primary-text placeholder:text-stone-400/60"
+              />
+            </div>
+            <div className="relative">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide pr-10">
+                <button
+                  onClick={() => setBookFilter('todos')}
+                  className={`px-4 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest border transition-all flex-shrink-0 ${bookFilter === 'todos' ? 'bg-accent text-zinc-950 border-accent shadow-sm' : 'bg-item-bg border-primary/30 text-stone-500 hover:border-accent/40'}`}
+                >
+                  Todos
+                </button>
+                {books.map(b => (
+                  <button
+                    key={b.id || b.title}
+                    onClick={() => setBookFilter(b.title)}
+                    className={`px-4 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest border transition-all flex-shrink-0 ${bookFilter === b.title ? 'bg-header-bg border-accent text-accent shadow-inner' : 'bg-item-bg border-primary/30 text-stone-500 hover:border-accent/40'}`}
+                  >
+                    {b.emoji} {b.title}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setShowDateRange(prev => !prev)}
+                  className={`px-4 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest border transition-all flex-shrink-0 ${(dateFrom || dateTo) ? 'bg-header-bg border-accent text-accent' : 'bg-item-bg border-primary/30 text-stone-500 hover:border-accent/40'}`}
+                >
+                  <CalendarDays size={12} className="inline mr-1" />
+                  {(dateFrom || dateTo) ? `${dateFrom || '…'} — ${dateTo || '…'}` : 'Fechas'}
+                </button>
+              </div>
+              <div className="absolute right-0 top-0 bottom-0 w-12 pointer-events-none bg-gradient-to-l from-app-bg to-transparent z-10" />
+            </div>
+            {/* DATE RANGE — collapsed by default */}
+            {showDateRange && (
+              <div className="flex items-center gap-3 animate-fade-in bg-header-bg p-3 rounded-lg border border-stone-200/50">
+                <input
+                  type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setVisibleCount(PAGE_SIZE); }}
+                  aria-label="Fecha desde"
+                  className="flex-1 bg-item-bg/50 border border-stone-200 rounded-md py-2 px-3 text-xs text-primary-text outline-none focus:border-accent font-serif"
+                />
+                <span className="text-stone-400 text-xs">—</span>
+                <input
+                  type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setVisibleCount(PAGE_SIZE); }}
+                  aria-label="Fecha hasta"
+                  className="flex-1 bg-item-bg/50 border border-stone-200 rounded-md py-2 px-3 text-xs text-primary-text outline-none focus:border-accent font-serif"
+                />
+                {(dateFrom || dateTo) && (
+                  <button onClick={() => { setDateFrom(''); setDateTo(''); }} aria-label="Limpiar fechas" className="p-3 text-stone-400 hover:text-accent flex items-center justify-center min-w-[44px] min-h-[44px]">
+                    <X size={18} />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {filteredEntries.length > 0 && (searchTerm || bookFilter !== 'todos' || dateFrom || dateTo) && (
         <p className="text-[10px] text-stone-400 font-serif italic -mt-2">
@@ -450,6 +461,7 @@ export function ReadingLog({ onNavigateToEntity, onConsultOracle, prefilledData,
         )}
       </div>
     </div>
+    </>
   );
 }
 
@@ -481,10 +493,12 @@ const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, onUpdateT
 
   return (
     <div
-      className={`group bg-header-bg rounded-sm transition-all flex flex-col shadow-sm relative ${
+      className={`group autograph-card bg-header-bg rounded-sm transition-all flex flex-col shadow-sm relative ${
         bulkMode ? 'cursor-pointer' : ''
       } ${isSelected ? 'ring-2 ring-accent' : 'hover:shadow-md'}`}
     >
+      {/* Scroll-driven Border Drawing Overlay */}
+      <div className="absolute inset-0 border-2 border-accent/20 pointer-events-none rounded-sm animate-border-scroll z-0 pointer-events-none" />
       <div 
         onClick={bulkMode ? onToggleSelect : onToggleExpand}
         className={`bg-section-bg p-3.5 sm:p-5 flex justify-between items-center transition-colors cursor-pointer ${isExpanded ? 'border-b border-primary/50' : ''} hover:bg-item-bg/50`}
@@ -500,8 +514,8 @@ const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, onUpdateT
               {isSelected ? <CheckSquare size={18} /> : <Square size={18} />}
             </div>
           )}
-          <div className="min-w-0 flex-1">
-            <h3 className="font-serif text-primary-text text-lg sm:text-xl leading-snug truncate">{entry.book}</h3>
+          <div className="min-w-0 flex-1 animate-parallax-scroll">
+            <h3 className="font-serif text-primary-text text-sm sm:text-base leading-snug truncate">{entry.book}</h3>
             <p className="text-[10px] text-stone-500 uppercase tracking-widest font-bold mt-0.5">{entry.date} • {entry.chapter || 'S/N'}</p>
           </div>
         </div>
@@ -556,7 +570,7 @@ const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, onUpdateT
       >
         <div className="p-6 flex flex-col gap-8 bg-item-bg">
         {entry.summary && (
-          <div className="px-1">
+          <div className="px-1 animate-inscribe-scroll">
             <div className="flex items-center gap-2 text-accent/50 mb-2">
               <ScrollText size={12}/>
               <span className="text-[9px] uppercase font-bold tracking-widest">Resumen de la Sesión</span>
@@ -568,7 +582,7 @@ const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, onUpdateT
         )}
 
         {entry.reingreso && (
-          <div className="bg-header-bg p-5 rounded-sm border-l-4 border-accent italic font-serif text-primary-text leading-relaxed relative shadow-inner prose prose-stone max-w-none">
+          <div className="bg-header-bg p-5 rounded-sm border-l-4 border-accent italic font-serif text-primary-text leading-relaxed relative shadow-inner prose prose-stone max-w-none animate-inscribe-scroll">
              <span className="absolute -top-3 left-4 bg-header-bg px-2 text-[9px] text-accent uppercase tracking-widest font-bold">Reingreso</span>
              <ReactMarkdown remarkPlugins={[remarkGfm]}>{entry.reingreso}</ReactMarkdown>
           </div>
@@ -577,7 +591,7 @@ const LogCard = React.memo(function LogCard({ entry, onEdit, onDelete, onUpdateT
         {entry.quotes?.length > 0 && (
           <div className="flex flex-col gap-4 px-1">
             {entry.quotes.map((q, i) => (
-              <div key={i} className="relative pl-8 py-2 group/quote">
+              <div key={i} className="relative pl-8 py-2 group/quote animate-inscribe-scroll" style={{ animationDelay: `${i * 0.1}s` }}>
                 <span className="absolute left-0 top-0 text-accent text-3xl font-serif opacity-30">&ldquo;</span>
                 <div className="text-base italic font-serif text-primary-text leading-relaxed prose prose-stone max-w-none">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{q}</ReactMarkdown>
@@ -734,11 +748,11 @@ function ActiveReadingOverlay({ schedule, completedWeeks, onClose, onSeal, onLog
             <div className="h-[1px] w-8 bg-accent/30" />
           </div>
 
-          <h2 className="text-zinc-500 font-serif text-lg mb-2 uppercase tracking-widest">Semana {week.week}</h2>
-          <h1 className="text-white font-serif text-4xl mb-4 leading-tight">
+          <h2 className="text-zinc-500 font-serif text-sm mb-2 uppercase tracking-widest">Semana {week.week}</h2>
+          <h1 className="text-white font-serif text-2xl mb-4 leading-tight">
             {week.novelTitle || week.mangaTitle}
           </h1>
-          <p className="text-zinc-400 font-serif italic text-xl mb-6">
+          <p className="text-zinc-400 font-serif italic text-base mb-6">
             {week.novelSection || week.mangaVols}
           </p>
           
@@ -753,7 +767,7 @@ function ActiveReadingOverlay({ schedule, completedWeeks, onClose, onSeal, onLog
           <div className="flex flex-col gap-4">
             <button
               onClick={() => onSeal(nextIdx)}
-              className="w-full py-6 bg-accent text-white rounded-2xl font-serif font-bold text-xl shadow-xl shadow-accent/10 hover:bg-accent-secondary active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+              className="w-full py-6 bg-accent text-white rounded-2xl font-serif font-bold text-base shadow-xl shadow-accent/10 hover:bg-accent-secondary active:scale-[0.98] transition-all flex items-center justify-center gap-3"
             >
               <Sparkles size={20} />
               ✦ Sellar esta semana
@@ -761,7 +775,7 @@ function ActiveReadingOverlay({ schedule, completedWeeks, onClose, onSeal, onLog
             
             <button
               onClick={() => onLog(week)}
-              className="w-full py-4 bg-transparent text-zinc-400 hover:text-white rounded-2xl font-serif text-lg transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 bg-transparent text-zinc-400 hover:text-white rounded-2xl font-serif text-sm transition-all flex items-center justify-center gap-2"
             >
               <Edit3 size={18} />
               ✎ Inscribir Crónica
@@ -771,7 +785,7 @@ function ActiveReadingOverlay({ schedule, completedWeeks, onClose, onSeal, onLog
       ) : (
         <div className="text-center">
           <Sparkles size={48} className="text-accent mx-auto mb-6 opacity-30" />
-          <h1 className="text-white font-serif text-3xl mb-4">Gran Viaje Completado</h1>
+          <h1 className="text-white font-serif text-xl mb-4">Gran Viaje Completado</h1>
           <p className="text-zinc-500 font-serif italic mb-8">Has sellado todas las semanas de tu plan actual.</p>
           <button onClick={onClose} className="px-8 py-3 border border-zinc-800 text-zinc-400 rounded-full hover:bg-zinc-900 transition-all">
             Volver

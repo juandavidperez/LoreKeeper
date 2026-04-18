@@ -39,12 +39,12 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
   const { isOnline } = useNetworkStatus();
 
   // VisualViewport: hide bottom nav when soft keyboard is open
-  const initialVVHeight = useRef(window.visualViewport?.height ?? window.innerHeight);
+  // Compare against window.innerHeight (stays constant when keyboard opens on mobile)
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const update = () => setKeyboardOpen(vv.height < initialVVHeight.current * 0.75);
+    const update = () => setKeyboardOpen(vv.height < window.innerHeight * 0.75);
     vv.addEventListener('resize', update);
     return () => vv.removeEventListener('resize', update);
   }, []);
@@ -194,12 +194,16 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
   const headerHeight = `calc(${chromeH} + env(safe-area-inset-top))`;
   const navHeight = `calc(${chromeH} + env(safe-area-inset-bottom))`;
   const offlineBannerH = isOnline ? '0rem' : '1.75rem';
-  const mainPaddingTop = `calc(${chromeH} + 2rem + ${offlineBannerH} + env(safe-area-inset-top))`;
+  const mainPaddingTop = `calc(${chromeH} + ${offlineBannerH} + env(safe-area-inset-top))`;
 
   return (
     <div 
-      className={`min-h-dvh bg-app-bg text-primary-text font-sans overflow-x-hidden relative ${isCompactLandscape ? 'pb-16' : 'pb-32'}`}
-      style={{ '--nav-height': navHeight }}
+      className="h-dvh bg-app-bg text-primary-text font-sans overflow-hidden relative flex flex-col"
+      style={{ 
+        '--nav-height': navHeight, 
+        '--header-height': headerHeight,
+        '--main-padding-top': mainPaddingTop
+      }}
     >
       {/* 🕯️ Dedicated Background Layer for Ambience */}
       <div className="fixed inset-0 pointer-events-none candle-glow opacity-30 z-0 bg-app-bg" aria-hidden="true" />
@@ -292,8 +296,8 @@ export function MainLayout({ activeTab, setActiveTab, children }) {
       <main
         id="main-content"
         tabIndex={-1}
-        className="safe-x max-w-7xl mx-auto min-h-[calc(100dvh-80px)] outline-none relative z-10"
-        style={{ paddingTop: mainPaddingTop }}
+        className="safe-x max-w-7xl mx-auto w-full flex-1 overflow-y-auto outline-none relative z-10 scroll-smooth"
+        style={{ paddingTop: mainPaddingTop, paddingBottom: navHeight }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
