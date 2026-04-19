@@ -136,12 +136,12 @@ export function Encyclopedia({ entityFocus, onClearFocus, onConsultOracle }) {
                 ))}
               </div>
 
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
                 {['todos', 'personajes', 'lugares', 'reglas', 'glosario'].map(cat => (
                   <button
                     key={cat}
                     onClick={() => setCategoryFilter(cat)}
-                    className={`text-[9px] font-bold uppercase tracking-widest transition-all ${categoryFilter === cat ? 'text-accent border-b border-accent' : 'text-stone-400 hover:text-stone-600'}`}
+                    className={`flex-shrink-0 text-[9px] font-bold uppercase tracking-widest transition-all ${categoryFilter === cat ? 'text-accent border-b border-accent' : 'text-stone-400 hover:text-stone-600'}`}
                   >
                     {cat === 'todos' ? 'Categorías' : cat}
                   </button>
