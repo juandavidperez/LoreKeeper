@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, Fragment, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Trash2, Book, Layers, Layout, Download, Upload, ChevronDown, ChevronRight, Plus, Sparkles, Loader2, Scroll, Share2 } from 'lucide-react';
 import { useLorekeeperState } from '../hooks/useLorekeeperState';
 import { useNotification } from '../hooks/useNotification';
@@ -1141,13 +1142,13 @@ Escribe una sola oración poética (máximo 25 palabras) en español que capture
       .finally(() => setLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-zinc-950/90 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="w-full sm:max-w-md bg-header-bg border border-accent/40 rounded-t-2xl sm:rounded-xl shadow-2xl overflow-hidden"
+        className="w-full sm:max-w-md bg-header-bg border border-accent/40 rounded-t-2xl sm:rounded-xl shadow-2xl overflow-y-auto max-h-[90dvh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -1299,6 +1300,7 @@ Escribe una sola oración poética (máximo 25 palabras) en español que capture
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
