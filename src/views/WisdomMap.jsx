@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, useContext } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { forceSimulation, forceManyBody, forceCenter, forceCollide, forceLink } from 'd3-force'
 import { drag } from 'd3-drag'
 import { select } from 'd3-selection'
 import { useLorekeeperState } from '../hooks/useLorekeeperState'
+import { ThemeContext } from '../context/ThemeContext'
 import { loadMapAssets, getLandmarkType } from '../utils/mapImages'
 import { MapFilters } from '../components/MapFilters'
 import { RelationshipPanel } from '../components/RelationshipPanel'
@@ -46,6 +47,7 @@ function touchCenter(t1, t2) {
 
 export function WisdomMap() {
   const { archive, books, entries, entities, mentions, relations, setRelations, mergeEntities } = useLorekeeperState()
+  const { theme } = useContext(ThemeContext)
   const [assets, setAssets]         = useState(null)
   const [loading, setLoading]       = useState(true)
   const [selectedBook, setSelectedBook]   = useState('all')
@@ -457,7 +459,11 @@ export function WisdomMap() {
       {/* ── Map canvas ── */}
       <div
         className="flex-1 relative mx-1 mt-1 mb-1 sm:mx-4 sm:mb-4 rounded-xl overflow-hidden border flex flex-col"
-        style={{ borderColor: 'var(--border-subtle)', background: isEmpty ? 'var(--bg-card)' : undefined }}
+        style={{
+          borderColor: theme === 'dark' ? 'rgba(245,158,11,0.25)' : 'var(--border-subtle)',
+          background: isEmpty ? 'var(--bg-card)' : undefined,
+          boxShadow: theme === 'dark' && !isEmpty ? 'inset 0 0 60px 20px rgba(0,0,0,0.55)' : undefined,
+        }}
       >
         <MapFilters 
           filters={filters} 
