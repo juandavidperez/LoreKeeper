@@ -71,6 +71,107 @@ function NameAutocomplete({ value, onChange, placeholder, suggestions = [], inpu
   );
 }
 
+const TAG_SUGGESTIONS = {
+  characters: [
+    { label: 'protagonista', group: 'Héroe' }, { label: 'elegido', group: 'Héroe' }, { label: 'aventurero', group: 'Héroe' },
+    { label: 'mentor', group: 'Maestro' }, { label: 'sensei', group: 'Maestro' }, { label: 'guía', group: 'Maestro' }, { label: 'capitán', group: 'Maestro' },
+    { label: 'oscuro', group: 'Antihéroe' }, { label: 'renegado', group: 'Antihéroe' }, { label: 'solitario', group: 'Antihéroe' }, { label: 'mercenario', group: 'Antihéroe' },
+    { label: 'combate', group: 'Guerrero' }, { label: 'soldado', group: 'Guerrero' }, { label: 'caballero', group: 'Guerrero' }, { label: 'defensor', group: 'Guerrero' },
+    { label: 'sabio', group: 'Sabio' }, { label: 'investigador', group: 'Sabio' }, { label: 'alquimista', group: 'Sabio' }, { label: 'médico', group: 'Sabio' },
+    { label: 'jefe', group: 'Monstruo' }, { label: 'deidad', group: 'Monstruo' }, { label: 'terror', group: 'Monstruo' }, { label: 'bijuu', group: 'Monstruo' },
+    { label: 'bestia', group: 'Criatura' }, { label: 'mascota', group: 'Criatura' }, { label: 'invocación', group: 'Criatura' },
+    { label: 'civil', group: 'Persona' }, { label: 'aldeano', group: 'Persona' }, { label: 'npc', group: 'Persona' },
+  ],
+  places: [
+    { label: 'castillo', group: 'Castillo' }, { label: 'fortaleza', group: 'Castillo' }, { label: 'palacio', group: 'Castillo' },
+    { label: 'bosque', group: 'Bosque' }, { label: 'selva', group: 'Bosque' },
+    { label: 'montana', group: 'Montaña' }, { label: 'cumbre', group: 'Montaña' },
+    { label: 'ruinas', group: 'Ruinas' }, { label: 'templo', group: 'Ruinas' }, { label: 'abandonado', group: 'Ruinas' },
+    { label: 'ciudad', group: 'Ciudad' }, { label: 'capital', group: 'Ciudad' },
+    { label: 'escuela', group: 'Academia' }, { label: 'academia', group: 'Academia' }, { label: 'instituto', group: 'Academia' },
+    { label: 'ninja', group: 'Shinobi' }, { label: 'konoha', group: 'Shinobi' },
+    { label: 'pueblo', group: 'Villa' }, { label: 'aldea', group: 'Villa' },
+  ],
+};
+
+function TagAutocomplete({ value = [], onChange, entityType = 'characters' }) {
+  const [raw, setRaw] = useState(value.join(', '));
+  const [open, setOpen] = useState(false);
+  const inputRef = useRef(null);
+  const containerRef = useRef(null);
+  const pool = TAG_SUGGESTIONS[entityType] || [];
+
+  // Sync raw when value changes from outside (e.g. AI extraction)
+  useEffect(() => {
+    const external = value.join(', ');
+    if (external !== raw.trim().replace(/,\s*$/, '')) setRaw(value.length ? value.join(', ') + ', ' : '');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value.join(',')]);
+
+  const partial = raw.split(',').pop().trim().toLowerCase();
+  const existing = raw.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+
+  const suggestions = partial.length > 0
+    ? pool.filter(s => s.label.includes(partial) && !existing.includes(s.label)).slice(0, 6)
+    : [];
+
+  const commit = (rawStr) => {
+    onChange(rawStr.split(',').map(t => t.trim()).filter(Boolean));
+  };
+
+  const pickSuggestion = (label) => {
+    const parts = raw.split(',');
+    parts[parts.length - 1] = ' ' + label;
+    const next = parts.join(',').replace(/^,\s*/, '') + ', ';
+    setRaw(next);
+    commit(next);
+    setOpen(false);
+    inputRef.current?.focus();
+  };
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative flex flex-col gap-1.5">
+      <input
+        ref={inputRef}
+        value={raw}
+        onChange={e => { setRaw(e.target.value); commit(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder="Etiquetas (separadas por coma)..."
+        className="bg-transparent border-0 border-b border-primary-text/5 text-xs text-stone-400 outline-none focus:border-accent/20 transition-all font-serif italic"
+      />
+      {open && suggestions.length > 0 && (
+        <ul className="absolute left-0 right-0 top-full mt-1 bg-header-bg border border-accent/25 rounded-sm shadow-2xl z-50 overflow-hidden">
+          {suggestions.map(s => (
+            <li key={s.label}>
+              <button
+                type="button"
+                onMouseDown={() => pickSuggestion(s.label)}
+                onTouchEnd={e => { e.preventDefault(); pickSuggestion(s.label); }}
+                className="w-full text-left px-4 py-2.5 flex items-center justify-between gap-3 hover:bg-accent/10 active:bg-accent/20"
+              >
+                <span className="text-xs font-serif text-primary-text">{s.label}</span>
+                <span className="text-[9px] uppercase tracking-widest text-stone-500">{s.group}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 let nextItemId = 0;
 function uid() { return `item-${Date.now()}-${nextItemId++}-${Math.random().toString(36).slice(2, 7)}`; }
 
@@ -652,7 +753,7 @@ export function EntryForm({ books, onSave, onCancel, initialData = null }) {
             <div key={c.id} className="bg-item-bg p-5 rounded-sm border-l-4 border-l-entity-character/40 mb-3 flex flex-col gap-3 relative shadow-sm hover:shadow-md transition-all">
               <button onClick={() => removeItem('characters', c.id)} aria-label="Eliminar" className="absolute top-3 right-3 p-3 text-stone-300 hover:text-red-500 transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"><Trash2 size={20}/></button>
               <NameAutocomplete value={c.name} onChange={v => updateItem('characters', c.id, 'name', v)} placeholder="Nombre del ser..." suggestions={archive.personajes || []} inputClassName="w-full bg-transparent border-0 border-b-2 border-primary-text/10 text-sm font-bold text-primary-text outline-none pb-1 focus:border-accent transition-all" />
-              <input value={c.tags} onChange={e => updateItem('characters', c.id, 'tags', e.target.value.split(',').map(t => t.trim()).filter(Boolean))} placeholder="Etiquetas (separadas por coma)..." className="bg-transparent border-0 border-b border-primary-text/5 text-xs text-stone-400 outline-none focus:border-accent/20 transition-all font-serif italic" />
+              <TagAutocomplete value={c.tags || []} onChange={v => updateItem('characters', c.id, 'tags', v)} entityType="characters" />
               <TiptapEditor
                 value={c.content}
                 onChange={v => updateItem('characters', c.id, 'content', v)}
