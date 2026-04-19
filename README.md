@@ -32,7 +32,7 @@ Sistema de gestión de lectura inspirado en "rituales" semanales. Organiza tus l
 Editor enriquecido para registrar momentos clave. Incluye captura de imágenes, detección automática de entidades (personajes/lugares) y un **cajón de referencia de lore** — consulta el Archivo completo sin cerrar la crónica activa. Las entradas se revelan con **animaciones de inscripción** vinculadas al scroll (scroll-driven animations), evocando un manuscrito que se escribe solo.
 
 ### 📖 El Archivo (Encyclopedia)
-Agrega automáticamente personajes, lugares, glosario y reglas del mundo a partir de todas tus entradas. Cada entidad puede recibir una **Esencia Permanente**: descripción canónica editable que persiste en el grimorio. Cabecera sticky con búsqueda y filtros integrados, vista de lista o mapa según preferencia.
+Agrega automáticamente personajes, lugares, glosario y reglas del mundo a partir de todas tus entradas. Cada entidad puede recibir una **Esencia Permanente**: descripción canónica editable que persiste en el grimorio. Cabecera sticky con búsqueda y filtros integrados en fila única (scroll horizontal en móvil), vista de lista o mapa según preferencia. Al registrar personajes, el formulario sugiere **etiquetas de archetype** (héroe, maestro, guerrero, etc.) con autocompletado — las etiquetas determinan el ícono del personaje en el Mapa de Sabiduría.
 
 ### 🔮 El Oráculo de Lore
 Integración con la API de **Google Gemini**. El Oráculo conoce tu archivo personal y puede responder preguntas sobre la trama, sugerir conexiones entre personajes o predecir giros basados en tu progreso actual. Interfaz rediseñada con tipografía ritual **Cinzel**, inscripciones sobre pergamino y acceso directo a **Visiones del Archivo** (análisis global de tus crónicas).
@@ -45,13 +45,13 @@ LoreKeeper está optimizado para instalarse y usarse desde el celular como app n
 
 - **Instalable** en Android (Chrome) e iOS (Safari) via Web App Manifest
 - **Offline-first**: todas las crónicas y entidades viven en localStorage + IndexedDB
-- **Teclado virtual inteligente**: la barra de navegación se oculta cuando el teclado bloquea la pantalla
+- **Teclado virtual inteligente**: la barra de navegación y el área de input del Oráculo se reajustan dinámicamente usando `visualViewport` para mantenerse visible cuando el teclado abre
 - **Header auto-oculto**: se retrae al desplazar hacia abajo, reaparece al subir
 - **Cabeceras sticky por vista**: búsqueda y filtros siempre accesibles al hacer scroll
 - **Memoria de posición por pestaña**: al volver a una pestaña, el scroll se restaura exactamente donde quedó
 - **Retroalimentación háptica**: vibración diferenciada en éxito, error, navegación y guardado
 - **Soundscape**: susurro de papel al cambiar pestaña, rasguño de pluma al guardar (opcional, navegador permitting)
-- **Bloqueo de scroll en modales**: sin deslizamiento accidental del fondo en iOS
+- **Bloqueo de scroll en modales**: sin deslizamiento accidental del fondo en iOS. Todos los modales usan `createPortal` al `document.body` para que `position: fixed` funcione correctamente dentro de vistas con scroll
 - **Sin zoom automático en inputs**: `font-size: max(16px, 1em)` previene el auto-zoom de Safari
 - **Reduced motion**: respeta `prefers-reduced-motion` del sistema
 - **theme-color adaptativo**: barra del navegador en color pergamino (claro) u oscuro según el sistema

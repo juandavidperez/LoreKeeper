@@ -64,6 +64,10 @@ Lorekeeper — reading companion PWA. Track progress, log entries with metadata 
 - Unique IDs via `uid()` (timestamp + counter + random) not `Date.now()`
 - Shortcuts: Cmd+K (search), Cmd+1–5 (tabs: Plan/Crónicas/Archivo/Oráculo/Mapa)
 - Offline banner: `useNetworkStatus` monitors `online`/`offline`. When offline, `MainLayout` shows fixed banner ("El Éter guarda silencio · sin conexión") with `WifiOff` icon
+- **Modal portals**: all full-screen modals use `createPortal(…, document.body)` — avoids `fixed` being trapped by transformed/scrolling ancestors. Any new modal must follow this pattern.
+- **OracleView keyboard**: `keyboardH` tracks `window.visualViewport` resize/scroll → applied as `height: calc(100dvh - … - ${keyboardH}px)` on root container so input+send button stay in viewport when keyboard opens.
+- **TagAutocomplete** (`EntryForm.jsx`): replaces plain tag `<input>` for characters. Filters `TAG_SUGGESTIONS` pool (same keywords as `ARCHETYPES_BY_TAG`/`LANDMARK_TYPES` in `mapImages.js`) on current partial tag (text after last comma). Dropdown shows keyword + group label (Héroe, Maestro, etc.).
+- **Encyclopedia category filter**: single-row horizontal scroll (`overflow-x-auto scrollbar-hide`, `flex-shrink-0` per button) — no wrap on mobile.
 - PWA install: `useInstallPrompt` captures `beforeinstallprompt`. `InstallBanner` shows CTA for Android (native) and iOS (manual). Dismissed state in `lore-install-dismissed`
 - Landscape compact: `MainLayout` listens `(orientation: landscape) and (max-height: 500px)`. Header + nav shrink to 2.5rem
 - Back gesture: swipe left/right on `<main>` navigates tabs (touch handlers in `MainLayout`)
@@ -143,14 +147,13 @@ Stats in `ReadingPlan` view (Plan tab), below header when not editing and `sched
 - **Supabase RLS** — Defined in `supabase-schema.sql` for all tables. Must be applied via Supabase SQL Editor if not already run.
 
 ### Features
-- **Restore UI** — `useSync` exposes `restore()` but no UI surface to trigger it. No user-facing restore.
 - **Social/sharing** — `ShareQuote` shares via `navigator.share` (mobile) or clipboard (desktop). No full entry/progress sharing.
 - **i18n** — All UI hardcoded Spanish. No i18n system.
 - **Wisdom Map** — SVG map of characters/places. Working: deterministic layout + collision resolution, archetype detection, pan/zoom, book filter, tooltip, co-occurrence lines ("hilos"), conversation history. Pending: d3-force layout, landmark clustering.
 
 ### Technical Improvements
 - **Data retention** — Oracle history capped at 10 conversations. localStorage can fill with entries + manga refs. IndexedDB orphaned panels pruned on app mount via `pruneOrphanedPanels` in `imageStore.js`; no proactive cleanup for entry data itself.
-- **WisdomMap images** — Characters use parchment-bg PNGs. Need transparent-bg versions (remove.bg or similar).
+- **WisdomMap images** — Characters use parchment-bg PNGs in `public/assets/map/characters/`. Need transparent-bg versions (preferred tool: remove.bg).
 
 ## Design Context
 
