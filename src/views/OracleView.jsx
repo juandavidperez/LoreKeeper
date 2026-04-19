@@ -274,7 +274,7 @@ ${mentions.length > 0 ? mentions.join('\n') : '(sin apariciones detalladas aún)
   };
 
   return (
-    <div className="flex flex-col animate-fade-in relative overflow-hidden" style={{ height: 'calc(100dvh - var(--main-padding-top) - var(--nav-height))' }}>
+    <div className="flex flex-col animate-fade-in relative overflow-hidden" style={{ height: `calc(100dvh - var(--main-padding-top) - var(--nav-height) - ${keyboardH}px)` }}>
       {/* Header Fixed */}
       <div className="sticky top-0 z-30 bg-header-bg/95 backdrop-blur-md pb-3 border-b border-primary/10 flex flex-col gap-3">
         <div className="flex justify-between items-center px-1">
