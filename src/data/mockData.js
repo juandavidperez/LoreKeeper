@@ -1,76 +1,84 @@
 // Initial constants to populate empty state
 export const INITIAL_BOOKS = [
-  { id: "book-1", title: "El Hobbit", emoji: "🧙", color: "#16A34A", type: "novel" },
-  { id: "book-2", title: "La Comunidad del Anillo", emoji: "💍", color: "#7C3AED", type: "novel" },
-  { id: "book-3", title: "Las Dos Torres", emoji: "🗡️", color: "#B45309", type: "novel" },
-  { id: "book-4", title: "El Retorno del Rey", emoji: "👑", color: "#DC2626", type: "novel" },
-  { id: "book-5", title: "El Silmarillion", emoji: "✨", color: "#0891B2", type: "novel" },
-  { id: "book-6", title: "Las Batallas de Tolkien (Day)", emoji: "📖", color: "#059669", type: "novel" },
-  { id: "book-7", title: "Las Leyendas del Anillo (Day)", emoji: "📖", color: "#047857", type: "novel" },
-  { id: "book-8", title: "Poderes Oscuros de Tolkien (Day)", emoji: "📖", color: "#065F46", type: "novel" },
-  { id: "book-9", title: "Lovecraft", emoji: "🐙", color: "#7C2D12", type: "novel" },
-  { id: "book-10", title: "Astroboy", emoji: "🤖", color: "#0284C7", type: "manga" },
-  { id: "book-11", title: "Slam Dunk", emoji: "🏀", color: "#3B82F6", type: "manga" },
-  { id: "book-12", title: "Naruto Gold", emoji: "🍃", color: "#F59E0B", type: "manga" },
-  { id: "book-13", title: "Fullmetal Alchemist", emoji: "⚗️", color: "#EF4444", type: "manga" },
-  { id: "book-14", title: "Spawn Integral", emoji: "👹", color: "#9CA3AF", type: "manga" },
-  { id: "book-15", title: "Vagabond", emoji: "⚔️", color: "#A8956A", type: "manga" }
+  { id: "book-1", title: "El Hobbit", emoji: "⛰️", color: "#15803D", type: "novel" },
+  { id: "book-2", title: "La Comunidad del Anillo", emoji: "💍", color: "#1E3A8A", type: "novel" },
+  { id: "book-3", title: "Las Dos Torres", emoji: "🏰", color: "#78350F", type: "novel" },
+  { id: "book-4", title: "El Retorno del Rey", emoji: "👑", color: "#991B1B", type: "novel" },
+  { id: "book-5", title: "El Silmarillion", emoji: "💎", color: "#0EA5E9", type: "novel" },
+  { id: "book-6", title: "Las Batallas de Tolkien (Day)", emoji: "📜", color: "#991B1B", type: "novel" },
+  { id: "book-7", title: "Las Leyendas del Anillo (Day)", emoji: "📜", color: "#78350F", type: "novel" },
+  { id: "book-8", title: "Poderes Oscuros de Tolkien (Day)", emoji: "📜", color: "#4B5563", type: "novel" },
+  { id: "book-9", title: "Lovecraft", emoji: "🐙", color: "#1E1B4B", type: "novel" },
+  { id: "book-10", title: "Astroboy", emoji: "🚀", color: "#E11D48", type: "manga" },
+  { id: "book-11", title: "Slam Dunk", emoji: "🏀", color: "#B91C1C", type: "manga" },
+  { id: "book-12", title: "Naruto Gold", emoji: "🍃", color: "#EA580C", type: "manga" },
+  { id: "book-13", title: "Fullmetal Alchemist", emoji: "🦾", color: "#991B1B", type: "manga" },
+  { id: "book-14", title: "Spawn Integral", emoji: "💀", color: "#0F172A", type: "manga" },
+  { id: "book-15", title: "Vagabond", emoji: "🌊", color: "#44403C", type: "manga" },
+  { id: "book-16", title: "El caballero de los 7 reinos", emoji: "🛡️", color: "#6b3fa0", type: "novel" }
 ];
 
 export const INITIAL_PHASES = [
-  { id: 1, label: "Fase 1 · El Hobbit", weeks: [1, 4], color: "#16A34A", desc: "El Hobbit + Astroboy + Slam Dunk" },
-  { id: 2, label: "Fase 2 · Tierra Media", weeks: [5, 14], color: "#7C3AED", desc: "Trilogía ESDLA + Naruto Gold + Arte companion (10 semanas)" },
-  { id: 3, label: "Fase 3 · Tolkien Profundo", weeks: [15, 24], color: "#0891B2", desc: "Silmarillion + FMA + David Day" },
-  { id: 4, label: "Fase 4 · Oscuridad", weeks: [25, 33], color: "#7C2D12", desc: "Lovecraft + Spawn Integral" },
-  { id: 5, label: "Fase 5 · El Maestro", weeks: [34, 36], color: "#A8956A", desc: "Vagabond solo" },
+  { id: 0, label: "PREÁMBULO · La Invocación", weeks: [1, 3], color: "#6b3fa0", desc: "El caballero de los 7 reinos (3 cuentos)" },
+  { id: 1, label: "Fase 1 · El Despertar (El Hobbit)", weeks: [4, 7], color: "#15803D", desc: "El Hobbit + Astroboy + Slam Dunk" },
+  { id: 2, label: "Fase 2 · La Expansión (Tierra Media)", weeks: [8, 17], color: "#B45309", desc: "Trilogía ESDLA + Naruto Gold + Arte companion (10 semanas)" },
+  { id: 3, label: "Fase 3 · Las Profundidades (Tolkien Profundo)", weeks: [18, 27], color: "#0EA5E9", desc: "Silmarillion + FMA + David Day" },
+  { id: 4, label: "Fase 4 · El Declive (Oscuridad)", weeks: [28, 36], color: "#1E1B4B", desc: "Lovecraft + Spawn Integral" },
+  { id: 5, label: "Fase 5 · La Búsqueda (El Maestro)", weeks: [37, 40], color: "#44403C", desc: "Vagabond + Cierre del Gran Viaje" },
 ];
 
 export const INITIAL_SCHEDULE = [
-  // ── Fase 1 · El Hobbit ────────────────────────────────────────────────────
-  { week: 1, mangaTitle: "Astroboy", mangaVols: "Tomo 1 (caps. 1–4)", novelTitle: "El Hobbit", novelSection: "Caps. 1–5", tip: "Dos clásicos fundacionales arrancan juntos. Tezuka y Tolkien, misma semana." },
-  { week: 2, mangaTitle: "Astroboy", mangaVols: "Tomo 1 (caps. 5–8, fin de colección)", novelTitle: "El Hobbit", novelSection: "Caps. 6–10", tip: "Llegas al límite de tu colección de Astroboy. La ternura de Tezuka es el antídoto al peligro de Tolkien." },
-  { week: 3, mangaTitle: "Slam Dunk", mangaVols: "Vol. 1", novelTitle: "El Hobbit", novelSection: "Caps. 11–15", tip: "Slam Dunk entra con energía pura. Sakuragi y Bilbo tienen más en común de lo que parece." },
-  { week: 4, mangaTitle: "Slam Dunk", mangaVols: "Vol. 2 (fin de colección)", novelTitle: "El Hobbit", novelSection: "Caps. 16–19 (fin)", tip: "Cierras El Hobbit y tu colección actual de Slam Dunk. Bilbo vuelve diferente. Sakuragi apenas empieza." },
+  // ── PREÁMBULO · La Invocación ─────────────────────────────────────────────
+  { week: 1, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "El caballero errante", novelSection: "Cuento I", tip: "Duncan el Alto y Egg comienzan su viaje. Un caballero errante y su escudero príncipe en el Prado de Vado Ceniza." },
+  { week: 2, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "La espada leal", novelSection: "Cuento II", tip: "Sequía y tensiones en Tiesa. Dunk aprende que el honor es más complejo que un simple juramento." },
+  { week: 3, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "El caballero misterioso", novelSection: "Cuento III", tip: "Un torneo en Murosblancos esconde una conspiración Fuegoscuro. Las identidades pesan más que las armaduras." },
 
-  // ── Fase 2 · Tierra Media (10 semanas) ───────────────────────────────────
-  { week: 5, mangaTitle: "Naruto Gold", mangaVols: "Vol. 1", novelTitle: "La Comunidad del Anillo", novelSection: "Libro I — La Comarca a Weathertop", companion: "Ilustraciones de La Comarca", tip: "Lee despacio. La Comarca es el jardín que vale perder — Tolkien la pinta para que su abandono duela." },
-  { week: 6, mangaTitle: "Naruto Gold", mangaVols: "Vol. 2", novelTitle: "La Comunidad del Anillo", novelSection: "Libro I — Weathertop a Rivendell (fin)", companion: "Rivendell y los Elfos", tip: "Weathertop es el primer golpe real. Tolkien no avisa cuando el cuento de hadas termina." },
-  { week: 7, mangaTitle: "Naruto Gold", mangaVols: "Vol. 3", novelTitle: "La Comunidad del Anillo", novelSection: "Libro II — Moria y Lothlórien", companion: "Moria y Lothlórien", tip: "Moria es catedral de oscuridad. La caída de Gandalf en el puente vale toda la semana." },
-  { week: 8, mangaTitle: "Naruto Gold", mangaVols: "Vol. 4", novelTitle: "Las Dos Torres", novelSection: "Libro III — Rohan y los Ents", companion: "Rohan, los Ents e Isengard", tip: "Rohan huele a anglosajón puro. Los Ents se mueven en tiempo geológico — deja que pasen." },
-  { week: 9, mangaTitle: "Naruto Gold", mangaVols: "Vol. 5", novelTitle: "Las Dos Torres", novelSection: "Libro IV — Gollum, Frodo y Sam", companion: "Gollum, Ithilien y Cirith Ungol", tip: "La dualidad Sméagol/Gollum es el corazón de ESDLA. Lee la escena del lago dos veces." },
-  { week: 10, mangaTitle: "Naruto Gold", mangaVols: "Vol. 6", novelTitle: "El Retorno del Rey", novelSection: "Libro V — Minas Tirith y Pelennor", companion: "Minas Tirith y Pelennor", tip: "Pelennor Fields. Éowyn. Merry. El loophole que Tolkien escondió desde el principio." },
-  { week: 11, mangaTitle: "Naruto Gold", mangaVols: "Vol. 7 (fin de colección)", novelTitle: "El Retorno del Rey", novelSection: "Libro VI — El Monte del Destino", companion: "Los Puertos Grises", tip: "Sam carga a Frodo porque Frodo ya no puede. El heroísmo más honesto de la literatura." },
-  { week: 12, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "El Retorno del Rey", novelSection: "Apéndices — Cronología + Anillos de Poder", tip: "No tienes que leerlos todos. Cronología y Anillos de Poder bastan para el contexto." },
-  { week: 13, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "El Retorno del Rey", novelSection: "Companion — Ilustraciones y mapas", tip: "Semana visual. Los companion de Day son álbumes de arte — hojea sin presión, sin examen." },
-  { week: 14, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "— Reflexión y transición —", novelSection: "Releer pasaje favorito de ESDLA", tip: "Antes de entrar al Silmarillion, cierra ESDLA en tu mente. ¿Quién te marcó más?" },
+  // ── Fase 1 · El Despertar (El Hobbit) ─────────────────────────────────────
+  { week: 4, mangaTitle: "Astroboy", mangaVols: "Tomo 1 (caps. 1–4)", novelTitle: "El Hobbit", novelSection: "Caps. 1–5", tip: "Dos clásicos fundacionales arrancan juntos. Tezuka y Tolkien, misma semana." },
+  { week: 5, mangaTitle: "Astroboy", mangaVols: "Tomo 1 (caps. 5–8, fin de colección)", novelTitle: "El Hobbit", novelSection: "Caps. 6–10", tip: "Llegas al límite de tu colección de Astroboy. La ternura de Tezuka es el antídoto al peligro de Tolkien." },
+  { week: 6, mangaTitle: "Slam Dunk", mangaVols: "Vol. 1", novelTitle: "El Hobbit", novelSection: "Caps. 11–15", tip: "Slam Dunk entra con energía pura. Sakuragi y Bilbo tienen más en común de lo que parece." },
+  { week: 7, mangaTitle: "Slam Dunk", mangaVols: "Vol. 2 (fin de colección)", novelTitle: "El Hobbit", novelSection: "Caps. 16–19 (fin)", tip: "Cierras El Hobbit y tu colección actual de Slam Dunk. Bilbo vuelve diferente. Sakuragi apenas empieza." },
 
-  // ── Fase 3 · Tolkien Profundo ─────────────────────────────────────────────
-  { week: 15, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 1", novelTitle: "El Silmarillion", novelSection: "Ainulindalë + Valaquenta", tip: "FMA y El Sil exploran el precio de la ambición. La Música de Ainur es creación pura." },
-  { week: 16, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 2", novelTitle: "El Silmarillion", novelSection: "Quenta (caps. 1–7)", tip: "Morgoth paralelo a la alquimia de FMA. La corrupción del poder tiene la misma forma." },
-  { week: 17, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 3", novelTitle: "El Silmarillion", novelSection: "Quenta (caps. 8–15)", tip: "Beren y Lúthien es la historia de amor más antigua de Tolkien. Léela como poema." },
-  { week: 18, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 4", novelTitle: "El Silmarillion", novelSection: "Quenta (caps. 16–22)", tip: "Ambos se oscurecen filosóficamente. La caída de Númenor es la más trágica del legendarium." },
-  { week: 19, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 5", novelTitle: "El Silmarillion", novelSection: "Akallabêth + De los Anillos de Poder (fin)", tip: "Tolkien completo. Reflexiona antes de pasar a Day — el legendarium necesita digestión." },
-  { week: 20, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 6", novelTitle: "Las Batallas de Tolkien (Day)", novelSection: "Primera mitad", tip: "David Day entra como enciclopedia visual. FMA y el mundo tolkieniano comparten obsesión con la transmutación." },
-  { week: 21, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 7 (fin de colección)", novelTitle: "Las Batallas de Tolkien (Day)", novelSection: "Segunda mitad (fin)", tip: "Tu archivo físico de FMA llega a su límite. Reflexiona sobre el precio del intercambio equivalente antes de cerrar el tomo." },
-  { week: 22, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "Poderes Oscuros de Tolkien (Day)", novelSection: "Completo", tip: "El lado oscuro del legendarium, en su propio espacio. Morgoth y Sauron como ensayo." },
-  { week: 23, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "Las Leyendas del Anillo (Day)", novelSection: "Completo", tip: "Day no necesita competencia. La historia visual de los Anillos, un artefacto hermoso." },
-  { week: 24, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "Las Leyendas del Anillo (Day)", novelSection: "Repaso + notas propias", tip: "Cierra el universo Tolkien. Anota tus conexiones antes de que la oscuridad de Lovecraft llegue." },
+  // ── Fase 2 · La Expansión (Tierra Media) (10 semanas) ──────────────────────
+  { week: 8, mangaTitle: "Naruto Gold", mangaVols: "Vol. 1", novelTitle: "La Comunidad del Anillo", novelSection: "Libro I — La Comarca a Weathertop", companion: "Ilustraciones de La Comarca", tip: "Lee despacio. La Comarca es el jardín que vale perder — Tolkien la pinta para que su abandono duela." },
+  { week: 9, mangaTitle: "Naruto Gold", mangaVols: "Vol. 2", novelTitle: "La Comunidad del Anillo", novelSection: "Libro I — Weathertop a Rivendell (fin)", companion: "Rivendell y los Elfos", tip: "Weathertop es el primer golpe real. Tolkien no avisa cuando el cuento de hadas termina." },
+  { week: 10, mangaTitle: "Naruto Gold", mangaVols: "Vol. 3", novelTitle: "La Comunidad del Anillo", novelSection: "Libro II — Moria y Lothlórien", companion: "Moria y Lothlórien", tip: "Moria es catedral de oscuridad. La caída de Gandalf en el puente vale toda la semana." },
+  { week: 11, mangaTitle: "Naruto Gold", mangaVols: "Vol. 4", novelTitle: "Las Dos Torres", novelSection: "Libro III — Rohan y los Ents", companion: "Rohan, los Ents e Isengard", tip: "Rohan huele a anglosajón puro. Los Ents se mueven en tiempo geológico — deja que pasen." },
+  { week: 12, mangaTitle: "Naruto Gold", mangaVols: "Vol. 5", novelTitle: "Las Dos Torres", novelSection: "Libro IV — Gollum, Frodo y Sam", companion: "Gollum, Ithilien y Cirith Ungol", tip: "La dualidad Sméagol/Gollum es el corazón de ESDLA. Lee la escena del lago dos veces." },
+  { week: 13, mangaTitle: "Naruto Gold", mangaVols: "Vol. 6", novelTitle: "El Retorno del Rey", novelSection: "Libro V — Minas Tirith y Pelennor", companion: "Minas Tirith y Pelennor", tip: "Pelennor Fields. Éowyn. Merry. El loophole que Tolkien escondió desde el principio." },
+  { week: 14, mangaTitle: "Naruto Gold", mangaVols: "Vol. 7 (fin de colección)", novelTitle: "El Retorno del Rey", novelSection: "Libro VI — El Monte del Destino", companion: "Los Puertos Grises", tip: "Sam carga a Frodo porque Frodo ya no puede. El heroísmo más honesto de la literatura." },
+  { week: 15, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "El Retorno del Rey", novelSection: "Apéndices — Cronología + Anillos de Poder", tip: "No tienes que leerlos todos. Cronología y Anillos de Poder bastan para el contexto." },
+  { week: 16, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "El Retorno del Rey", novelSection: "Companion — Ilustraciones y mapas", tip: "Semana visual. Los companion de Day son álbumes de arte — hojea sin presión, sin examen." },
+  { week: 17, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "— Reflexión y transición —", novelSection: "Releer pasaje favorito de ESDLA", tip: "Antes de entrar al Silmarillion, cierra ESDLA en tu mente. ¿Quién te marcó más?" },
 
-  // ── Fase 4 · Oscuridad ────────────────────────────────────────────────────
-  { week: 25, mangaTitle: "Spawn Integral", mangaVols: "Vol. 1", novelTitle: "Lovecraft", novelSection: "Dagon, Polaris, Gatos de Ulthar, La calle", tip: "El terror incipiente. Los mitos apenas nacen; lo onírico y lo macabro se entrelazan al tiempo que Spawn despierta." },
-  { week: 26, mangaTitle: "Spawn Integral", mangaVols: "Vol. 2", novelTitle: "Lovecraft", novelSection: "El extraño, Azathoth, Ex Oblivione, Lo innombrable, Dulce Ermengarde", tip: "El vacío cósmico y el horror a uno mismo. 'El extraño' es una joya absoluta de la alienación." },
-  { week: 27, mangaTitle: "Spawn Integral", mangaVols: "Vol. 3", novelTitle: "Lovecraft", novelSection: "Las ratas de las paredes + El relato de Red Hook", tip: "Descenso a la locura y ruinas urbanas. Lovecraft construye el miedo explorando linajes y herencias malditas." },
-  { week: 28, mangaTitle: "Spawn Integral", mangaVols: "Vol. 4", novelTitle: "Lovecraft", novelSection: "La sombra sobre Innsmouth", tip: "Aislamiento asfixiante y revelaciones genéticas. El horror toma una forma física, viscosa y persecutoria." },
-  { week: 29, mangaTitle: "Spawn Integral", mangaVols: "Vol. 5", novelTitle: "Lovecraft", novelSection: "El color surgido del espacio", tip: "Horror inefable, algo que no se puede describir. El horror de lo desconocido se manifiesta en todo su esplendor." },
-  { week: 30, mangaTitle: "Spawn Integral", mangaVols: "Vol. 6", novelTitle: "Lovecraft", novelSection: "En las montañas de la locura (I–VI)", tip: "La obra maestra de Lovecraft empieza esta semana. Lee de noche si puedes." },
-  { week: 31, mangaTitle: "Spawn Integral", mangaVols: "Vol. 7", novelTitle: "Lovecraft", novelSection: "En las montañas de la locura (VII–XII)", tip: "El final de Montañas es inquietante en el sentido correcto: no resuelve, se expande." },
-  { week: 32, mangaTitle: "Spawn Integral", mangaVols: "Vol. 8", novelTitle: "Lovecraft", novelSection: "El extraño caso de Charles Dexter Ward (I–III)", tip: "Lovecraft se vuelve mucho más narrativo e histórico aquí — su obra más extensa y accesible." },
-  { week: 33, mangaTitle: "Spawn Integral", mangaVols: "Vol. 9 (fin de colección)", novelTitle: "Lovecraft", novelSection: "El extraño caso de Charles Dexter Ward (IV–V, fin)", tip: "Semana de transición. Cierra la oscuridad de Lovecraft antes de entrar al silencio de Vagabond." },
+  // ── Fase 3 · Las Profundidades (Tolkien Profundo) ─────────────────────────
+  { week: 18, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 1", novelTitle: "El Silmarillion", novelSection: "Ainulindalë + Valaquenta", tip: "FMA y El Sil exploran el precio de la ambición. La Música de Ainur es creación pura." },
+  { week: 19, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 2", novelTitle: "El Silmarillion", novelSection: "Quenta (caps. 1–7)", tip: "Morgoth paralelo a la alquimia de FMA. La corrupción del poder tiene la misma forma." },
+  { week: 20, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 3", novelTitle: "El Silmarillion", novelSection: "Quenta (caps. 8–15)", tip: "Beren y Lúthien es la historia de amor más antigua de Tolkien. Léela como poema." },
+  { week: 21, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 4", novelTitle: "El Silmarillion", novelSection: "Quenta (caps. 16–22)", tip: "Ambos se oscurecen filosóficamente. La caída de Númenor es la más trágica del legendarium." },
+  { week: 22, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 5", novelTitle: "El Silmarillion", novelSection: "Akallabêth + De los Anillos de Poder (fin)", tip: "Tolkien completo. Reflexiona antes de pasar a Day — el legendarium necesita digestión." },
+  { week: 23, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 6", novelTitle: "Las Batallas de Tolkien (Day)", novelSection: "Primera mitad", tip: "David Day entra como enciclopedia visual. FMA y el mundo tolkieniano comparten obsesión con la transmutación." },
+  { week: 24, mangaTitle: "Fullmetal Alchemist", mangaVols: "Vol. 7 (fin de colección)", novelTitle: "Las Batallas de Tolkien (Day)", novelSection: "Segunda mitad (fin)", tip: "Tu archivo físico de FMA llega a su límite. Reflexiona sobre el precio del intercambio equivalente antes de cerrar el tomo." },
+  { week: 25, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "Poderes Oscuros de Tolkien (Day)", novelSection: "Completo", tip: "El lado oscuro del legendarium, en su propio espacio. Morgoth y Sauron como ensayo." },
+  { week: 26, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "Las Leyendas del Anillo (Day)", novelSection: "Completo", tip: "Day no necesita competencia. La historia visual de los Anillos, un artefacto hermoso." },
+  { week: 27, mangaTitle: "— Pausa —", mangaVols: "Sin manga", novelTitle: "Las Leyendas del Anillo (Day)", novelSection: "Repaso + notas propias", tip: "Cierra el universo Tolkien. Anota tus conexiones antes de que la oscuridad de Lovecraft llegue." },
 
-  // ── Fase 5 · El Maestro ───────────────────────────────────────────────────
-  { week: 34, mangaTitle: "Vagabond", mangaVols: "Vol. 1", novelTitle: "— Vagabond merece toda la atención —", novelSection: "Sin novela", tip: "El final boss del viaje. Inoue no se lee — se contempla. Sin prisa, sin calendario." },
-  { week: 35, mangaTitle: "Vagabond", mangaVols: "Vol. 2", novelTitle: "— Meditación —", novelSection: "Búsqueda del sentido", tip: "¿A qué te recuerda la búsqueda de Musashi? No es retórico — escríbelo en el grimorio." },
-  { week: 36, mangaTitle: "Vagabond", mangaVols: "Vol. 3 (fin de colección)", novelTitle: "🏁 Fin del Gran Viaje Lector", novelSection: "Fin del viaje", tip: "No se termina Vagabond, se experimenta. 36 semanas después, ya eres otro lector." },
+  // ── Fase 4 · El Declive (Oscuridad) ───────────────────────────────────────
+  { week: 28, mangaTitle: "Spawn Integral", mangaVols: "Vol. 1", novelTitle: "Lovecraft", novelSection: "Dagon, Polaris, Gatos de Ulthar, La calle", tip: "El terror incipiente. Los mitos apenas nacen; lo onírico y lo macabro se entrelazan al tiempo que Spawn despierta en un mundo que ya no es el suyo." },
+  { week: 29, mangaTitle: "Spawn Integral", mangaVols: "Vol. 2", novelTitle: "Lovecraft", novelSection: "El extraño, Azathoth, Ex Oblivione, Lo innombrable, Dulce Ermengarde", tip: "El vacío cósmico y el horror a uno mismo. Al Simmons y 'El Extraño' comparten la tragedia de mirarse al espejo y no reconocer su propia humanidad." },
+  { week: 30, mangaTitle: "Spawn Integral", mangaVols: "Vol. 3", novelTitle: "Lovecraft", novelSection: "Las ratas de las paredes + El relato de Red Hook", tip: "Descenso a las ruinas urbanas. Mientras Lovecraft explora linajes malditos, Spawn descubre que su pacto es una herencia de sangre que no puede borrar." },
+  { week: 31, mangaTitle: "Spawn Integral", mangaVols: "Vol. 4", novelTitle: "Lovecraft", novelSection: "La sombra sobre Innsmouth", tip: "Horror físico y viscoso. La mutación de Innsmouth resuena con la simbiosis de la armadura de Spawn: el cuerpo como una prisión que cambia de forma." },
+  { week: 32, mangaTitle: "Spawn Integral", mangaVols: "Vol. 5", novelTitle: "Lovecraft", novelSection: "El color surgido del espacio", tip: "Lo inefable. El color que cae del cielo y el poder del Infierno son fuerzas que la razón humana no puede contener. Acepta el caos." },
+  { week: 33, mangaTitle: "Spawn Integral", mangaVols: "Vol. 6", novelTitle: "Lovecraft", novelSection: "En las montañas de la locura (I–VI)", tip: "La obra maestra. Así como los exploradores hallan ciudades prohibidas, Spawn desciende a los niveles más profundos de su propia condenación. Lee de noche." },
+  { week: 34, mangaTitle: "Spawn Integral", mangaVols: "Vol. 7", novelTitle: "Lovecraft", novelSection: "En las montañas de la locura (VII–XII)", tip: "El horror no se resuelve, se expande. Las revelaciones de la Antártida y la guerra del Infierno te dejarán con más preguntas que respuestas." },
+  { week: 35, mangaTitle: "Spawn Integral", mangaVols: "Vol. 8", novelTitle: "Lovecraft", novelSection: "El extraño caso de Charles Dexter Ward (I–III)", tip: "Resurrecciones y sombras. El caso de Charles Dexter Ward trata sobre revivir lo que debería estar muerto, la esencia misma de un Hellspawn." },
+  { week: 36, mangaTitle: "Spawn Integral", mangaVols: "Vol. 9 (fin de colección)", novelTitle: "Lovecraft", novelSection: "El extraño caso de Charles Dexter Ward (IV–V, fin)", tip: "Cierre de la oscuridad. Has cruzado el abismo de la locura y el infierno. Respira hondo antes de entrar al silencio meditativo de Vagabond." },
+
+  // ── Fase 5 · La Búsqueda (El Maestro) ─────────────────────────────────────
+  { week: 37, mangaTitle: "Vagabond", mangaVols: "Vol. 1", novelTitle: "— Vagabond merece toda la atención —", novelSection: "Sin novela", tip: "El final boss del viaje. Inoue no se lee — se contempla. Sin prisa, sin calendario." },
+  { week: 38, mangaTitle: "Vagabond", mangaVols: "Vol. 2", novelTitle: "— Meditación —", novelSection: "Búsqueda del sentido", tip: "¿A qué te recuerda la búsqueda de Musashi? No es retórico — escríbelo en el grimorio." },
+  { week: 39, mangaTitle: "Vagabond", mangaVols: "Vol. 3 (fin de colección)", novelTitle: "— Reflexión —", novelSection: "El camino del guerrero", tip: "No se termina Vagabond, se experimenta. El viaje físico acaba, pero el archivo persiste." },
+  { week: 40, mangaTitle: "— El Gran Archivo —", mangaVols: "Viaje completado", novelTitle: "🏁 El Grimorio de LoreKeeper", novelSection: "Revisión final del Wisdom Map", tip: "No hay más páginas que leer, solo conexiones que contemplar. Has transformado 40 semanas de historias en una parte de tu propia leyenda." },
 ];
 
 export const INITIAL_ENTRIES = [];
@@ -279,7 +287,7 @@ export const DEMO_DATA = {
   books: INITIAL_BOOKS,
   phases: INITIAL_PHASES,
   schedule: INITIAL_SCHEDULE,
-  completedWeeks: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+  completedWeeks: [4, 5, 6, 7, 8, 9, 10, 11, 12],
   entities: DEMO_ENTITIES,
   mentions: DEMO_MENTIONS,
   relations: DEMO_RELATIONS,
